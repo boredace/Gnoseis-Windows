@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Gnoseis.App.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Page.Resources>
+        <!-- A settings row: icon, title and description on the left, a control on the right. -->
+        <Style x:Key="SettingsCardGridStyle" TargetType="Grid">
+            <Setter Property="ColumnSpacing" Value="16" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Margin="{StaticResource PageMargin}"
+            AutomationProperties.HeadingLevel="Level1"
+            Style="{StaticResource TitleTextBlockStyle}"
+            Text="Settings" />
+
+        <ScrollViewer Grid.Row="1" Padding="{StaticResource PageContentMargin}">
+            <!-- Left-aligned, like the page title, and no wider than is comfortable to read -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="1000" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+            <StackPanel Margin="0,8,0,0" HorizontalAlignment="Stretch" Spacing="4">
+
+                <InfoBar x:Name="ResultInfoBar" Margin="0,8,0,4" IsOpen="False" />
+
+                <!-- Appearance -->
+                <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Appearance" />
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid Style="{StaticResource SettingsCardGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon VerticalAlignment="Center" Glyph="&#xE790;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="App theme" />
+                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Choose which theme Gnoseis uses" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ComboBox
+                            x:Name="ThemeComboBox"
+                            Grid.Column="2"
+                            MinWidth="200"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="App theme"
+                            SelectionChanged="ThemeComboBox_SelectionChanged">
+                            <ComboBoxItem Content="Use system setting" Tag="Default" />
+                            <ComboBoxItem Content="Light" Tag="Light" />
+                            <ComboBoxItem Content="Dark" Tag="Dark" />
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
+                <!-- Data -->
+                <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Data" />
+
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid Style="{StaticResource SettingsCardGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon VerticalAlignment="Center" Glyph="&#xE8B7;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Database file" />
+                            <TextBlock
+                                x:Name="DatabasePathText"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                IsTextSelectionEnabled="True"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button Grid.Column="2" VerticalAlignment="Center" Click="OpenFolder_Click" Content="Open folder" />
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid Style="{StaticResource SettingsCardGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon VerticalAlignment="Center" Glyph="&#xE792;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Back up database" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="Save a copy of all your data to a file. The file can be restored here or in Gnoseis for Android. Backup files are not encrypted."
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button x:Name="BackupButton" Grid.Column="2" VerticalAlignment="Center" Click="Backup_Click" Content="Back up…" />
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid Style="{StaticResource SettingsCardGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon VerticalAlignment="Center" Glyph="&#xE81C;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Restore database" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="Replace all data in Gnoseis with a backup file, or with a gnoseis_data file from Gnoseis for Android. The file is checked first, and a copy of your current data is kept in the database folder."
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button x:Name="RestoreButton" Grid.Column="2" VerticalAlignment="Center" Click="Restore_Click" Content="Restore…" />
+                    </Grid>
+                </Border>
+
+                <ProgressBar x:Name="BusyBar" Margin="0,4" IsIndeterminate="True" Visibility="Collapsed" />
+
+                <!-- Keyboard shortcuts -->
+                <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Keyboard shortcuts" />
+                <Border Style="{StaticResource CardStyle}">
+                    <Grid ColumnSpacing="24" RowSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+1 … Ctrl+6" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Home, Notes, Contacts, Organizations, Categories, Items" />
+                        <TextBlock Grid.Row="1" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+F" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Search everything" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+N" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="New record in the current section" />
+                        <TextBlock Grid.Row="3" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+E" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Edit the selected record" />
+                        <TextBlock Grid.Row="4" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+L" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Link existing records to the selected record" />
+                        <TextBlock Grid.Row="5" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Delete" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Delete the selected record (in a list)" />
+                        <TextBlock Grid.Row="6" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+S / Esc" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Save / cancel while editing" />
+                        <TextBlock Grid.Row="7" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Enter" />
+                        <TextBlock Grid.Row="7" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Add the quick note on Home" />
+                        <TextBlock Grid.Row="8" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Alt+Left" />
+                        <TextBlock Grid.Row="8" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Back" />
+                    </Grid>
+                </Border>
+
+                <!-- About -->
+                <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="About" />
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="6">
+                        <TextBlock x:Name="VersionText" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            Text="A CRM and knowledge manager that keeps all data on this device. Uses the same database format as Gnoseis for Android."
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="Copyright (C) 2024 Gnoseis.org. Licensed under the GNU General Public License v3.0, or under a commercial license."
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>

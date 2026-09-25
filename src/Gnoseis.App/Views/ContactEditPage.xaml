@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Gnoseis.App.Views.ContactEditPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls">
+
+    <Page.Resources>
+        <Style x:Key="PairGridStyle" TargetType="Grid">
+            <Setter Property="ColumnSpacing" Value="16" />
+            <Setter Property="RowSpacing" Value="12" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Margin="{StaticResource PageMargin}" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                AutomationProperties.HeadingLevel="Level1"
+                Style="{StaticResource TitleTextBlockStyle}"
+                Text="{x:Bind ViewModel.PageTitle}" />
+            <Button
+                Grid.Column="1"
+                MinWidth="96"
+                Click="Save_Click"
+                Content="Save"
+                IsEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
+                Style="{StaticResource AccentButtonStyle}"
+                ToolTipService.ToolTip="Save (Ctrl+S)">
+                <Button.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="S" Modifiers="Control" />
+                </Button.KeyboardAccelerators>
+            </Button>
+            <Button
+                Grid.Column="2"
+                MinWidth="96"
+                Click="Cancel_Click"
+                Content="Cancel"
+                ToolTipService.ToolTip="Cancel (Esc)">
+                <Button.KeyboardAccelerators>
+                    <KeyboardAccelerator Key="Escape" />
+                </Button.KeyboardAccelerators>
+            </Button>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" Padding="{StaticResource PageContentMargin}">
+            <!-- Left-aligned form that grows up to FormMaxWidth -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="{StaticResource FormMaxWidth}" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+            <StackPanel Margin="0,4,0,0" HorizontalAlignment="Stretch">
+
+                <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Name" />
+                <Grid Style="{StaticResource PairGridStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <controls:FormTextBox x:Name="FirstNameBox" Field="{x:Bind ViewModel.NameFirst}" Kind="Name" />
+                    <controls:FormTextBox Grid.Column="1" Field="{x:Bind ViewModel.NameLast}" IsRequired="True" Kind="Name" />
+                </Grid>
+
+                <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Work" />
+                <Grid Style="{StaticResource PairGridStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <controls:FormTextBox Field="{x:Bind ViewModel.JobTitle}" />
+                    <controls:FormTextBox Grid.Column="1" Field="{x:Bind ViewModel.Company}" />
+                </Grid>
+
+                <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Phone" />
+                <Grid Style="{StaticResource PairGridStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <controls:FormTextBox Field="{x:Bind ViewModel.PhoneMain}" Kind="Phone" />
+                    <controls:FormTextBox Grid.Column="1" Field="{x:Bind ViewModel.PhoneMobile}" Kind="Phone" />
+                    <controls:FormTextBox Grid.Row="1" Field="{x:Bind ViewModel.PhoneHome}" Kind="Phone" />
+                    <controls:FormTextBox Grid.Row="1" Grid.Column="1" Field="{x:Bind ViewModel.PhoneWork}" Kind="Phone" />
+                </Grid>
+
+                <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Email" />
+                <Grid Style="{StaticResource PairGridStyle}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <controls:FormTextBox Field="{x:Bind ViewModel.EmailMain}" Kind="Email" />
+                    <controls:FormTextBox Grid.Column="1" Field="{x:Bind ViewModel.EmailMobile}" Kind="Email" />
+                    <controls:FormTextBox Grid.Row="1" Field="{x:Bind ViewModel.EmailHome}" Kind="Email" />
+                    <controls:FormTextBox Grid.Row="1" Grid.Column="1" Field="{x:Bind ViewModel.EmailWork}" Kind="Email" />
+                </Grid>
+
+                <controls:FormTextBox Margin="0,24,0,8" Field="{x:Bind ViewModel.Comments}" Kind="Multiline" />
+            </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>

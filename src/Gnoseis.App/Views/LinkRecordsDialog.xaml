@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ContentDialog
+    x:Class="Gnoseis.App.Views.LinkRecordsDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    CloseButtonText="Cancel"
+    DefaultButton="Primary"
+    IsPrimaryButtonEnabled="{x:Bind ViewModel.CanLink, Mode=OneWay}"
+    PrimaryButtonClick="LinkRecordsDialog_PrimaryButtonClick"
+    PrimaryButtonText="{x:Bind ViewModel.LinkButtonText, Mode=OneWay}"
+    Title="{x:Bind ViewModel.PageTitle, Mode=OneWay}">
+
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">760</x:Double>
+        <x:Double x:Key="ContentDialogMaxHeight">860</x:Double>
+        <CollectionViewSource x:Name="GroupsSource" IsSourceGrouped="True" />
+    </ContentDialog.Resources>
+
+    <Grid Width="600" Height="520" RowSpacing="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <AutoSuggestBox
+            x:Name="QueryBox"
+            AutomationProperties.Name="Search records to link"
+            PlaceholderText="Search notes, contacts, organizations, categories and items"
+            QueryIcon="Find"
+            Text="{x:Bind ViewModel.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+        <TextBlock
+            Grid.Row="1"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Style="{StaticResource CaptionTextBlockStyle}"
+            Text="{x:Bind ViewModel.StatusText, Mode=OneWay}" />
+
+        <ListView
+            x:Name="ResultList"
+            Grid.Row="2"
+            AutomationProperties.Name="Records to link"
+            ContainerContentChanging="ResultList_ContainerContentChanging"
+            ItemTemplate="{StaticResource RecordRowTemplate}"
+            IsSynchronizedWithCurrentItem="False"
+            SelectionChanged="ResultList_SelectionChanged"
+            SelectionMode="Multiple">
+            <ListView.GroupStyle>
+                <GroupStyle HeaderTemplate="{StaticResource RecordGroupHeaderTemplate}" />
+            </ListView.GroupStyle>
+        </ListView>
+    </Grid>
+</ContentDialog>

@@ -1,0 +1,29 @@
+## Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+ARM64/
+AppPackages/
+BundleArtifacts/
+*.msix
+*.appx
+
+## Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+
+## Tests
+TestResults/
+*.trx
+coverage*/
+
+## Local databases
+gnoseis_data
+gnoseis_data-*
+*.backup

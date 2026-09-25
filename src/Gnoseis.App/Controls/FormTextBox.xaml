@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Gnoseis.App.Controls.FormTextBox"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <StackPanel>
+        <TextBox
+            x:Name="Box"
+            MaxLength="{x:Bind Field.MaxLength, Mode=OneWay}"
+            PlaceholderText="{x:Bind PlaceholderText, Mode=OneWay}"
+            Text="{x:Bind Field.Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBlock
+            Style="{StaticResource ValidationTextStyle}"
+            Text="{x:Bind Field.Error, Mode=OneWay}"
+            Visibility="{x:Bind Field.HasError, Mode=OneWay}" />
+    </StackPanel>
+</UserControl>

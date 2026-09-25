@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Gnoseis.App.Views.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Gnoseis.App.ViewModels"
+    SizeChanged="Page_SizeChanged">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="1180" Margin="36,28,36,36" Spacing="24">
+
+            <!-- Greeting -->
+            <StackPanel Spacing="2">
+                <TextBlock AutomationProperties.HeadingLevel="Level1" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind ViewModel.Greeting}" />
+                <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind ViewModel.DateText}" />
+            </StackPanel>
+
+            <!-- Quick note -->
+            <Border Style="{StaticResource CardStyle}">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <FontIcon FontSize="16" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Glyph="&#xE70B;" />
+                        <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Quick note" />
+                    </StackPanel>
+                    <TextBox
+                        x:Name="QuickTitleBox"
+                        AutomationProperties.Name="Quick note title"
+                        MaxLength="60"
+                        PlaceholderText="Title (optional)"
+                        Text="{x:Bind ViewModel.QuickTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox
+                        AcceptsReturn="True"
+                        AutomationProperties.Name="Quick note text"
+                        IsSpellCheckEnabled="True"
+                        MinHeight="88"
+                        PlaceholderText="Write down anything. It is saved as a note for today."
+                        Text="{x:Bind ViewModel.QuickText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        TextWrapping="Wrap" />
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <InfoBar
+                            x:Name="QuickNoteInfo"
+                            Padding="0"
+                            VerticalAlignment="Center"
+                            IsClosable="True"
+                            IsOpen="False"
+                            Severity="Success"
+                            Title="Note added" />
+                        <Button
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Click="AddQuickNote_Click"
+                            Content="Add note"
+                            IsEnabled="{x:Bind ViewModel.CanAddQuickNote, Mode=OneWay}"
+                            Style="{StaticResource AccentButtonStyle}"
+                            ToolTipService.ToolTip="Add note (Ctrl+Enter)">
+                            <Button.KeyboardAccelerators>
+                                <KeyboardAccelerator Key="Enter" Modifiers="Control" />
+                            </Button.KeyboardAccelerators>
+                        </Button>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Counts -->
+            <ItemsRepeater ItemsSource="{x:Bind ViewModel.Stats, Mode=OneWay}">
+                <ItemsRepeater.Layout>
+                    <UniformGridLayout ItemsStretch="Fill" MinColumnSpacing="12" MinItemWidth="170" MinRowSpacing="12" />
+                </ItemsRepeater.Layout>
+                <ItemsRepeater.ItemTemplate>
+                    <DataTemplate x:DataType="vm:StatCard">
+                        <Button
+                            AutomationProperties.Name="{x:Bind AutomationName}"
+                            Click="StatCard_Click"
+                            Style="{StaticResource CardButtonStyle}">
+                            <StackPanel Orientation="Horizontal" Spacing="14">
+                                <Border Width="40" Height="40" Background="{x:Bind TileBrush}" CornerRadius="8">
+                                    <FontIcon FontSize="18" Foreground="White" Glyph="{x:Bind Glyph}" />
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind CountText}" />
+                                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Label}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsRepeater.ItemTemplate>
+            </ItemsRepeater>
+
+            <!-- Recent notes and recently opened records -->
+            <Grid x:Name="ListsGrid" ColumnSpacing="16" RowSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition x:Name="SecondListColumn" Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <Border VerticalAlignment="Top" Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="6">
+                        <Grid>
+                            <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Recent notes" />
+                            <HyperlinkButton Padding="4,0" HorizontalAlignment="Right" Click="AllNotes_Click" Content="All notes" />
+                        </Grid>
+                        <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="No notes yet." Visibility="{x:Bind ViewModel.HasNoRecentNotes, Mode=OneWay}" />
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.RecentNotes, Mode=OneWay}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RecordRow">
+                                    <Button
+                                        AutomationProperties.Name="{x:Bind AutomationName}"
+                                        Click="Row_Click"
+                                        Content="{x:Bind}"
+                                        ContentTemplate="{StaticResource RecordRowTemplate}"
+                                        Style="{StaticResource RowButtonStyle}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="RecentlyOpenedCard" Grid.Column="1" VerticalAlignment="Top" Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="6">
+                        <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Recently opened" />
+                        <TextBlock
+                            Style="{StaticResource SecondaryTextStyle}"
+                            Text="Records you open appear here, so you can get back to them quickly."
+                            Visibility="{x:Bind ViewModel.HasNoRecentlyOpened, Mode=OneWay}" />
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.RecentlyOpened, Mode=OneWay}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RecordRow">
+                                    <Button
+                                        AutomationProperties.Name="{x:Bind AutomationName}"
+                                        Click="Row_Click"
+                                        Content="{x:Bind}"
+                                        ContentTemplate="{StaticResource RecordRowTemplate}"
+                                        Style="{StaticResource RowButtonStyle}" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

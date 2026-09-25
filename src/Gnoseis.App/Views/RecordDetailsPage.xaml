@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Gnoseis.App.Views.RecordDetailsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:Gnoseis.App.ViewModels"
+    SizeChanged="Page_SizeChanged">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header: type tile, title and commands -->
+        <Grid Margin="32,24,24,12" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <PersonPicture
+                Width="48"
+                Height="48"
+                VerticalAlignment="Top"
+                DisplayName="{x:Bind ViewModel.Title, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.IsContact}" />
+            <Border
+                Width="48"
+                Height="48"
+                VerticalAlignment="Top"
+                Background="{x:Bind ViewModel.TileBrush}"
+                CornerRadius="10"
+                Visibility="{x:Bind ViewModel.ShowTypeTile}">
+                <FontIcon FontSize="22" Foreground="White" Glyph="{x:Bind ViewModel.Glyph}" />
+            </Border>
+
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.TypeName}" />
+                <TextBlock
+                    AutomationProperties.HeadingLevel="Level1"
+                    IsTextSelectionEnabled="True"
+                    MaxLines="3"
+                    Style="{StaticResource SubtitleTextBlockStyle}"
+                    Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.HasSubtitle, Mode=OneWay}" />
+            </StackPanel>
+
+            <CommandBar
+                Grid.Column="2"
+                VerticalAlignment="Top"
+                Background="Transparent"
+                DefaultLabelPosition="Right"
+                IsEnabled="{x:Bind ViewModel.IsAvailable, Mode=OneWay}"
+                OverflowButtonVisibility="Auto">
+                <AppBarButton Click="Edit_Click" Label="Edit" ToolTipService.ToolTip="Edit (Ctrl+E)">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE70F;" />
+                    </AppBarButton.Icon>
+                    <AppBarButton.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="E" Modifiers="Control" />
+                    </AppBarButton.KeyboardAccelerators>
+                </AppBarButton>
+                <AppBarButton Click="LinkExisting_Click" Label="Link" ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE71B;" />
+                    </AppBarButton.Icon>
+                    <AppBarButton.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="L" Modifiers="Control" />
+                    </AppBarButton.KeyboardAccelerators>
+                </AppBarButton>
+                <AppBarButton Label="New linked" ToolTipService.ToolTip="Create a record linked to this one">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE710;" />
+                    </AppBarButton.Icon>
+                    <AppBarButton.Flyout>
+                        <MenuFlyout x:Name="NewLinkedMenu" Placement="BottomEdgeAlignedRight" />
+                    </AppBarButton.Flyout>
+                </AppBarButton>
+                <CommandBar.SecondaryCommands>
+                    <AppBarButton Click="Delete_Click" Label="Delete" ToolTipService.ToolTip="Delete (Del in the list)">
+                        <AppBarButton.Icon>
+                            <FontIcon Glyph="&#xE74D;" />
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                </CommandBar.SecondaryCommands>
+            </CommandBar>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" Visibility="{x:Bind ViewModel.IsAvailable, Mode=OneWay}">
+            <Grid x:Name="ContentGrid" Margin="32,4,24,32" ColumnSpacing="24" RowSpacing="24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="MainColumn" Width="*" />
+                    <ColumnDefinition x:Name="SideColumn" Width="320" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Main content -->
+                <StackPanel x:Name="MainPanel" MaxWidth="820" HorizontalAlignment="Stretch" Spacing="12">
+
+                    <!-- Note text: a readable column, like a document -->
+                    <RichTextBlock
+                        x:Name="NoteText"
+                        FontSize="15"
+                        IsTextSelectionEnabled="True"
+                        LineHeight="24"
+                        Visibility="{x:Bind ViewModel.ShowNoteText, Mode=OneWay}" />
+
+                    <!-- Contact fields -->
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.Sections, Mode=OneWay}" Visibility="{x:Bind ViewModel.HasSections, Mode=OneWay}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Spacing="12" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:DetailSection">
+                                <Border Style="{StaticResource CardStyle}">
+                                    <StackPanel Spacing="8">
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <FontIcon
+                                                FontSize="16"
+                                                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                Glyph="{x:Bind Glyph}" />
+                                            <TextBlock
+                                                AutomationProperties.HeadingLevel="Level2"
+                                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                                Text="{x:Bind Header}" />
+                                        </StackPanel>
+                                        <ItemsControl Margin="26,0,0,0" ItemsSource="{x:Bind Fields}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:DetailField">
+                                                    <Grid Margin="0,3" ColumnSpacing="12">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="72" />
+                                                            <ColumnDefinition Width="*" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock
+                                                            VerticalAlignment="Center"
+                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                            Style="{StaticResource CaptionTextBlockStyle}"
+                                                            Text="{x:Bind Label}" />
+                                                        <HyperlinkButton
+                                                            Grid.Column="1"
+                                                            Padding="0"
+                                                            Content="{x:Bind Value}"
+                                                            NavigateUri="{x:Bind Link}"
+                                                            ToolTipService.ToolTip="{x:Bind Link}"
+                                                            Visibility="{x:Bind HasLink}" />
+                                                        <TextBlock
+                                                            Grid.Column="1"
+                                                            VerticalAlignment="Center"
+                                                            IsTextSelectionEnabled="True"
+                                                            Style="{StaticResource BodyTextBlockStyle}"
+                                                            Text="{x:Bind Value}"
+                                                            Visibility="{x:Bind HasNoLink}" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Comments / description -->
+                    <Border Style="{StaticResource CardStyle}" Visibility="{x:Bind ViewModel.ShowBodyCard, Mode=OneWay}">
+                        <StackPanel Spacing="8">
+                            <TextBlock
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind ViewModel.BodyHeader}" />
+                            <TextBlock
+                                IsTextSelectionEnabled="True"
+                                LineHeight="22"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind ViewModel.Body, Mode=OneWay}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock
+                        Style="{StaticResource SecondaryTextStyle}"
+                        Text="{x:Bind ViewModel.NoDetailsText}"
+                        Visibility="{x:Bind ViewModel.HasNoDetails, Mode=OneWay}" />
+                </StackPanel>
+
+                <!-- Linked records: all types visible at once -->
+                <Border x:Name="LinkedPanel" Grid.Column="1" VerticalAlignment="Top" Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="8">
+                        <Grid>
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind ViewModel.LinkedHeader, Mode=OneWay}" />
+                            <Button
+                                Padding="8,4"
+                                HorizontalAlignment="Right"
+                                Click="LinkExisting_Click"
+                                ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon FontSize="12" Glyph="&#xE71B;" />
+                                    <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="Link" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <TextBlock
+                            Style="{StaticResource SecondaryTextStyle}"
+                            Text="Nothing linked yet. Link notes, contacts, organizations, categories and items to keep related information together."
+                            Visibility="{x:Bind ViewModel.HasNoLinks, Mode=OneWay}" />
+
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.Tabs, Mode=OneWay}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LinkedTab">
+                                    <StackPanel Margin="0,6,0,0" Spacing="2">
+                                        <StackPanel Margin="0,0,0,2" Orientation="Horizontal" Spacing="8">
+                                            <TextBlock
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Text="{x:Bind Header}" />
+                                            <InfoBadge Style="{StaticResource AttentionValueInfoBadgeStyle}" Value="{x:Bind Rows.Count}" />
+                                        </StackPanel>
+                                        <ItemsControl ItemsSource="{x:Bind Rows}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:RecordRow">
+                                                    <Button
+                                                        AutomationProperties.Name="{x:Bind AutomationName}"
+                                                        Click="LinkedRow_Click"
+                                                        Content="{x:Bind}"
+                                                        ContentTemplate="{StaticResource RecordRowTemplate}"
+                                                        ContextRequested="LinkedRow_ContextRequested"
+                                                        Style="{StaticResource RowButtonStyle}"
+                                                        ToolTipService.ToolTip="Open (right-click for more)" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- The record was deleted (e.g. while this page was in the back stack) -->
+        <StackPanel
+            Grid.Row="1"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Spacing="12"
+            Visibility="{x:Bind ViewModel.IsMissing, Mode=OneWay}">
+            <FontIcon FontSize="48" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Glyph="&#xE9CE;" />
+            <TextBlock HorizontalAlignment="Center" Style="{StaticResource SecondaryTextStyle}" Text="This record no longer exists." />
+        </StackPanel>
+    </Grid>
+</Page>
