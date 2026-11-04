@@ -49,8 +49,9 @@ public sealed class GnoseisDatabase
     public event EventHandler<DataChangedEventArgs>? DataChanged;
 
     /// <summary>
-    /// Opens (creating if needed) and checks the database file. Never deletes or migrates data:
-    /// a file that does not match the expected schema raises <see cref="DatabaseIncompatibleException"/>.
+    /// Opens (creating if needed) and checks the database file. A file that does not match the
+    /// expected schema raises <see cref="DatabaseIncompatibleException"/> and is left as it is.
+    /// A file at an older supported schema version is first copied next to itself, then migrated.
     /// </summary>
     public static GnoseisDatabase Open(string filePath)
     {
@@ -119,6 +120,23 @@ public sealed class GnoseisDatabase
             {
                 throw new DatabaseIncompatibleException(problem);
             }
+
+            if (UserVersion(connection) < DatabaseSchema.Version)
+            {
+                // Keep the file as it was before changing it (never lose data).
+                using (var safetyCopy = new SqliteConnection(new SqliteConnectionStringBuilder
+                {
+                    DataSource = $"{FilePath}.before-v{DatabaseSchema.Version}-{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.backup",
+                    Mode = SqliteOpenMode.ReadWriteCreate,
+                    Pooling = false,
+                }.ToString()))
+                {
+                    safetyCopy.Open();
+                    connection.BackupDatabase(safetyCopy);
+                    Execute(safetyCopy, "PRAGMA journal_mode=DELETE;");
+                }
+                Migrate(connection);
+            }
         }
 
         // Rollback journal instead of Room's write-ahead log: every committed change is in the main
@@ -173,15 +191,60 @@ public sealed class GnoseisDatabase
         transaction.Commit();
     }
 
+    private static long UserVersion(SqliteConnection connection, SqliteTransaction? transaction = null) =>
+        Convert.ToInt64(Scalar(connection, "PRAGMA user_version;", transaction));
+
+    /// <summary>
+    /// Brings a file that passed <see cref="FindSchemaProblem"/> up to <see cref="DatabaseSchema.Version"/>,
+    /// in one transaction. The same steps as the Android Room migrations.
+    /// </summary>
+    internal static void Migrate(SqliteConnection connection)
+    {
+        using var transaction = connection.BeginTransaction();
+        var version = UserVersion(connection, transaction);
+
+        if (version == 1)
+        {
+            // 1 -> 2: no table changes. Drop indexes that SQLite did not create itself, and keep only
+            // the first link of each unordered pair of records.
+            var indexes = new List<string>();
+            using (var query = connection.CreateCommand())
+            {
+                query.Transaction = transaction;
+                query.CommandText = "SELECT name FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL;";
+                using var reader = query.ExecuteReader();
+                while (reader.Read())
+                {
+                    indexes.Add(reader.GetString(0));
+                }
+            }
+            foreach (var index in indexes)
+            {
+                Execute(connection, $"DROP INDEX `{index.Replace("`", "``")}`;", transaction);
+            }
+
+            Execute(connection,
+                "DELETE FROM LinkedRecord WHERE rowid NOT IN (" +
+                "SELECT MIN(rowid) FROM LinkedRecord " +
+                "GROUP BY MIN(record1Id, record2Id), MAX(record1Id, record2Id));", transaction);
+            version = 2;
+        }
+
+        Execute(connection, $"PRAGMA user_version = {version};", transaction);
+        transaction.Commit();
+    }
+
     /// <summary>Returns a description of why the database cannot be used, or null if it is fine.</summary>
     internal static string? FindSchemaProblem(SqliteConnection connection)
     {
-        var userVersion = Convert.ToInt64(Scalar(connection, "PRAGMA user_version;"));
-        if (userVersion != DatabaseSchema.Version)
+        var userVersion = UserVersion(connection);
+        if (userVersion > DatabaseSchema.Version)
         {
-            return userVersion > DatabaseSchema.Version
-                ? $"The database was created by a newer version of Gnoseis (schema version {userVersion}). Update this app to open it."
-                : $"The database has an unsupported schema version ({userVersion}).";
+            return $"The database was created by a newer version of Gnoseis (schema version {userVersion}). Update this app to open it.";
+        }
+        if (userVersion < DatabaseSchema.OldestSupportedVersion)
+        {
+            return $"The database has an unsupported schema version ({userVersion}).";
         }
 
         var hasMasterTable = Convert.ToInt64(Scalar(connection,

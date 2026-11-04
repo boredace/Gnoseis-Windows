@@ -20,6 +20,12 @@ public static class DatabaseSchema
     public const int Version = 2;
 
     /// <summary>
+    /// The oldest version this app opens. Older supported versions are migrated to
+    /// <see cref="Version"/> when the file is opened or restored.
+    /// </summary>
+    public const int OldestSupportedVersion = 1;
+
+    /// <summary>
     /// Room identity hash, stored in room_master_table. Versions 1 and 2 have the same tables,
     /// so they share this hash.
     /// </summary>
