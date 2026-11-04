@@ -29,13 +29,19 @@ public sealed class NoteRepository(GnoseisDatabase database) : RepositoryBase(da
         return note;
     }
 
+    /// <summary>
+    /// Saves the user-editable columns (the note's dates count as editable). Only a real change
+    /// moves updatedAt; the owner and createdAt are never written.
+    /// </summary>
     public Task UpdateNoteAsync(Note note) =>
         ExecuteAsync(RecordType.Note,
-            "UPDATE Note SET ownerDbId = $ownerDbId, title = $title, textContents = $textContents, " +
-            "createDateTime = $createDateTime, createDate = $createDate WHERE id = $id;",
-            ("$id", note.Id), ("$ownerDbId", note.OwnerDbId), ("$title", note.Title),
+            "UPDATE Note SET title = $title, textContents = $textContents, " +
+            "createDateTime = $createDateTime, createDate = $createDate, updatedAt = $now " +
+            "WHERE id = $id AND (title IS NOT $title OR textContents IS NOT $textContents " +
+            "OR createDateTime IS NOT $createDateTime OR createDate IS NOT $createDate);",
+            ("$id", note.Id), ("$title", note.Title),
             ("$textContents", note.TextContents), ("$createDateTime", note.CreateDateTime),
-            ("$createDate", note.CreateDate));
+            ("$createDate", note.CreateDate), ("$now", EpochTime.UtcNowMillis()));
 }
 
 public sealed class ContactRepository(GnoseisDatabase database) : RepositoryBase(database)
@@ -57,13 +63,22 @@ public sealed class ContactRepository(GnoseisDatabase database) : RepositoryBase
         return contact;
     }
 
+    /// <summary>
+    /// Saves the user-editable columns. Only a real change moves updatedAt; the owner and
+    /// createdAt are never written.
+    /// </summary>
     public Task UpdateContactAsync(Contact contact) =>
         ExecuteAsync(RecordType.Contact,
-            "UPDATE Contact SET ownerDbId = $ownerDbId, nameLast = $nameLast, nameFirst = $nameFirst, " +
+            "UPDATE Contact SET nameLast = $nameLast, nameFirst = $nameFirst, " +
             "jobTitle = $jobTitle, company = $company, phoneMain = $phoneMain, phoneMobile = $phoneMobile, " +
             "phoneHome = $phoneHome, phoneWork = $phoneWork, emailMain = $emailMain, emailMobile = $emailMobile, " +
-            "emailHome = $emailHome, emailWork = $emailWork, comments = $comments WHERE id = $id;",
-            Parameters(contact));
+            "emailHome = $emailHome, emailWork = $emailWork, comments = $comments, updatedAt = $now " +
+            "WHERE id = $id AND (nameLast IS NOT $nameLast OR nameFirst IS NOT $nameFirst " +
+            "OR jobTitle IS NOT $jobTitle OR company IS NOT $company OR phoneMain IS NOT $phoneMain " +
+            "OR phoneMobile IS NOT $phoneMobile OR phoneHome IS NOT $phoneHome OR phoneWork IS NOT $phoneWork " +
+            "OR emailMain IS NOT $emailMain OR emailMobile IS NOT $emailMobile OR emailHome IS NOT $emailHome " +
+            "OR emailWork IS NOT $emailWork OR comments IS NOT $comments);",
+            [.. Parameters(contact).Where(p => p.Item1 != "$ownerDbId"), ("$now", EpochTime.UtcNowMillis())]);
 
     private static (string, object?)[] Parameters(Contact c) =>
     [
@@ -93,11 +108,17 @@ public sealed class OrganizationRepository(GnoseisDatabase database) : Repositor
         return organization;
     }
 
+    /// <summary>
+    /// Saves the user-editable columns. Only a real change moves updatedAt; the owner and
+    /// createdAt are never written.
+    /// </summary>
     public Task UpdateOrganizationAsync(Organization organization) =>
         ExecuteAsync(RecordType.Organization,
-            "UPDATE Organization SET ownerDbId = $ownerDbId, organizationName = $name, comments = $comments WHERE id = $id;",
-            ("$id", organization.Id), ("$ownerDbId", organization.OwnerDbId),
-            ("$name", organization.OrganizationName), ("$comments", organization.Comments));
+            "UPDATE Organization SET organizationName = $name, comments = $comments, updatedAt = $now " +
+            "WHERE id = $id AND (organizationName IS NOT $name OR comments IS NOT $comments);",
+            ("$id", organization.Id),
+            ("$name", organization.OrganizationName), ("$comments", organization.Comments),
+            ("$now", EpochTime.UtcNowMillis()));
 }
 
 public sealed class CategoryRepository(GnoseisDatabase database) : RepositoryBase(database)
@@ -118,11 +139,17 @@ public sealed class CategoryRepository(GnoseisDatabase database) : RepositoryBas
         return category;
     }
 
+    /// <summary>
+    /// Saves the user-editable columns. Only a real change moves updatedAt; the owner and
+    /// createdAt are never written.
+    /// </summary>
     public Task UpdateCategoryAsync(Category category) =>
         ExecuteAsync(RecordType.Category,
-            "UPDATE Category SET ownerDbId = $ownerDbId, parentId = $parentId, categoryName = $name, comments = $comments WHERE id = $id;",
-            ("$id", category.Id), ("$ownerDbId", category.OwnerDbId), ("$parentId", category.ParentId),
-            ("$name", category.CategoryName), ("$comments", category.Comments));
+            "UPDATE Category SET parentId = $parentId, categoryName = $name, comments = $comments, updatedAt = $now " +
+            "WHERE id = $id AND (parentId IS NOT $parentId OR categoryName IS NOT $name OR comments IS NOT $comments);",
+            ("$id", category.Id), ("$parentId", category.ParentId),
+            ("$name", category.CategoryName), ("$comments", category.Comments),
+            ("$now", EpochTime.UtcNowMillis()));
 }
 
 public sealed class ItemRepository(GnoseisDatabase database) : RepositoryBase(database)
@@ -143,9 +170,15 @@ public sealed class ItemRepository(GnoseisDatabase database) : RepositoryBase(da
         return item;
     }
 
+    /// <summary>
+    /// Saves the user-editable columns. Only a real change moves updatedAt; the owner and
+    /// createdAt are never written.
+    /// </summary>
     public Task UpdateItemAsync(Item item) =>
         ExecuteAsync(RecordType.Item,
-            "UPDATE Item SET ownerDbId = $ownerDbId, parentId = $parentId, itemName = $name, comments = $comments WHERE id = $id;",
-            ("$id", item.Id), ("$ownerDbId", item.OwnerDbId), ("$parentId", item.ParentId),
-            ("$name", item.ItemName), ("$comments", item.Comments));
+            "UPDATE Item SET parentId = $parentId, itemName = $name, comments = $comments, updatedAt = $now " +
+            "WHERE id = $id AND (parentId IS NOT $parentId OR itemName IS NOT $name OR comments IS NOT $comments);",
+            ("$id", item.Id), ("$parentId", item.ParentId),
+            ("$name", item.ItemName), ("$comments", item.Comments),
+            ("$now", EpochTime.UtcNowMillis()));
 }
