@@ -57,7 +57,10 @@ public sealed class BackupRepository(GnoseisDatabase database)
         }
     });
 
-    /// <summary>Checks that a file is an intact Gnoseis database. The file itself is not changed.</summary>
+    /// <summary>
+    /// Checks that a file is an intact Gnoseis database at a supported schema version (an older
+    /// one is migrated when restored). The file itself is not changed.
+    /// </summary>
     public static Task<DatabaseInspection> InspectAsync(string path) => Task.Run(() =>
     {
         string? stagingPath = null;
@@ -98,10 +101,16 @@ public sealed class BackupRepository(GnoseisDatabase database)
 
             await Task.Run(() =>
             {
-                // Fold any -wal content into the staged file so it is a single self-contained file.
+                // Fold any -wal content into the staged file so it is a single self-contained file,
+                // and bring an older supported schema version up to date on the staged copy, so the
+                // live file is only ever replaced by a current one. The source file is not changed.
                 using (var staged = OpenUnpooled(stagingPath))
                 {
                     GnoseisDatabase.Execute(staged, "PRAGMA journal_mode=DELETE;");
+                    if (Convert.ToInt64(GnoseisDatabase.Scalar(staged, "PRAGMA user_version;")) < DatabaseSchema.Version)
+                    {
+                        GnoseisDatabase.Migrate(staged);
+                    }
                 }
 
                 // Release every pooled handle on the live file before replacing it.
