@@ -167,8 +167,8 @@ public sealed class GnoseisDatabase
         {
             insert.Transaction = transaction;
             insert.CommandText =
-                "INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate) " +
-                "VALUES ($id, $ownerDbId, $title, $textContents, $createDateTime, $createDate);";
+                "INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate, createdAt, updatedAt) " +
+                "VALUES ($id, $ownerDbId, $title, $textContents, $createDateTime, $createDate, $now, $now);";
             var (createDate, createDateTime) = Domain.NoteDates.ForNewNote(DateOnly.FromDateTime(DateTime.Now), DateTime.Now.TimeOfDay);
             var note = new Note
             {
@@ -184,6 +184,7 @@ public sealed class GnoseisDatabase
             insert.Parameters.AddWithValue("$textContents", note.TextContents);
             insert.Parameters.AddWithValue("$createDateTime", note.CreateDateTime);
             insert.Parameters.AddWithValue("$createDate", note.CreateDate);
+            insert.Parameters.AddWithValue("$now", EpochTime.UtcNowMillis());
             insert.ExecuteNonQuery();
         }
 

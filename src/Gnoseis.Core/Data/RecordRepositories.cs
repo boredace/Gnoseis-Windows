@@ -21,11 +21,11 @@ public sealed class NoteRepository(GnoseisDatabase database) : RepositoryBase(da
     public async Task<Note> AddNoteAsync(Note note)
     {
         await ExecuteAsync(RecordType.Note,
-            "INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate) " +
-            "VALUES ($id, $ownerDbId, $title, $textContents, $createDateTime, $createDate);",
+            "INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate, createdAt, updatedAt) " +
+            "VALUES ($id, $ownerDbId, $title, $textContents, $createDateTime, $createDate, $now, $now);",
             ("$id", note.Id), ("$ownerDbId", note.OwnerDbId), ("$title", note.Title),
             ("$textContents", note.TextContents), ("$createDateTime", note.CreateDateTime),
-            ("$createDate", note.CreateDate)).ConfigureAwait(false);
+            ("$createDate", note.CreateDate), ("$now", EpochTime.UtcNowMillis())).ConfigureAwait(false);
         return note;
     }
 
@@ -50,10 +50,10 @@ public sealed class ContactRepository(GnoseisDatabase database) : RepositoryBase
     {
         await ExecuteAsync(RecordType.Contact,
             "INSERT INTO Contact (id, ownerDbId, nameLast, nameFirst, jobTitle, company, phoneMain, phoneMobile, " +
-            "phoneHome, phoneWork, emailMain, emailMobile, emailHome, emailWork, comments) VALUES ($id, $ownerDbId, " +
+            "phoneHome, phoneWork, emailMain, emailMobile, emailHome, emailWork, comments, createdAt, updatedAt) VALUES ($id, $ownerDbId, " +
             "$nameLast, $nameFirst, $jobTitle, $company, $phoneMain, $phoneMobile, $phoneHome, $phoneWork, $emailMain, " +
-            "$emailMobile, $emailHome, $emailWork, $comments);",
-            Parameters(contact)).ConfigureAwait(false);
+            "$emailMobile, $emailHome, $emailWork, $comments, $now, $now);",
+            [.. Parameters(contact), ("$now", EpochTime.UtcNowMillis())]).ConfigureAwait(false);
         return contact;
     }
 
@@ -86,9 +86,10 @@ public sealed class OrganizationRepository(GnoseisDatabase database) : Repositor
     public async Task<Organization> AddOrganizationAsync(Organization organization)
     {
         await ExecuteAsync(RecordType.Organization,
-            "INSERT INTO Organization (id, ownerDbId, organizationName, comments) VALUES ($id, $ownerDbId, $name, $comments);",
+            "INSERT INTO Organization (id, ownerDbId, organizationName, comments, createdAt, updatedAt) VALUES ($id, $ownerDbId, $name, $comments, $now, $now);",
             ("$id", organization.Id), ("$ownerDbId", organization.OwnerDbId),
-            ("$name", organization.OrganizationName), ("$comments", organization.Comments)).ConfigureAwait(false);
+            ("$name", organization.OrganizationName), ("$comments", organization.Comments),
+            ("$now", EpochTime.UtcNowMillis())).ConfigureAwait(false);
         return organization;
     }
 
@@ -110,9 +111,10 @@ public sealed class CategoryRepository(GnoseisDatabase database) : RepositoryBas
     public async Task<Category> AddCategoryAsync(Category category)
     {
         await ExecuteAsync(RecordType.Category,
-            "INSERT INTO Category (id, ownerDbId, parentId, categoryName, comments) VALUES ($id, $ownerDbId, $parentId, $name, $comments);",
+            "INSERT INTO Category (id, ownerDbId, parentId, categoryName, comments, createdAt, updatedAt) VALUES ($id, $ownerDbId, $parentId, $name, $comments, $now, $now);",
             ("$id", category.Id), ("$ownerDbId", category.OwnerDbId), ("$parentId", category.ParentId),
-            ("$name", category.CategoryName), ("$comments", category.Comments)).ConfigureAwait(false);
+            ("$name", category.CategoryName), ("$comments", category.Comments),
+            ("$now", EpochTime.UtcNowMillis())).ConfigureAwait(false);
         return category;
     }
 
@@ -134,9 +136,10 @@ public sealed class ItemRepository(GnoseisDatabase database) : RepositoryBase(da
     public async Task<Item> AddItemAsync(Item item)
     {
         await ExecuteAsync(RecordType.Item,
-            "INSERT INTO Item (id, ownerDbId, parentId, itemName, comments) VALUES ($id, $ownerDbId, $parentId, $name, $comments);",
+            "INSERT INTO Item (id, ownerDbId, parentId, itemName, comments, createdAt, updatedAt) VALUES ($id, $ownerDbId, $parentId, $name, $comments, $now, $now);",
             ("$id", item.Id), ("$ownerDbId", item.OwnerDbId), ("$parentId", item.ParentId),
-            ("$name", item.ItemName), ("$comments", item.Comments)).ConfigureAwait(false);
+            ("$name", item.ItemName), ("$comments", item.Comments),
+            ("$now", EpochTime.UtcNowMillis())).ConfigureAwait(false);
         return item;
     }
 
