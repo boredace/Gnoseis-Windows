@@ -84,6 +84,44 @@ public class BackupTests : IDisposable
     }
 
     [Fact]
+    public async Task Restore_migrates_a_version_1_backup_and_leaves_the_backup_unchanged()
+    {
+        var oldBackup = _test.PathFor("gnoseis_data_v1.backup");
+        DatabaseCompatibilityTests.CreateVersion1DatabaseWithDuplicateLinks(oldBackup);
+
+        var inspection = await BackupRepository.InspectAsync(oldBackup);
+        await _data.Backup.RestoreAsync(oldBackup);
+
+        Assert.True(inspection.IsValid);
+        Assert.Equal(3, inspection.ContactCount);
+        Assert.Equal(3, (await _data.Contacts.GetContactsAsync()).Count);
+        var live = _data.Database.FilePath;
+        Assert.Equal(2L, TestDatabase.ScalarRaw(live, "PRAGMA user_version;"));
+        Assert.Equal(2L, TestDatabase.ScalarRaw(live, "SELECT count(*) FROM LinkedRecord;"));
+        Assert.Equal(0L, TestDatabase.ScalarRaw(live, "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL;"));
+        // Migrated on the staged copy: no before-v2 copy of the live file is needed.
+        Assert.Empty(Directory.GetFiles(_test.Folder, "*.before-v2-*"));
+        // The chosen file itself is not changed.
+        Assert.Equal(1L, TestDatabase.ScalarRaw(oldBackup, "PRAGMA user_version;"));
+        Assert.Equal(4L, TestDatabase.ScalarRaw(oldBackup, "SELECT count(*) FROM LinkedRecord;"));
+    }
+
+    [Fact]
+    public async Task Restore_rejects_a_newer_schema_version_and_keeps_the_data()
+    {
+        await _data.Notes.AddNoteAsync(new Note { Title = "Keep me" });
+        var newerFile = _test.PathFor("gnoseis_data_v3");
+        DatabaseCompatibilityTests.CreateAndroidStyleDatabase(newerFile, version: 3);
+
+        var inspection = await BackupRepository.InspectAsync(newerFile);
+        await Assert.ThrowsAsync<DatabaseIncompatibleException>(() => _data.Backup.RestoreAsync(newerFile));
+
+        Assert.False(inspection.IsValid);
+        Assert.Contains("newer version", inspection.Problem);
+        Assert.Contains((await _data.Notes.GetNotesAsync()), n => n.Title == "Keep me");
+    }
+
+    [Fact]
     public async Task Restore_rejects_a_file_that_is_not_a_Gnoseis_database_and_keeps_the_data()
     {
         // Android known bug 3: any file was accepted and overwrote the user's data.

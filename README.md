@@ -5,7 +5,8 @@ It stores all data on the device. This is the Windows (WinUI 3) port of
 [Gnoseis for Android](../../Android/Gnoseis-Android), ported from the `tests` branch at commit `738b656`.
 
 The Windows app uses **the same SQLite database format** as the Android app. A `gnoseis_data` file
-from Android can be used on Windows as is, and a Windows database or backup can be used on Android.
+or backup from Android up to 0.2.5 can be used on Windows, and a Windows database or backup can be
+used on Android 0.2.4 or later. See [Supported schema versions](#supported-schema-versions).
 
 ## Features
 
@@ -107,19 +108,40 @@ Either:
 To go the other way, use **Settings › Back up database**. It writes a single self-contained file that
 the Android app can import.
 
+### Supported schema versions
+
+The schema version is stored in the database file as `PRAGMA user_version`.
+
+| Schema version | Written by | On Windows |
+|---|---|---|
+| 1 | Android before 0.2.4 | Opens. It's migrated to version 2 the first time it's opened or restored (see below). |
+| 2 | Android 0.2.4 and 0.2.5, and this app | Opens as is. New databases and backups are version 2. |
+| 3 | Android 0.3.0 and later | Doesn't open yet. The app explains that the file is from a newer version and leaves it unchanged. |
+
+Version 2 has the same tables as version 1. The migration from 1 to 2 is the same as on Android: it
+removes links that were stored more than once between the same two records (keeping the first one),
+and drops indexes that Gnoseis doesn't use. Before migrating the database file, the app copies it to
+`gnoseis_data.before-v2-<date>.backup` in the database folder. A restored version 1 backup is migrated
+on a temporary copy, so the backup file itself isn't changed.
+
+Android 0.2.4 and later open a version 2 file. Android before 0.2.4 can't, so update the Android app
+before copying a Windows database or backup to it. Android 0.3.0 and later migrate a version 2 file
+to version 3, after which this app can't open it.
+
 ### Compatibility details
 
-- The tables, columns, `PRAGMA user_version` (1) and Room's `room_master_table` identity hash
+- The tables, columns, `PRAGMA user_version` (2) and Room's `room_master_table` identity hash
   (`e7731af7…`) are exactly the ones Room expects. The tests compare the database against the Room
-  schema export (`tests/Gnoseis.Core.Tests/RoomSchema/1.json`, copied from
+  schema export (`tests/Gnoseis.Core.Tests/RoomSchema/2.json`, copied from
   `Gnoseis-Android/app/schemas`).
 - Ids are GUID strings and dates are epoch milliseconds, as on Android. Note dates are shown in UTC,
   like the Android app, so a note shows the same date on both platforms.
 - Windows keeps the file in rollback-journal mode, so the main `gnoseis_data` file always holds all
   committed data. Room switches it back to WAL when Android opens it.
-- A file that doesn't match (e.g. from a newer app version) is **never deleted or migrated**. The
+- A file that doesn't match (e.g. from a newer app version) is **never deleted or changed**. The
   app explains the problem and offers to start a new database, renaming the old file to
-  `gnoseis_data.unusable-<date>`.
+  `gnoseis_data.unusable-<date>`. The only file the app migrates is a version 1 file, after copying
+  it as described above.
 
 ## Windows user experience
 

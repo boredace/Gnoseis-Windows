@@ -10,16 +10,25 @@ namespace Gnoseis.Core.Data;
 
 /// <summary>
 /// The database schema, copied from the Android Room schema export
-/// (Gnoseis-Android/app/schemas/org.gnoseis.data.database.GnoseisDatabase/1.json).
+/// (Gnoseis-Android/app/schemas/org.gnoseis.data.database.GnoseisDatabase/2.json).
 /// A database created by this app can be opened by the Android app and vice versa, as long as
 /// <see cref="Version"/> and <see cref="RoomIdentityHash"/> match what Room expects.
 /// </summary>
 public static class DatabaseSchema
 {
     /// <summary>Room database version, stored in PRAGMA user_version.</summary>
-    public const int Version = 1;
+    public const int Version = 2;
 
-    /// <summary>Room identity hash of schema version 1, stored in room_master_table.</summary>
+    /// <summary>
+    /// The oldest version this app opens. Older supported versions are migrated to
+    /// <see cref="Version"/> when the file is opened or restored.
+    /// </summary>
+    public const int OldestSupportedVersion = 1;
+
+    /// <summary>
+    /// Room identity hash, stored in room_master_table. Versions 1 and 2 have the same tables,
+    /// so they share this hash.
+    /// </summary>
     public const string RoomIdentityHash = "e7731af7b4c86f23b4635d9383faf3cc";
 
     /// <summary>Android stores the database as "gnoseis_data" (no extension) in the app's databases folder.</summary>
