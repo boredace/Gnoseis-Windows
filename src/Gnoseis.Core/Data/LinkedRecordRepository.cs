@@ -55,12 +55,17 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
     /// <summary>Links two records. Does nothing if they are already linked, in either direction.</summary>
     public Task AddLinkedRecordAsync(LinkedRecord link) =>
         ExecuteAsync(RecordType.LinkedRecord,
-            "INSERT INTO LinkedRecord (id, ownerDbId, record1Id, record2Id, record1TypeId, record2TypeId) " +
-            "SELECT $id, $ownerDbId, $record1Id, $record2Id, $record1TypeId, $record2TypeId " +
-            "WHERE NOT EXISTS (SELECT 1 FROM LinkedRecord " +
-            "WHERE (record1Id = $record1Id AND record2Id = $record2Id) OR (record1Id = $record2Id AND record2Id = $record1Id));",
+            AddLinkSql,
             ("$id", link.Id), ("$ownerDbId", link.OwnerDbId), ("$record1Id", link.Record1Id),
-            ("$record2Id", link.Record2Id), ("$record1TypeId", link.Record1TypeId), ("$record2TypeId", link.Record2TypeId));
+            ("$record2Id", link.Record2Id), ("$record1TypeId", link.Record1TypeId), ("$record2TypeId", link.Record2TypeId),
+            ("$now", EpochTime.UtcNowMillis()));
+
+    /// <summary>Inserts a link stamped with its created time, unless the records are already linked.</summary>
+    private const string AddLinkSql =
+        "INSERT INTO LinkedRecord (id, ownerDbId, record1Id, record2Id, record1TypeId, record2TypeId, createdAt) " +
+        "SELECT $id, $ownerDbId, $record1Id, $record2Id, $record1TypeId, $record2TypeId, $now " +
+        "WHERE NOT EXISTS (SELECT 1 FROM LinkedRecord " +
+        "WHERE (record1Id = $record1Id AND record2Id = $record2Id) OR (record1Id = $record2Id AND record2Id = $record1Id));";
 
     /// <summary>Links the source record to each target record, in one transaction.</summary>
     public async Task AddLinkedRecordsAsync(string sourceId, RecordType sourceType, IEnumerable<SearchResult> targets)
@@ -73,19 +78,16 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
 
         await Task.Run(() =>
         {
+            var now = EpochTime.UtcNowMillis();
             using var connection = Database.OpenConnection();
             using var transaction = connection.BeginTransaction();
             foreach (var target in targetList)
             {
-                using var command = CreateCommand(connection,
-                    "INSERT INTO LinkedRecord (id, ownerDbId, record1Id, record2Id, record1TypeId, record2TypeId) " +
-                    "SELECT $id, $ownerDbId, $record1Id, $record2Id, $record1TypeId, $record2TypeId " +
-                    "WHERE NOT EXISTS (SELECT 1 FROM LinkedRecord " +
-                    "WHERE (record1Id = $record1Id AND record2Id = $record2Id) OR (record1Id = $record2Id AND record2Id = $record1Id));",
+                using var command = CreateCommand(connection, AddLinkSql,
                     [
                         ("$id", Note.NewId()), ("$ownerDbId", "db1"), ("$record1Id", sourceId),
                         ("$record2Id", target.RecordId), ("$record1TypeId", (int)sourceType),
-                        ("$record2TypeId", target.RecordTypeId),
+                        ("$record2TypeId", target.RecordTypeId), ("$now", now),
                     ],
                     transaction);
                 command.ExecuteNonQuery();
@@ -95,13 +97,39 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
         Database.NotifyChanged(RecordType.LinkedRecord);
     }
 
-    /// <summary>Removes the link between two records (whichever direction it was stored in).</summary>
+    /// <summary>
+    /// Removes the link between two records (whichever direction it was stored in). If a link was
+    /// removed, lastDeletionAt is saved in the same transaction.
+    /// </summary>
     public Task<int> DeleteLinkAsync(string recordId1, string recordId2) =>
-        ExecuteAsync(RecordType.LinkedRecord,
+        DeleteLinksRecordingDeletionAsync(
             "DELETE FROM LinkedRecord WHERE (record1Id = $a AND record2Id = $b) OR (record1Id = $b AND record2Id = $a);",
             ("$a", recordId1), ("$b", recordId2));
 
+    /// <summary>Removes every link to the record. If any was removed, lastDeletionAt is saved in the same transaction.</summary>
     public Task<int> DeleteLinksToRecordIdAsync(string recordId) =>
-        ExecuteAsync(RecordType.LinkedRecord,
+        DeleteLinksRecordingDeletionAsync(
             "DELETE FROM LinkedRecord WHERE record1Id = $id OR record2Id = $id;", ("$id", recordId));
+
+    private async Task<int> DeleteLinksRecordingDeletionAsync(string sql, params (string Name, object? Value)[] parameters)
+    {
+        var rows = await Task.Run(() =>
+        {
+            using var connection = Database.OpenConnection();
+            using var transaction = connection.BeginTransaction();
+            int deleted;
+            using (var command = CreateCommand(connection, sql, parameters, transaction))
+            {
+                deleted = command.ExecuteNonQuery();
+            }
+            if (deleted > 0)
+            {
+                SettingsRepository.RecordDeletion(connection, transaction);
+            }
+            transaction.Commit();
+            return deleted;
+        }).ConfigureAwait(false);
+        Database.NotifyChanged(RecordType.LinkedRecord);
+        return rows;
+    }
 }

@@ -22,5 +22,6 @@ public sealed class AppContainer(GnoseisDatabase database)
     public LinkedRecordRepository LinkedRecords { get; } = new(database);
     public SearchRepository Search { get; } = new(database);
     public BackupRepository Backup { get; } = new(database);
+    public SettingsRepository Settings { get; } = new(database);
     public DeleteRecordUseCase DeleteRecord { get; } = new(database);
 }

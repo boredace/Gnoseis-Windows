@@ -5,8 +5,8 @@ It stores all data on the device. This is the Windows (WinUI 3) port of
 [Gnoseis for Android](../../Android/Gnoseis-Android), ported from the `tests` branch at commit `738b656`.
 
 The Windows app uses **the same SQLite database format** as the Android app. A `gnoseis_data` file
-or backup from Android up to 0.2.5 can be used on Windows, and a Windows database or backup can be
-used on Android 0.2.4 or later. See [Supported schema versions](#supported-schema-versions).
+or backup from Android can be used on Windows as long as it's schema version 3 or earlier (Android
+0.3.0 writes version 3), and a Windows database or backup can be used on Android 0.3.0 or later. See [Supported schema versions](#supported-schema-versions).
 
 ## Features
 
@@ -114,25 +114,45 @@ The schema version is stored in the database file as `PRAGMA user_version`.
 
 | Schema version | Written by | On Windows |
 |---|---|---|
-| 1 | Android before 0.2.4 | Opens. It's migrated to version 2 the first time it's opened or restored (see below). |
-| 2 | Android 0.2.4 and 0.2.5, and this app | Opens as is. New databases and backups are version 2. |
-| 3 | Android 0.3.0 and later | Doesn't open yet. The app explains that the file is from a newer version and leaves it unchanged. |
+| 1 | Android before 0.2.4 | Opens. It's migrated to version 3 the first time it's opened or restored (see below). |
+| 2 | Android 0.2.4 and 0.2.5 | Opens. It's migrated to version 3 the first time it's opened or restored (see below). |
+| 3 | Android 0.3.0 and later, and this app | Opens as is. New databases and backups are version 3. |
+| 4 or later | Not released yet | Doesn't open. The app explains that the file is from a newer version and leaves it unchanged. |
 
-Version 2 has the same tables as version 1. The migration from 1 to 2 is the same as on Android: it
-removes links that were stored more than once between the same two records (keeping the first one),
-and drops indexes that Gnoseis doesn't use. Before migrating the database file, the app copies it to
-`gnoseis_data.before-v2-<date>.backup` in the database folder. A restored version 1 backup is migrated
-on a temporary copy, so the backup file itself isn't changed.
+The migrations are the same as on Android:
 
-Android 0.2.4 and later open a version 2 file. Android before 0.2.4 can't, so update the Android app
-before copying a Windows database or backup to it. Android 0.3.0 and later migrate a version 2 file
-to version 3, after which this app can't open it.
+- **1 to 2:** the tables don't change. Links that were stored more than once between the same two
+  records are removed (the first one is kept), and indexes that Gnoseis doesn't use are dropped.
+- **2 to 3:** every record gets the time it was created and last changed (`createdAt`, `updatedAt`),
+  and every link the time it was made (`createdAt`), all in UTC epoch milliseconds. Existing records
+  and links keep these empty, because their times aren't known. A new `Settings` table holds the
+  time of the last backup (`lastBackupAt`) and of the last deletion of a record or link
+  (`lastDeletionAt`). It starts empty.
+
+Before migrating the database file, the app copies it to `gnoseis_data.before-v3-<date>.backup` in
+the database folder. A restored version 1 or 2 backup is migrated on a temporary copy, so the backup
+file itself isn't changed.
+
+Android before 0.3.0 can't open a version 3 file, so update the Android app before copying a
+Windows database or backup to it.
+
+### Record times and settings
+
+- A new record gets its created and updated time. Saving a record changes its updated time only if
+  something was edited; saving without a change leaves the record as it was. A note's own date and
+  time count as edits. The created time never changes.
+- A new link gets its created time.
+- **Back up database** saves the time of the backup in the backup file and, once the backup has
+  succeeded, in the database. Deleting a record or removing a link saves the time of the deletion.
+- A restore never changes these times: the restored database keeps what the backup holds.
+- The Windows app doesn't show these times yet. It keeps them up to date, so the Android app shows
+  the right backup reminder for a database that was used on Windows.
 
 ### Compatibility details
 
-- The tables, columns, `PRAGMA user_version` (2) and Room's `room_master_table` identity hash
-  (`e7731af7…`) are exactly the ones Room expects. The tests compare the database against the Room
-  schema export (`tests/Gnoseis.Core.Tests/RoomSchema/2.json`, copied from
+- The tables, columns, `PRAGMA user_version` (3) and Room's `room_master_table` identity hash
+  (`d4a4ee67…`) are exactly the ones Room expects. The tests compare new and migrated databases
+  against the Room schema export (`tests/Gnoseis.Core.Tests/RoomSchema/3.json`, copied from
   `Gnoseis-Android/app/schemas`).
 - Ids are GUID strings and dates are epoch milliseconds, as on Android. Note dates are shown in UTC,
   like the Android app, so a note shows the same date on both platforms.

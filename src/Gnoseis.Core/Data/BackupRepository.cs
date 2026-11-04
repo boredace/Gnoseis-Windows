@@ -35,8 +35,25 @@ public sealed class BackupRepository(GnoseisDatabase database)
     public static string DefaultBackupFileName(DateTime now) =>
         $"gnoseis_data_{now:yyyy-MM-dd_HH-mm-ss}";
 
-    /// <summary>Writes a consistent, self-contained copy of the open database to <paramref name="destinationPath"/>.</summary>
+    /// <summary>
+    /// Writes a consistent, self-contained copy of the open database to <paramref name="destinationPath"/>.
+    /// The copy holds lastBackupAt = the time of this export; once the copy is complete, the live
+    /// database gets the same value. A failed export leaves the live database unchanged.
+    /// </summary>
     public Task ExportAsync(string destinationPath) => Task.Run(() =>
+    {
+        var now = Models.EpochTime.UtcNowMillis();
+        CopyTo(destinationPath, lastBackupAt: now);
+        using var live = database.OpenConnection();
+        SettingsRepository.UpsertLastBackupAt(live, now);
+    });
+
+    /// <summary>
+    /// Writes a copy of the open database to <paramref name="destinationPath"/>, through a temporary
+    /// file so the destination is only ever a complete copy. With <paramref name="lastBackupAt"/>,
+    /// that value is saved in the copy's Settings table; the live database is not changed.
+    /// </summary>
+    private void CopyTo(string destinationPath, long? lastBackupAt)
     {
         var temporaryPath = destinationPath + ".tmp";
         DeleteIfExists(temporaryPath);
@@ -46,6 +63,10 @@ public sealed class BackupRepository(GnoseisDatabase database)
             using (var destination = OpenUnpooled(temporaryPath))
             {
                 source.BackupDatabase(destination);
+                if (lastBackupAt is { } value)
+                {
+                    SettingsRepository.UpsertLastBackupAt(destination, value);
+                }
                 // One file with no -wal file next to it, so it can be copied anywhere (e.g. to Android).
                 GnoseisDatabase.Execute(destination, "PRAGMA journal_mode=DELETE;");
             }
@@ -55,7 +76,7 @@ public sealed class BackupRepository(GnoseisDatabase database)
         {
             DeleteIfExists(temporaryPath);
         }
-    });
+    }
 
     /// <summary>
     /// Checks that a file is an intact Gnoseis database at a supported schema version (an older
@@ -97,13 +118,16 @@ public sealed class BackupRepository(GnoseisDatabase database)
             }
 
             var safetyCopyPath = $"{database.FilePath}.before-restore-{DateTime.Now:yyyy-MM-dd_HH-mm-ss}{BackupFileExtension}";
-            await ExportAsync(safetyCopyPath).ConfigureAwait(false);
+            // A safety copy, not a backup the user made: lastBackupAt is not written anywhere.
+            await Task.Run(() => CopyTo(safetyCopyPath, lastBackupAt: null)).ConfigureAwait(false);
 
             await Task.Run(() =>
             {
                 // Fold any -wal content into the staged file so it is a single self-contained file,
-                // and bring an older supported schema version up to date on the staged copy, so the
-                // live file is only ever replaced by a current one. The source file is not changed.
+                // and bring an older supported schema version (1 or 2) up to date on the staged copy,
+                // so the live file is only ever replaced by a current one. The source file is not
+                // changed. Nothing is stamped: the restored file keeps the times and Settings rows
+                // the backup holds.
                 using (var staged = OpenUnpooled(stagingPath))
                 {
                     GnoseisDatabase.Execute(staged, "PRAGMA journal_mode=DELETE;");

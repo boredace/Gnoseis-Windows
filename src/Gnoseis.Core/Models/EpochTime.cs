@@ -31,4 +31,10 @@ public static class EpochTime
 
     /// <summary>The UTC calendar day of the instant.</summary>
     public static DateOnly ToUtcDate(long epochMillis) => DateOnly.FromDateTime(ToUtc(epochMillis).UtcDateTime);
+
+    /// <summary>
+    /// The current instant in UTC epoch milliseconds. Used for the system times a record keeps
+    /// (createdAt / updatedAt) and for the Settings times; not for note dates.
+    /// </summary>
+    public static long UtcNowMillis() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 }

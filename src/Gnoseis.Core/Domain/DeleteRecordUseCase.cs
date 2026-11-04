@@ -14,6 +14,7 @@ namespace Gnoseis.Core.Domain;
 /// <summary>
 /// Deletes a record and every link to it. Linked records themselves are kept.
 /// Both steps run in one transaction, so a failure never leaves links to a deleted record.
+/// The same transaction saves lastDeletionAt in the Settings table.
 /// </summary>
 public sealed class DeleteRecordUseCase(GnoseisDatabase database)
 {
@@ -43,6 +44,7 @@ public sealed class DeleteRecordUseCase(GnoseisDatabase database)
             {
                 deleteRecord.ExecuteNonQuery();
             }
+            SettingsRepository.RecordDeletion(connection, transaction);
             transaction.Commit();
         }).ConfigureAwait(false);
 

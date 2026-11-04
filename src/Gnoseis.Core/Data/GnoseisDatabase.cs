@@ -167,8 +167,8 @@ public sealed class GnoseisDatabase
         {
             insert.Transaction = transaction;
             insert.CommandText =
-                "INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate) " +
-                "VALUES ($id, $ownerDbId, $title, $textContents, $createDateTime, $createDate);";
+                "INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate, createdAt, updatedAt) " +
+                "VALUES ($id, $ownerDbId, $title, $textContents, $createDateTime, $createDate, $now, $now);";
             var (createDate, createDateTime) = Domain.NoteDates.ForNewNote(DateOnly.FromDateTime(DateTime.Now), DateTime.Now.TimeOfDay);
             var note = new Note
             {
@@ -184,6 +184,7 @@ public sealed class GnoseisDatabase
             insert.Parameters.AddWithValue("$textContents", note.TextContents);
             insert.Parameters.AddWithValue("$createDateTime", note.CreateDateTime);
             insert.Parameters.AddWithValue("$createDate", note.CreateDate);
+            insert.Parameters.AddWithValue("$now", EpochTime.UtcNowMillis());
             insert.ExecuteNonQuery();
         }
 
@@ -230,6 +231,24 @@ public sealed class GnoseisDatabase
             version = 2;
         }
 
+        if (version == 2)
+        {
+            // 2 -> 3: created and updated times (UTC epoch ms) on every record, a created time on
+            // every link, and the Settings table. Existing rows keep NULL: their times are unknown.
+            // Settings is created empty: a missing row means "never".
+            foreach (var table in DatabaseSchema.TimestampedRecordTables)
+            {
+                Execute(connection, $"ALTER TABLE `{table}` ADD COLUMN `createdAt` INTEGER;", transaction);
+                Execute(connection, $"ALTER TABLE `{table}` ADD COLUMN `updatedAt` INTEGER;", transaction);
+            }
+            Execute(connection, "ALTER TABLE `LinkedRecord` ADD COLUMN `createdAt` INTEGER;", transaction);
+            Execute(connection, DatabaseSchema.SettingsCreateStatement, transaction);
+            version = 3;
+        }
+
+        // Room writes the new identity hash itself after its migrations; do the same.
+        Execute(connection, "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)", transaction);
+        Execute(connection, $"INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '{DatabaseSchema.RoomIdentityHashFor(version)}')", transaction);
         Execute(connection, $"PRAGMA user_version = {version};", transaction);
         transaction.Commit();
     }
@@ -252,13 +271,13 @@ public sealed class GnoseisDatabase
         if (hasMasterTable)
         {
             var hash = Scalar(connection, "SELECT identity_hash FROM room_master_table WHERE id = 42;") as string;
-            if (hash != null && hash != DatabaseSchema.RoomIdentityHash)
+            if (hash != null && hash != DatabaseSchema.RoomIdentityHashFor(userVersion))
             {
                 return "The database schema does not match this version of Gnoseis.";
             }
         }
 
-        foreach (var (table, columns) in DatabaseSchema.RequiredColumns)
+        foreach (var (table, columns) in DatabaseSchema.RequiredColumnsFor(userVersion))
         {
             var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             using var command = connection.CreateCommand();
