@@ -52,8 +52,122 @@ public class DatabaseCompatibilityTests
         using var test = new TestDatabase();
         test.Open();
 
-        Assert.Equal(2L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
+        Assert.Equal(3L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
         Assert.Equal(DatabaseSchema.RoomIdentityHash, TestDatabase.ScalarRaw(test.FilePath, "SELECT identity_hash FROM room_master_table WHERE id = 42;"));
+    }
+
+    [Fact]
+    public void New_database_has_an_empty_Settings_table()
+    {
+        using var test = new TestDatabase();
+        test.Open();
+
+        Assert.Equal(0L, TestDatabase.ScalarRaw(test.FilePath, "SELECT count(*) FROM Settings;"));
+    }
+
+    [Fact]
+    public void New_database_columns_match_the_Room_schema()
+    {
+        using var test = new TestDatabase();
+        test.Open();
+
+        AssertColumnsMatchRoomSchema(test.FilePath);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    public void A_version_1_or_2_file_opens_as_version_3_with_empty_times(int version)
+    {
+        using var test = new TestDatabase();
+        CreateAndroidStyleDatabase(test.FilePath, version);
+        TestDatabase.ExecuteRaw(test.FilePath,
+            "INSERT INTO Organization (id, ownerDbId, organizationName) VALUES ('o1', 'db1', 'Acme');",
+            "INSERT INTO Category (id, ownerDbId, categoryName) VALUES ('k1', 'db1', 'Work');",
+            "INSERT INTO Item (id, ownerDbId, itemName) VALUES ('i1', 'db1', 'Laptop');",
+            "INSERT INTO LinkedRecord (id, ownerDbId, record1Id, record2Id, record1TypeId, record2TypeId) VALUES ('l1', 'db1', 'c1', 'o1', 2, 3);");
+
+        test.Open();
+
+        Assert.Equal(3L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
+        Assert.Equal(DatabaseSchema.RoomIdentityHash, TestDatabase.ScalarRaw(test.FilePath, "SELECT identity_hash FROM room_master_table WHERE id = 42;"));
+        AssertColumnsMatchRoomSchema(test.FilePath);
+        foreach (var table in new[] { "Note", "Contact", "Organization", "Category", "Item" })
+        {
+            Assert.Equal(1L, TestDatabase.ScalarRaw(test.FilePath, $"SELECT count(*) FROM {table};"));
+            Assert.Equal(1L, TestDatabase.ScalarRaw(test.FilePath, $"SELECT count(*) FROM {table} WHERE createdAt IS NULL AND updatedAt IS NULL;"));
+        }
+        Assert.Equal(1L, TestDatabase.ScalarRaw(test.FilePath, "SELECT count(*) FROM LinkedRecord WHERE createdAt IS NULL;"));
+        Assert.Equal(0L, TestDatabase.ScalarRaw(test.FilePath, "SELECT count(*) FROM Settings;"));
+
+        // The file as it was before the migration is kept next to it.
+        var copy = Assert.Single(Directory.GetFiles(test.Folder, "gnoseis_data.before-v3-*.backup"));
+        Assert.Equal((long)version, TestDatabase.ScalarRaw(copy, "PRAGMA user_version;"));
+    }
+
+    [Fact]
+    public void Refuses_a_version_3_file_without_the_new_columns_and_leaves_it_unchanged()
+    {
+        using var test = new TestDatabase();
+        CreateAndroidStyleDatabase(test.FilePath, version: 2);
+        TestDatabase.ExecuteRaw(test.FilePath,
+            $"UPDATE room_master_table SET identity_hash = '{DatabaseSchema.RoomIdentityHash}';",
+            "PRAGMA user_version = 3;");
+
+        var error = Assert.Throws<DatabaseIncompatibleException>(() => GnoseisDatabase.Open(test.FilePath));
+
+        Assert.Contains("createdAt", error.Message);
+        Assert.Equal(3L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
+        Assert.Empty(Directory.GetFiles(test.Folder, "*.backup"));
+    }
+
+    [Fact]
+    public void Refuses_a_version_2_file_with_the_version_3_identity_hash()
+    {
+        using var test = new TestDatabase();
+        CreateAndroidStyleDatabase(test.FilePath, version: 2);
+        TestDatabase.ExecuteRaw(test.FilePath, $"UPDATE room_master_table SET identity_hash = '{DatabaseSchema.RoomIdentityHash}';");
+
+        Assert.Throws<DatabaseIncompatibleException>(() => GnoseisDatabase.Open(test.FilePath));
+
+        Assert.Equal(2L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
+    }
+
+    /// <summary>
+    /// Every table has the columns of the Room schema export, with the same type, NOT NULL and
+    /// primary key (the way Room validates a table; the stored CREATE TABLE text of a migrated
+    /// table differs, because ALTER TABLE appends to it).
+    /// </summary>
+    internal static void AssertColumnsMatchRoomSchema(string path)
+    {
+        using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={path};Pooling=False");
+        connection.Open();
+        foreach (var entity in RoomSchema().GetProperty("entities").EnumerateArray())
+        {
+            var table = entity.GetProperty("tableName").GetString()!;
+            var primaryKey = entity.GetProperty("primaryKey").GetProperty("columnNames").EnumerateArray().Select(c => c.GetString()!).ToList();
+            var expected = entity.GetProperty("fields").EnumerateArray()
+                .Select(f => (
+                    Name: f.GetProperty("columnName").GetString()!,
+                    Type: f.GetProperty("affinity").GetString()!,
+                    NotNull: f.GetProperty("notNull").GetBoolean(),
+                    PrimaryKeyPosition: primaryKey.IndexOf(f.GetProperty("columnName").GetString()!) + 1))
+                .OrderBy(c => c.Name, StringComparer.Ordinal)
+                .ToList();
+
+            var actual = new List<(string Name, string Type, bool NotNull, int PrimaryKeyPosition)>();
+            using var command = connection.CreateCommand();
+            command.CommandText = $"PRAGMA table_info(`{table}`);";
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    actual.Add((reader.GetString(1), reader.GetString(2), reader.GetInt64(3) != 0, (int)reader.GetInt64(5)));
+                }
+            }
+
+            Assert.Equal(expected, actual.OrderBy(c => c.Name, StringComparer.Ordinal).ToList());
+        }
     }
 
     [Fact]
@@ -100,7 +214,7 @@ public class DatabaseCompatibilityTests
         // Android known bug 5: a version mismatch silently deleted all data.
         using var test = new TestDatabase();
         CreateAndroidStyleDatabase(test.FilePath);
-        TestDatabase.ExecuteRaw(test.FilePath, "PRAGMA user_version = 3;");
+        TestDatabase.ExecuteRaw(test.FilePath, "PRAGMA user_version = 4;");
 
         var error = Assert.Throws<DatabaseIncompatibleException>(() => GnoseisDatabase.Open(test.FilePath));
 
@@ -109,14 +223,14 @@ public class DatabaseCompatibilityTests
     }
 
     [Fact]
-    public async Task Migrates_a_version_1_file_to_version_2_and_keeps_a_copy()
+    public async Task Migrates_a_version_1_file_to_version_3_and_keeps_a_copy()
     {
         using var test = new TestDatabase();
         CreateVersion1DatabaseWithDuplicateLinks(test.FilePath);
 
         var data = test.Open();
 
-        Assert.Equal(2L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
+        Assert.Equal(3L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
         Assert.Equal(DatabaseSchema.RoomIdentityHash, TestDatabase.ScalarRaw(test.FilePath, "SELECT identity_hash FROM room_master_table WHERE id = 42;"));
         // Duplicates in both directions are removed; the first link of each pair is kept.
         Assert.Equal("l1,l4", TestDatabase.ScalarRaw(test.FilePath, "SELECT group_concat(id, ',') FROM (SELECT id FROM LinkedRecord ORDER BY id);"));
@@ -128,14 +242,14 @@ public class DatabaseCompatibilityTests
         Assert.Single(await data.Notes.GetNotesAsync());
 
         // The file as it was before the migration is kept next to it.
-        var copy = Assert.Single(Directory.GetFiles(test.Folder, "gnoseis_data.before-v2-*.backup"));
+        var copy = Assert.Single(Directory.GetFiles(test.Folder, "gnoseis_data.before-v3-*.backup"));
         Assert.Equal(1L, TestDatabase.ScalarRaw(copy, "PRAGMA user_version;"));
         Assert.Equal(4L, TestDatabase.ScalarRaw(copy, "SELECT count(*) FROM LinkedRecord;"));
         Assert.Equal(1L, TestDatabase.ScalarRaw(copy, "SELECT count(*) FROM sqlite_master WHERE name = 'index_extra';"));
     }
 
     [Fact]
-    public void Opening_a_version_2_file_makes_no_copy()
+    public void Opening_a_version_3_file_makes_no_copy()
     {
         using var test = new TestDatabase();
         CreateAndroidStyleDatabase(test.FilePath);
@@ -192,12 +306,18 @@ public class DatabaseCompatibilityTests
 
     /// <summary>
     /// A database the way Room creates it on Android: WAL mode, android_metadata table, Room tables.
-    /// Schema version 2 by default, as written by Android 0.2.4 and later.
+    /// Schema version 3 by default, as written by Android 0.3.0 and later. The tables come from the
+    /// Room schema export of that version (versions 1 and 2 have the same tables).
     /// </summary>
     internal static void CreateAndroidStyleDatabase(string path, int version = DatabaseSchema.Version)
     {
         var statements = new List<string> { "PRAGMA journal_mode=WAL;", "CREATE TABLE android_metadata (locale TEXT);", "INSERT INTO android_metadata VALUES ('en_US');" };
-        statements.AddRange(DatabaseSchema.CreateStatements);
+        var schema = RoomSchema(Math.Clamp(version, 2, DatabaseSchema.Version));
+        foreach (var entity in schema.GetProperty("entities").EnumerateArray())
+        {
+            statements.Add(entity.GetProperty("createSql").GetString()!.Replace("${TABLE_NAME}", entity.GetProperty("tableName").GetString()!));
+        }
+        statements.AddRange(schema.GetProperty("setupQueries").EnumerateArray().Select(q => q.GetString()!));
         statements.Add($"PRAGMA user_version = {version};");
         statements.Add("INSERT INTO Contact (id, ownerDbId, nameLast) VALUES ('c1', 'db1', 'Smith');");
         statements.Add("INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate) VALUES ('n1', 'db1', 'Android note', 'Text', 1700000000000, 1699920000000);");

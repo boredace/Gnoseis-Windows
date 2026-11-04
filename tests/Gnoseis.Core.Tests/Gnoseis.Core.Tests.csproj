@@ -23,6 +23,7 @@
     <!-- Room schema export copied from Gnoseis-Android/app/schemas, the reference for file compatibility. -->
     <None Include="RoomSchema\1.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="RoomSchema\2.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="RoomSchema\3.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

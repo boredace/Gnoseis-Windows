@@ -96,11 +96,11 @@ public class BackupTests : IDisposable
         Assert.Equal(3, inspection.ContactCount);
         Assert.Equal(3, (await _data.Contacts.GetContactsAsync()).Count);
         var live = _data.Database.FilePath;
-        Assert.Equal(2L, TestDatabase.ScalarRaw(live, "PRAGMA user_version;"));
+        Assert.Equal(3L, TestDatabase.ScalarRaw(live, "PRAGMA user_version;"));
         Assert.Equal(2L, TestDatabase.ScalarRaw(live, "SELECT count(*) FROM LinkedRecord;"));
         Assert.Equal(0L, TestDatabase.ScalarRaw(live, "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL;"));
         // Migrated on the staged copy: no before-v2 copy of the live file is needed.
-        Assert.Empty(Directory.GetFiles(_test.Folder, "*.before-v2-*"));
+        Assert.Empty(Directory.GetFiles(_test.Folder, "*.before-v3-*"));
         // The chosen file itself is not changed.
         Assert.Equal(1L, TestDatabase.ScalarRaw(oldBackup, "PRAGMA user_version;"));
         Assert.Equal(4L, TestDatabase.ScalarRaw(oldBackup, "SELECT count(*) FROM LinkedRecord;"));
@@ -110,8 +110,8 @@ public class BackupTests : IDisposable
     public async Task Restore_rejects_a_newer_schema_version_and_keeps_the_data()
     {
         await _data.Notes.AddNoteAsync(new Note { Title = "Keep me" });
-        var newerFile = _test.PathFor("gnoseis_data_v3");
-        DatabaseCompatibilityTests.CreateAndroidStyleDatabase(newerFile, version: 3);
+        var newerFile = _test.PathFor("gnoseis_data_v4");
+        DatabaseCompatibilityTests.CreateAndroidStyleDatabase(newerFile, version: 4);
 
         var inspection = await BackupRepository.InspectAsync(newerFile);
         await Assert.ThrowsAsync<DatabaseIncompatibleException>(() => _data.Backup.RestoreAsync(newerFile));
