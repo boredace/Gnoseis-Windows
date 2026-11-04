@@ -97,13 +97,39 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
         Database.NotifyChanged(RecordType.LinkedRecord);
     }
 
-    /// <summary>Removes the link between two records (whichever direction it was stored in).</summary>
+    /// <summary>
+    /// Removes the link between two records (whichever direction it was stored in). If a link was
+    /// removed, lastDeletionAt is saved in the same transaction.
+    /// </summary>
     public Task<int> DeleteLinkAsync(string recordId1, string recordId2) =>
-        ExecuteAsync(RecordType.LinkedRecord,
+        DeleteLinksRecordingDeletionAsync(
             "DELETE FROM LinkedRecord WHERE (record1Id = $a AND record2Id = $b) OR (record1Id = $b AND record2Id = $a);",
             ("$a", recordId1), ("$b", recordId2));
 
+    /// <summary>Removes every link to the record. If any was removed, lastDeletionAt is saved in the same transaction.</summary>
     public Task<int> DeleteLinksToRecordIdAsync(string recordId) =>
-        ExecuteAsync(RecordType.LinkedRecord,
+        DeleteLinksRecordingDeletionAsync(
             "DELETE FROM LinkedRecord WHERE record1Id = $id OR record2Id = $id;", ("$id", recordId));
+
+    private async Task<int> DeleteLinksRecordingDeletionAsync(string sql, params (string Name, object? Value)[] parameters)
+    {
+        var rows = await Task.Run(() =>
+        {
+            using var connection = Database.OpenConnection();
+            using var transaction = connection.BeginTransaction();
+            int deleted;
+            using (var command = CreateCommand(connection, sql, parameters, transaction))
+            {
+                deleted = command.ExecuteNonQuery();
+            }
+            if (deleted > 0)
+            {
+                SettingsRepository.RecordDeletion(connection, transaction);
+            }
+            transaction.Commit();
+            return deleted;
+        }).ConfigureAwait(false);
+        Database.NotifyChanged(RecordType.LinkedRecord);
+        return rows;
+    }
 }
