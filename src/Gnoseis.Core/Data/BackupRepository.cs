@@ -102,8 +102,10 @@ public sealed class BackupRepository(GnoseisDatabase database)
             await Task.Run(() =>
             {
                 // Fold any -wal content into the staged file so it is a single self-contained file,
-                // and bring an older supported schema version up to date on the staged copy, so the
-                // live file is only ever replaced by a current one. The source file is not changed.
+                // and bring an older supported schema version (1 or 2) up to date on the staged copy,
+                // so the live file is only ever replaced by a current one. The source file is not
+                // changed. Nothing is stamped: the restored file keeps the times and Settings rows
+                // the backup holds.
                 using (var staged = OpenUnpooled(stagingPath))
                 {
                     GnoseisDatabase.Execute(staged, "PRAGMA journal_mode=DELETE;");
