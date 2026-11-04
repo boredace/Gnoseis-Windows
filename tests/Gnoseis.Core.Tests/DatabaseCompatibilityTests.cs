@@ -14,9 +14,9 @@ namespace Gnoseis.Core.Tests;
 /// <summary>The database file must stay interchangeable with the Android (Room) database.</summary>
 public class DatabaseCompatibilityTests
 {
-    private static JsonElement RoomSchema()
+    private static JsonElement RoomSchema(int version = DatabaseSchema.Version)
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "RoomSchema", "1.json");
+        var path = Path.Combine(AppContext.BaseDirectory, "RoomSchema", $"{version}.json");
         return JsonDocument.Parse(File.ReadAllText(path)).RootElement.GetProperty("database");
     }
 
@@ -52,7 +52,7 @@ public class DatabaseCompatibilityTests
         using var test = new TestDatabase();
         test.Open();
 
-        Assert.Equal(1L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
+        Assert.Equal(2L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
         Assert.Equal(DatabaseSchema.RoomIdentityHash, TestDatabase.ScalarRaw(test.FilePath, "SELECT identity_hash FROM room_master_table WHERE id = 42;"));
     }
 
@@ -100,7 +100,7 @@ public class DatabaseCompatibilityTests
         // Android known bug 5: a version mismatch silently deleted all data.
         using var test = new TestDatabase();
         CreateAndroidStyleDatabase(test.FilePath);
-        TestDatabase.ExecuteRaw(test.FilePath, "PRAGMA user_version = 2;");
+        TestDatabase.ExecuteRaw(test.FilePath, "PRAGMA user_version = 3;");
 
         var error = Assert.Throws<DatabaseIncompatibleException>(() => GnoseisDatabase.Open(test.FilePath));
 
@@ -122,7 +122,7 @@ public class DatabaseCompatibilityTests
     public void Refuses_an_unrelated_sqlite_database()
     {
         using var test = new TestDatabase();
-        TestDatabase.ExecuteRaw(test.FilePath, "CREATE TABLE Other (x TEXT);", "PRAGMA user_version = 1;");
+        TestDatabase.ExecuteRaw(test.FilePath, "CREATE TABLE Other (x TEXT);", "PRAGMA user_version = 2;");
 
         Assert.Throws<DatabaseIncompatibleException>(() => GnoseisDatabase.Open(test.FilePath));
     }
@@ -139,12 +139,15 @@ public class DatabaseCompatibilityTests
         Assert.True(File.Exists(newName));
     }
 
-    /// <summary>A database the way Room creates it on Android: WAL mode, android_metadata table, Room tables.</summary>
-    internal static void CreateAndroidStyleDatabase(string path)
+    /// <summary>
+    /// A database the way Room creates it on Android: WAL mode, android_metadata table, Room tables.
+    /// Schema version 2 by default, as written by Android 0.2.4 and later.
+    /// </summary>
+    internal static void CreateAndroidStyleDatabase(string path, int version = DatabaseSchema.Version)
     {
         var statements = new List<string> { "PRAGMA journal_mode=WAL;", "CREATE TABLE android_metadata (locale TEXT);", "INSERT INTO android_metadata VALUES ('en_US');" };
         statements.AddRange(DatabaseSchema.CreateStatements);
-        statements.Add("PRAGMA user_version = 1;");
+        statements.Add($"PRAGMA user_version = {version};");
         statements.Add("INSERT INTO Contact (id, ownerDbId, nameLast) VALUES ('c1', 'db1', 'Smith');");
         statements.Add("INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate) VALUES ('n1', 'db1', 'Android note', 'Text', 1700000000000, 1699920000000);");
         TestDatabase.ExecuteRaw(path, statements.ToArray());
