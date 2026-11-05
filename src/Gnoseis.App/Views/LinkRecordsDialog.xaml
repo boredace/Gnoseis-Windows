@@ -3,6 +3,7 @@
     x:Class="Gnoseis.App.Views.LinkRecordsDialog"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls"
     CloseButtonText="Cancel"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="{x:Bind ViewModel.CanLink, Mode=OneWay}"
@@ -39,6 +40,7 @@
         <ListView
             x:Name="ResultList"
             Grid.Row="2"
+            VerticalAlignment="Top"
             AutomationProperties.Name="Records to link"
             ContainerContentChanging="ResultList_ContainerContentChanging"
             ItemTemplate="{StaticResource RecordRowTemplate}"
@@ -48,6 +50,17 @@
             <ListView.GroupStyle>
                 <GroupStyle HeaderTemplate="{StaticResource RecordGroupHeaderTemplate}" />
             </ListView.GroupStyle>
+            <!-- After the records when none has exactly the name searched for; scrolls with the list. -->
+            <ListView.Footer>
+                <controls:CreateFromSearchPanel x:Name="CreatePanel" CreateRequested="CreatePanel_CreateRequested" />
+            </ListView.Footer>
         </ListView>
+
+        <!-- In place of the list when no record is found. -->
+        <controls:CreateFromSearchPanel
+            x:Name="NoResultsCreatePanel"
+            Grid.Row="2"
+            VerticalAlignment="Top"
+            CreateRequested="CreatePanel_CreateRequested" />
     </Grid>
 </ContentDialog>

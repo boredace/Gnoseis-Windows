@@ -130,8 +130,19 @@ public sealed class LinkRecordsViewModel(RecordRef source) : PageViewModel
     private string _sourceTitle = "";
     private int _visibleCount;
     private bool _isLinking;
+    private CreateOffer _createOffer = CreateOffer.None;
 
     public RecordRef Source { get; } = source;
+
+    /// <summary>The types the picker offers to create: all but the source's.</summary>
+    public IReadOnlyList<RecordType> CreateTypes { get; } = CreateFromSearch.TypesFor(source.Type);
+
+    /// <summary>What the picker offers to create for its query, after its own filters.</summary>
+    public CreateOffer CreateOffer
+    {
+        get => _createOffer;
+        private set => SetProperty(ref _createOffer, value);
+    }
 
     public string SourceTitle
     {
@@ -212,6 +223,7 @@ public sealed class LinkRecordsViewModel(RecordRef source) : PageViewModel
         }
     }
 
+    /// <summary>Links the picked records; does nothing when none is picked.</summary>
     public async Task LinkSelectedAsync()
     {
         if (!CanLink)
@@ -237,12 +249,13 @@ public sealed class LinkRecordsViewModel(RecordRef source) : PageViewModel
     private void ApplyFilter()
     {
         var query = Query.Trim();
-        var rows = _allRecords
-            .Where(r => query.Length == 0 || r.RecordTitle.Contains(query, StringComparison.CurrentCultureIgnoreCase))
-            .Select(r => RecordRows.FromSearchResult(r, _alreadyLinked.Contains(r.RecordId)))
+        var results = _allRecords
+            .Where(r => query.Length == 0 || CreateFromSearch.ResultContains(r, query))
             .ToList();
+        var rows = results.Select(r => RecordRows.FromSearchResult(r, _alreadyLinked.Contains(r.RecordId))).ToList();
         _visibleCount = rows.Count;
         Groups = RecordRows.GroupByType(rows);
+        CreateOffer = new CreateOffer(query, CreateFromSearch.OfferFor(query, results));
         OnPropertyChanged(nameof(StatusText));
     }
 
