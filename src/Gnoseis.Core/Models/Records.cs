@@ -93,7 +93,24 @@ public sealed record LinkedRecordTypeCount(int RecordTypeId, int Count)
     public RecordType RecordType => (RecordType)RecordTypeId;
 }
 
-public sealed record SearchResult(string RecordId, int RecordTypeId, string RecordTitle)
+/// <summary>
+/// A record as search lists it: its title (a contact as "Last, First"; a note without a title by the
+/// start of its text) and the stored data its row shows.
+/// </summary>
+/// <param name="LinkCount">Distinct records linked to it, in either direction.</param>
+/// <param name="NoteDate">A note's day (createDate, epoch ms); null for other types.</param>
+/// <param name="JobTitle">A contact's job title; null for other types.</param>
+/// <param name="Company">A contact's company; null for other types.</param>
+/// <param name="UpdatedAt">When the record was last changed (UTC epoch ms); null before schema v3.</param>
+public sealed record SearchResult(
+    string RecordId,
+    int RecordTypeId,
+    string RecordTitle,
+    int LinkCount = 0,
+    long? NoteDate = null,
+    string? JobTitle = null,
+    string? Company = null,
+    long? UpdatedAt = null)
 {
     public RecordType RecordType => (RecordType)RecordTypeId;
 }
