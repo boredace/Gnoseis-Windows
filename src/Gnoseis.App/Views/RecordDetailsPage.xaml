@@ -3,6 +3,7 @@
     x:Class="Gnoseis.App.Views.RecordDetailsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls"
     xmlns:vm="using:Gnoseis.App.ViewModels"
     SizeChanged="Page_SizeChanged">
 
@@ -25,16 +26,16 @@
                 Height="48"
                 VerticalAlignment="Top"
                 DisplayName="{x:Bind ViewModel.Title, Mode=OneWay}"
+                Style="{StaticResource ContactPictureStyle}"
                 Visibility="{x:Bind ViewModel.IsContact}" />
-            <Border
+            <controls:TypeTile
                 Width="48"
                 Height="48"
                 VerticalAlignment="Top"
-                Background="{x:Bind ViewModel.TileBrush}"
                 CornerRadius="10"
-                Visibility="{x:Bind ViewModel.ShowTypeTile}">
-                <FontIcon FontSize="22" Foreground="White" Glyph="{x:Bind ViewModel.Glyph}" />
-            </Border>
+                FontSize="22"
+                Type="{x:Bind ViewModel.Type}"
+                Visibility="{x:Bind ViewModel.ShowTypeTile}" />
 
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                 <TextBlock
@@ -84,7 +85,7 @@
                         <FontIcon Glyph="&#xE710;" />
                     </AppBarButton.Icon>
                     <AppBarButton.Flyout>
-                        <MenuFlyout x:Name="NewLinkedMenu" Placement="BottomEdgeAlignedRight" />
+                        <MenuFlyout x:Name="NewLinkedMenu" Opening="NewLinkedMenu_Opening" Placement="BottomEdgeAlignedRight" />
                     </AppBarButton.Flyout>
                 </AppBarButton>
                 <CommandBar.SecondaryCommands>

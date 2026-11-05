@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Record type colours, the same as Gnoseis for Android: an outline and a fill per type, per theme.
+    These are the only colours that stand for a record type. Use them with {ThemeResource}, so they follow
+    the app's theme. The values match Gnoseis.Core's RecordTypeColors table (a test checks it).
+-->
+<ResourceDictionary
+    x:Class="Gnoseis.App.Resources.RecordTypeColorResources"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls">
+
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <Color x:Key="NoteOutlineColor">#FF38641C</Color>
+            <Color x:Key="NoteFillColor">#FFDBEFCB</Color>
+            <SolidColorBrush x:Key="NoteOutlineBrush" Color="{StaticResource NoteOutlineColor}" />
+            <SolidColorBrush x:Key="NoteFillBrush" Color="{StaticResource NoteFillColor}" />
+            <Color x:Key="ContactOutlineColor">#FF7C560D</Color>
+            <Color x:Key="ContactFillColor">#FFFFE7CA</Color>
+            <SolidColorBrush x:Key="ContactOutlineBrush" Color="{StaticResource ContactOutlineColor}" />
+            <SolidColorBrush x:Key="ContactFillBrush" Color="{StaticResource ContactFillColor}" />
+            <Color x:Key="OrganizationOutlineColor">#FF96333F</Color>
+            <Color x:Key="OrganizationFillColor">#FFFFCECF</Color>
+            <SolidColorBrush x:Key="OrganizationOutlineBrush" Color="{StaticResource OrganizationOutlineColor}" />
+            <SolidColorBrush x:Key="OrganizationFillBrush" Color="{StaticResource OrganizationFillColor}" />
+            <Color x:Key="CategoryOutlineColor">#FF235198</Color>
+            <Color x:Key="CategoryFillColor">#FFD0D9FF</Color>
+            <SolidColorBrush x:Key="CategoryOutlineBrush" Color="{StaticResource CategoryOutlineColor}" />
+            <SolidColorBrush x:Key="CategoryFillBrush" Color="{StaticResource CategoryFillColor}" />
+            <Color x:Key="ItemOutlineColor">#FF00646B</Color>
+            <Color x:Key="ItemFillColor">#FFAFECF3</Color>
+            <SolidColorBrush x:Key="ItemOutlineBrush" Color="{StaticResource ItemOutlineColor}" />
+            <SolidColorBrush x:Key="ItemFillBrush" Color="{StaticResource ItemFillColor}" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <Color x:Key="NoteOutlineColor">#FFAACD90</Color>
+            <Color x:Key="NoteFillColor">#FF324D21</Color>
+            <SolidColorBrush x:Key="NoteOutlineBrush" Color="{StaticResource NoteOutlineColor}" />
+            <SolidColorBrush x:Key="NoteFillBrush" Color="{StaticResource NoteFillColor}" />
+            <Color x:Key="ContactOutlineColor">#FFE3BA82</Color>
+            <Color x:Key="ContactFillColor">#FF553C12</Color>
+            <SolidColorBrush x:Key="ContactOutlineBrush" Color="{StaticResource ContactOutlineColor}" />
+            <SolidColorBrush x:Key="ContactFillBrush" Color="{StaticResource ContactFillColor}" />
+            <Color x:Key="OrganizationOutlineColor">#FFFFAAAD</Color>
+            <Color x:Key="OrganizationFillColor">#FF6B2D32</Color>
+            <SolidColorBrush x:Key="OrganizationOutlineBrush" Color="{StaticResource OrganizationOutlineColor}" />
+            <SolidColorBrush x:Key="OrganizationFillBrush" Color="{StaticResource OrganizationFillColor}" />
+            <Color x:Key="CategoryOutlineColor">#FFACBFFF</Color>
+            <Color x:Key="CategoryFillColor">#FF293E6C</Color>
+            <SolidColorBrush x:Key="CategoryOutlineBrush" Color="{StaticResource CategoryOutlineColor}" />
+            <SolidColorBrush x:Key="CategoryFillBrush" Color="{StaticResource CategoryFillColor}" />
+            <Color x:Key="ItemOutlineColor">#FF62DEEA</Color>
+            <Color x:Key="ItemFillColor">#FF004349</Color>
+            <SolidColorBrush x:Key="ItemOutlineBrush" Color="{StaticResource ItemOutlineColor}" />
+            <SolidColorBrush x:Key="ItemFillBrush" Color="{StaticResource ItemFillColor}" />
+        </ResourceDictionary>
+
+        <!-- High contrast: the user's contrast theme replaces the type colours; types are told apart by glyph and label. -->
+        <ResourceDictionary x:Key="HighContrast">
+            <StaticResource x:Key="NoteOutlineColor" ResourceKey="SystemColorWindowTextColor" />
+            <StaticResource x:Key="NoteFillColor" ResourceKey="SystemColorWindowColor" />
+            <SolidColorBrush x:Key="NoteOutlineBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="NoteFillBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <StaticResource x:Key="ContactOutlineColor" ResourceKey="SystemColorWindowTextColor" />
+            <StaticResource x:Key="ContactFillColor" ResourceKey="SystemColorWindowColor" />
+            <SolidColorBrush x:Key="ContactOutlineBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="ContactFillBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <StaticResource x:Key="OrganizationOutlineColor" ResourceKey="SystemColorWindowTextColor" />
+            <StaticResource x:Key="OrganizationFillColor" ResourceKey="SystemColorWindowColor" />
+            <SolidColorBrush x:Key="OrganizationOutlineBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="OrganizationFillBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <StaticResource x:Key="CategoryOutlineColor" ResourceKey="SystemColorWindowTextColor" />
+            <StaticResource x:Key="CategoryFillColor" ResourceKey="SystemColorWindowColor" />
+            <SolidColorBrush x:Key="CategoryOutlineBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="CategoryFillBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <StaticResource x:Key="ItemOutlineColor" ResourceKey="SystemColorWindowTextColor" />
+            <StaticResource x:Key="ItemFillColor" ResourceKey="SystemColorWindowColor" />
+            <SolidColorBrush x:Key="ItemOutlineBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="ItemFillBrush" Color="{ThemeResource SystemColorWindowColor}" />
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!--
+        Type tile: the type's fill, the glyph in the outline colour and a 1 px outline border, at every size.
+        TypeTile picks "<Type>TileStyle" by its Type; size, corner radius and glyph size are set where it is used.
+    -->
+    <Style x:Key="TypeTileBaseStyle" TargetType="controls:TypeTile">
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="controls:TypeTile">
+                    <Border
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                        <FontIcon
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="{TemplateBinding FontSize}"
+                            Foreground="{TemplateBinding Foreground}"
+                            Glyph="{TemplateBinding Glyph}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="NoteTileStyle" TargetType="controls:TypeTile" BasedOn="{StaticResource TypeTileBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource NoteFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource NoteOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource NoteOutlineBrush}" />
+    </Style>
+    <Style x:Key="ContactTileStyle" TargetType="controls:TypeTile" BasedOn="{StaticResource TypeTileBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource ContactFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ContactOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ContactOutlineBrush}" />
+    </Style>
+    <Style x:Key="OrganizationTileStyle" TargetType="controls:TypeTile" BasedOn="{StaticResource TypeTileBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource OrganizationFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource OrganizationOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource OrganizationOutlineBrush}" />
+    </Style>
+    <Style x:Key="CategoryTileStyle" TargetType="controls:TypeTile" BasedOn="{StaticResource TypeTileBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource CategoryFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CategoryOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource CategoryOutlineBrush}" />
+    </Style>
+    <Style x:Key="ItemTileStyle" TargetType="controls:TypeTile" BasedOn="{StaticResource TypeTileBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource ItemFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ItemOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ItemOutlineBrush}" />
+    </Style>
+    <!-- A type without a colour: no type colour, system greys. -->
+    <Style x:Key="UnknownTileStyle" TargetType="controls:TypeTile" BasedOn="{StaticResource TypeTileBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource ControlFillColorSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlStrokeColorDefaultBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+
+    <!-- A contact's round picture: initials in the contact outline colour on the contact fill, with a 1 px outline ring. -->
+    <!-- No BasedOn: PersonPicture's default style isn't a resource here, and the control keeps its own template. -->
+    <Style x:Key="ContactPictureStyle" TargetType="PersonPicture">
+        <Setter Property="Background" Value="{ThemeResource ContactFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ContactOutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{ThemeResource ContactOutlineBrush}" />
+    </Style>
+
+    <!-- A type glyph on its own (no tile), in the type's outline colour. Picked by "<Type>GlyphStyle". -->
+    <Style x:Key="NoteGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource NoteOutlineBrush}" />
+    </Style>
+    <Style x:Key="ContactGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource ContactOutlineBrush}" />
+    </Style>
+    <Style x:Key="OrganizationGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource OrganizationOutlineBrush}" />
+    </Style>
+    <Style x:Key="CategoryGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource CategoryOutlineBrush}" />
+    </Style>
+    <Style x:Key="ItemGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource ItemOutlineBrush}" />
+    </Style>
+    <Style x:Key="UnknownGlyphStyle" TargetType="FontIcon">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+
+    <!-- List group headers: a day or a first letter in the accent colour; a record type's group in its outline colour. -->
+    <Style x:Key="GroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+    </Style>
+    <Style x:Key="NoteGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource NoteOutlineBrush}" />
+    </Style>
+    <Style x:Key="ContactGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ContactOutlineBrush}" />
+    </Style>
+    <Style x:Key="OrganizationGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource OrganizationOutlineBrush}" />
+    </Style>
+    <Style x:Key="CategoryGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource CategoryOutlineBrush}" />
+    </Style>
+    <Style x:Key="ItemGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ItemOutlineBrush}" />
+    </Style>
+
+    <!--
+        A button that creates a record of a type: the type's fill, outline text and glyph, 1 px outline border.
+        Hover and pressed show the fill at 90 % and 80 %; disabled keeps the standard disabled look.
+        Picked by "<Type>ButtonStyle".
+    -->
+    <Style x:Key="TypeButtonBaseStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid CornerRadius="{TemplateBinding CornerRadius}">
+                        <Border x:Name="FillLayer" Background="{TemplateBinding Background}" />
+                        <ContentPresenter
+                            x:Name="ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            AutomationProperties.AccessibilityView="Raw"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            ContentTransitions="{TemplateBinding ContentTransitions}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Foreground="{TemplateBinding Foreground}" />
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="FillLayer.Opacity" Value="0.9" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="FillLayer.Opacity" Value="0.8" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="FillLayer.Background" Value="{ThemeResource ButtonBackgroundDisabled}" />
+                                        <Setter Target="ContentPresenter.BorderBrush" Value="{ThemeResource ButtonBorderBrushDisabled}" />
+                                        <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource ButtonForegroundDisabled}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="NoteButtonStyle" TargetType="Button" BasedOn="{StaticResource TypeButtonBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource NoteFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource NoteOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource NoteOutlineBrush}" />
+    </Style>
+    <Style x:Key="ContactButtonStyle" TargetType="Button" BasedOn="{StaticResource TypeButtonBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource ContactFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ContactOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ContactOutlineBrush}" />
+    </Style>
+    <Style x:Key="OrganizationButtonStyle" TargetType="Button" BasedOn="{StaticResource TypeButtonBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource OrganizationFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource OrganizationOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource OrganizationOutlineBrush}" />
+    </Style>
+    <Style x:Key="CategoryButtonStyle" TargetType="Button" BasedOn="{StaticResource TypeButtonBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource CategoryFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CategoryOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource CategoryOutlineBrush}" />
+    </Style>
+    <Style x:Key="ItemButtonStyle" TargetType="Button" BasedOn="{StaticResource TypeButtonBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource ItemFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ItemOutlineBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource ItemOutlineBrush}" />
+    </Style>
+
+</ResourceDictionary>

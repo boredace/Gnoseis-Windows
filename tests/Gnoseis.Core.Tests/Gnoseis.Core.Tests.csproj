@@ -24,6 +24,8 @@
     <None Include="RoomSchema\1.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="RoomSchema\2.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="RoomSchema\3.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The app's record type colour resources, checked against the Core table. -->
+    <None Include="..\..\src\Gnoseis.App\Resources\RecordTypeColors.xaml" Link="AppResources\RecordTypeColors.xaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

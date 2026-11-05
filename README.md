@@ -184,8 +184,9 @@ switching and seeing related information at a glance.
 - **Linking** existing records uses a picker dialog with search and multi-select. Records that are
   already linked are dimmed.
 - **Delete** asks first (the safe answer is the default), then moves on to the next record.
-- **Colours per record type** (notes amber, contacts blue, organizations purple, categories green,
-  items teal), so record types can be told apart at a glance.
+- **Colours per record type**: the same colours as Gnoseis for Android, in light and dark theme, so
+  record types can be told apart at a glance (also with night light on). A high-contrast theme uses
+  the system colours instead.
 - **Remembers where you were**: window size and position, whether it was maximized, the navigation
   pane and the last section, plus the selected record in each section while the app is open.
 - **Narrow windows** show one pane at a time; Back returns from a record to the list.

@@ -77,27 +77,27 @@
                 <NavigationViewItemSeparator />
                 <NavigationViewItem Content="Notes" Tag="Note" ToolTipService.ToolTip="Notes (Ctrl+2)">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE70B;" />
+                        <FontIcon Foreground="{ThemeResource NoteOutlineBrush}" Glyph="&#xE70B;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Contacts" Tag="Contact" ToolTipService.ToolTip="Contacts (Ctrl+3)">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE77B;" />
+                        <FontIcon Foreground="{ThemeResource ContactOutlineBrush}" Glyph="&#xE77B;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Organizations" Tag="Organization" ToolTipService.ToolTip="Organizations (Ctrl+4)">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE821;" />
+                        <FontIcon Foreground="{ThemeResource OrganizationOutlineBrush}" Glyph="&#xE821;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Categories" Tag="Category" ToolTipService.ToolTip="Categories (Ctrl+5)">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8EC;" />
+                        <FontIcon Foreground="{ThemeResource CategoryOutlineBrush}" Glyph="&#xE8EC;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Items" Tag="Item" ToolTipService.ToolTip="Items (Ctrl+6)">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE7B8;" />
+                        <FontIcon Foreground="{ThemeResource ItemOutlineBrush}" Glyph="&#xE7B8;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>

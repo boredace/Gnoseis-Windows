@@ -8,7 +8,6 @@
 
 using System.Globalization;
 using Gnoseis.Core.Domain;
-using Microsoft.UI.Xaml.Media;
 
 namespace Gnoseis.App.ViewModels;
 
@@ -19,7 +18,6 @@ public sealed class StatCard(RecordType type, int count)
     public string CountText { get; } = count.ToString("N0", CultureInfo.CurrentCulture);
     public string Label { get; } = count == 1 ? type.DisplayName() : type.PluralDisplayName();
     public string Glyph => Glyphs.For(Type);
-    public SolidColorBrush TileBrush => TypeColors.BrushFor(Type);
     public string AutomationName => $"{CountText} {Label}. Open {Type.PluralDisplayName()}";
 }
 

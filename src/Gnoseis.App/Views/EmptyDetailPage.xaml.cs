@@ -24,8 +24,7 @@ public sealed partial class EmptyDetailPage : Page
         base.OnNavigatedTo(e);
         if (e.Parameter is RecordListViewModel list)
         {
-            Tile.Background = TypeColors.BrushFor(list.Type);
-            TileIcon.Glyph = list.Glyph;
+            Tile.Type = list.Type;
             MessageText.Text = list.NoSelectionText;
             HintText.Text = $"or press Ctrl+N to create a new {list.TypeNameLower}";
         }

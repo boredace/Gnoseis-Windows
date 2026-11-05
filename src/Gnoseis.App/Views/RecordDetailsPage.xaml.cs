@@ -106,15 +106,23 @@ public sealed partial class RecordDetailsPage : Page
 
     // ---------------------------------------------------------------- Commands
 
+    // Built each time it opens: the glyph brushes are picked for the page's theme (or high contrast) at that moment.
+    private void NewLinkedMenu_Opening(object? sender, object e) => BuildNewLinkedMenu();
+
     private void BuildNewLinkedMenu()
     {
         NewLinkedMenu.Items.Clear();
         foreach (var type in ViewModel.NewLinkedTypes)
         {
+            var icon = new FontIcon { Glyph = Helpers.Glyphs.For(type) };
+            if (RecordTypeStyles.Brush(this, type, ColorRole.Outline) is { } brush)
+            {
+                icon.Foreground = brush;
+            }
             var item = new MenuFlyoutItem
             {
                 Text = $"New {type.DisplayName().ToLowerInvariant()}",
-                Icon = new FontIcon { Glyph = Helpers.Glyphs.For(type) },
+                Icon = icon,
                 Tag = type,
             };
             item.Click += NewLinked_Click;

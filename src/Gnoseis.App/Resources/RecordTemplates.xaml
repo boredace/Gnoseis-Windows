@@ -3,6 +3,8 @@
     x:Class="Gnoseis.App.Resources.RecordTemplates"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls"
+    xmlns:helpers="using:Gnoseis.App.Helpers"
     xmlns:vm="using:Gnoseis.App.ViewModels">
 
     <!-- One record in a list: picture (initials or colored type tile), title, preview and trailing text. -->
@@ -18,16 +20,16 @@
                 Height="32"
                 VerticalAlignment="Center"
                 DisplayName="{x:Bind Title}"
+                Style="{StaticResource ContactPictureStyle}"
                 Visibility="{x:Bind IsPerson}" />
-            <Border
+            <controls:TypeTile
                 Width="32"
                 Height="32"
                 VerticalAlignment="Center"
-                Background="{x:Bind TileBrush}"
                 CornerRadius="6"
-                Visibility="{x:Bind ShowTile}">
-                <FontIcon FontSize="15" Foreground="White" Glyph="{x:Bind Glyph}" />
-            </Border>
+                FontSize="15"
+                Type="{x:Bind Type}"
+                Visibility="{x:Bind ShowTile}" />
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
                 <TextBlock
                     MaxLines="1"
@@ -55,12 +57,11 @@
         </Grid>
     </DataTemplate>
 
-    <!-- Sticky group header (day, first letter or record type). -->
+    <!-- Sticky group header: a day or first letter in the accent colour, a record type in its outline colour. -->
     <DataTemplate x:Key="RecordGroupHeaderTemplate" x:DataType="vm:RecordGroup">
         <TextBlock
             AutomationProperties.HeadingLevel="Level2"
-            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-            Style="{StaticResource BodyStrongTextBlockStyle}"
+            Style="{x:Bind helpers:RecordTypeStyles.GroupHeader(Type)}"
             Text="{x:Bind Header}" />
     </DataTemplate>
 

@@ -34,7 +34,6 @@ public sealed class LinkedTab(RecordType type, IReadOnlyList<RecordRow> rows)
     public string Header => Type.PluralDisplayName();
     public string CountText => Rows.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
     public string Glyph => Glyphs.For(Type);
-    public Microsoft.UI.Xaml.Media.SolidColorBrush TileBrush => TypeColors.BrushFor(Type);
 }
 
 /// <summary>Details of one record and the records linked to it (all five Android details pages).</summary>
@@ -146,8 +145,6 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
     public bool ShowBodyCard => HasBody && !IsNote;
 
     public bool ShowNoteText => HasBody && IsNote;
-
-    public Microsoft.UI.Xaml.Media.SolidColorBrush TileBrush => TypeColors.BrushFor(Type);
 
     public bool IsMissing
     {
