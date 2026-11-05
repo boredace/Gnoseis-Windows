@@ -141,7 +141,8 @@
     </Style>
 
     <!-- A contact's round picture: initials in the contact outline colour on the contact fill, with a 1 px outline ring. -->
-    <Style x:Key="ContactPictureStyle" TargetType="PersonPicture" BasedOn="{StaticResource DefaultPersonPictureStyle}">
+    <!-- No BasedOn: PersonPicture's default style isn't a resource here, and the control keeps its own template. -->
+    <Style x:Key="ContactPictureStyle" TargetType="PersonPicture">
         <Setter Property="Background" Value="{ThemeResource ContactFillBrush}" />
         <Setter Property="BorderBrush" Value="{ThemeResource ContactOutlineBrush}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -166,6 +167,26 @@
     </Style>
     <Style x:Key="UnknownGlyphStyle" TargetType="FontIcon">
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+
+    <!-- List group headers: a day or a first letter in the accent colour; a record type's group in its outline colour. -->
+    <Style x:Key="GroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+    </Style>
+    <Style x:Key="NoteGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource NoteOutlineBrush}" />
+    </Style>
+    <Style x:Key="ContactGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ContactOutlineBrush}" />
+    </Style>
+    <Style x:Key="OrganizationGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource OrganizationOutlineBrush}" />
+    </Style>
+    <Style x:Key="CategoryGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource CategoryOutlineBrush}" />
+    </Style>
+    <Style x:Key="ItemGroupHeaderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource ItemOutlineBrush}" />
     </Style>
 
     <!--

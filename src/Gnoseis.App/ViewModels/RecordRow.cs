@@ -7,7 +7,6 @@
  */
 
 using System.Globalization;
-using Microsoft.UI.Xaml.Media;
 
 namespace Gnoseis.App.ViewModels;
 
@@ -29,7 +28,6 @@ public sealed class RecordRow
     public bool IsLinked { get; init; }
 
     public string Glyph => Glyphs.For(Type);
-    public SolidColorBrush TileBrush => TypeColors.BrushFor(Type);
     public bool IsPerson => ShowIcon && Type == RecordType.Contact;
     public bool ShowTile => ShowIcon && Type != RecordType.Contact;
     public bool HasTitle => Title.Length > 0;
@@ -46,10 +44,13 @@ public sealed class RecordRow
     public override string ToString() => Title;
 }
 
-/// <summary>A group of rows under a header (sticky in the list), e.g. a day or a first letter.</summary>
-public sealed class RecordGroup(string header, IEnumerable<RecordRow> rows) : List<RecordRow>(rows)
+/// <summary>A group of rows under a header (sticky in the list), e.g. a day, a first letter or a record type.</summary>
+public sealed class RecordGroup(string header, IEnumerable<RecordRow> rows, RecordType? type = null) : List<RecordRow>(rows)
 {
     public string Header { get; } = header;
+
+    /// <summary>The record type, when the group is one type's records (its header takes the type's colour).</summary>
+    public RecordType? Type { get; } = type;
 }
 
 /// <summary>Builds list rows and groups.</summary>
@@ -130,7 +131,7 @@ public static class RecordRows
 
     /// <summary>Rows grouped by record type (search and link results).</summary>
     public static List<RecordGroup> GroupByType(IEnumerable<RecordRow> rows) =>
-        rows.GroupBy(r => r.Type).OrderBy(g => (int)g.Key).Select(g => new RecordGroup(g.Key.PluralDisplayName(), g)).ToList();
+        rows.GroupBy(r => r.Type).OrderBy(g => (int)g.Key).Select(g => new RecordGroup(g.Key.PluralDisplayName(), g, g.Key)).ToList();
 
     public static string DayHeader(DateOnly day)
     {

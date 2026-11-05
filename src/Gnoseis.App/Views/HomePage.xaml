@@ -3,6 +3,7 @@
     x:Class="Gnoseis.App.Views.HomePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls"
     xmlns:vm="using:Gnoseis.App.ViewModels"
     SizeChanged="Page_SizeChanged">
 
@@ -19,7 +20,7 @@
             <Border Style="{StaticResource CardStyle}">
                 <StackPanel Spacing="10">
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon FontSize="16" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Glyph="&#xE70B;" />
+                        <FontIcon FontSize="16" Foreground="{ThemeResource NoteOutlineBrush}" Glyph="&#xE70B;" />
                         <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Quick note" />
                     </StackPanel>
                     <TextBox
@@ -55,7 +56,7 @@
                             Click="AddQuickNote_Click"
                             Content="Add note"
                             IsEnabled="{x:Bind ViewModel.CanAddQuickNote, Mode=OneWay}"
-                            Style="{StaticResource AccentButtonStyle}"
+                            Style="{StaticResource NoteButtonStyle}"
                             ToolTipService.ToolTip="Add note (Ctrl+Enter)">
                             <Button.KeyboardAccelerators>
                                 <KeyboardAccelerator Key="Enter" Modifiers="Control" />
@@ -77,9 +78,7 @@
                             Click="StatCard_Click"
                             Style="{StaticResource CardButtonStyle}">
                             <StackPanel Orientation="Horizontal" Spacing="14">
-                                <Border Width="40" Height="40" Background="{x:Bind TileBrush}" CornerRadius="8">
-                                    <FontIcon FontSize="18" Foreground="White" Glyph="{x:Bind Glyph}" />
-                                </Border>
+                                <controls:TypeTile Width="40" Height="40" CornerRadius="8" FontSize="18" Type="{x:Bind Type}" />
                                 <StackPanel VerticalAlignment="Center">
                                     <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind CountText}" />
                                     <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Label}" />

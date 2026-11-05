@@ -30,6 +30,13 @@ public static class RecordTypeStyles
     /// <summary>The style of a button that creates a record of the type, or the default button style.</summary>
     public static Style Button(RecordType type) => Find(KeyOf(type) is { } key ? $"{key}ButtonStyle" : "DefaultButtonStyle");
 
+    /// <summary>
+    /// The style of a list group header: a record type's group in the type's outline colour,
+    /// any other group (a day, a first letter) in the accent colour.
+    /// </summary>
+    public static Style GroupHeader(RecordType? type) =>
+        Find(type is { } t && KeyOf(t) is { } key ? $"{key}GroupHeaderTextStyle" : "GroupHeaderTextStyle");
+
     /// <summary>True if the user has a high-contrast theme on.</summary>
     public static bool IsHighContrast => Accessibility.HighContrast;
 

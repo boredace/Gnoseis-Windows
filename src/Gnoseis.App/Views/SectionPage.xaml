@@ -47,7 +47,7 @@
                     VerticalAlignment="Center"
                     AutomationProperties.Name="{x:Bind ViewModel.NewButtonText}"
                     Click="NewButton_Click"
-                    Style="{StaticResource AccentButtonStyle}">
+                    Style="{x:Bind helpers:RecordTypeStyles.Button(ViewModel.Type)}">
                     <ToolTipService.ToolTip>
                         <ToolTip Content="{x:Bind helpers:Converters.Shortcut(ViewModel.NewButtonText, 'Ctrl+N')}" />
                     </ToolTipService.ToolTip>
@@ -99,7 +99,7 @@
                 VerticalAlignment="Center"
                 Spacing="8"
                 Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay}">
-                <FontIcon FontSize="40" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Glyph="{x:Bind ViewModel.Glyph}" />
+                <FontIcon FontSize="40" Glyph="{x:Bind ViewModel.Glyph}" Style="{x:Bind helpers:RecordTypeStyles.Glyph(ViewModel.Type)}" />
                 <TextBlock HorizontalAlignment="Center" Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind ViewModel.EmptyText}" />
                 <TextBlock HorizontalAlignment="Center" Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind ViewModel.EmptyHint}" TextAlignment="Center" />
             </StackPanel>
