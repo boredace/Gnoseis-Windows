@@ -57,6 +57,46 @@
         </Grid>
     </DataTemplate>
 
+    <!-- A title bar search suggestion: tile or picture, the title with the query highlighted, the context line. -->
+    <DataTemplate x:Key="SearchSuggestionTemplate" x:DataType="vm:SearchRow">
+        <Grid Padding="0,6" ColumnSpacing="12" AutomationProperties.Name="{x:Bind AutomationName}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <PersonPicture
+                Width="32"
+                Height="32"
+                VerticalAlignment="Center"
+                AutomationProperties.AccessibilityView="Raw"
+                DisplayName="{x:Bind Title}"
+                Style="{StaticResource ContactPictureStyle}"
+                Visibility="{x:Bind IsPerson}" />
+            <controls:TypeTile
+                Width="32"
+                Height="32"
+                VerticalAlignment="Center"
+                CornerRadius="6"
+                FontSize="15"
+                Type="{x:Bind Type}"
+                Visibility="{x:Bind ShowTile}" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                <controls:HighlightedText
+                    Ranges="{x:Bind Highlights}"
+                    Text="{x:Bind Title}"
+                    TextStyle="{StaticResource BodyTextBlockStyle}"
+                    Type="{x:Bind Type}" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    MaxLines="1"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind Context}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap" />
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
     <!-- The body line of a linked row: secondary text, or primary for a note without a title -->
     <Style x:Key="RowBodyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />

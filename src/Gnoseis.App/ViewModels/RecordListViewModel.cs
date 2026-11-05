@@ -24,7 +24,8 @@ public sealed class RecordListViewModel(RecordType type) : PageViewModel
     public string Glyph => Glyphs.For(Type);
     public string TypeNameLower => Type.DisplayName().ToLowerInvariant();
     public string NewButtonText => $"New {TypeNameLower}";
-    public string FilterPlaceholder => $"Filter {Title.ToLowerInvariant()}";
+    /// <summary>Typing filters the list in place; Enter opens the search page for this type.</summary>
+    public string FilterPlaceholder => $"Filter {Title.ToLowerInvariant()} · Enter to search";
     public string EmptyText => $"No {Title.ToLowerInvariant()} yet";
     public string EmptyHint => $"Select \"{NewButtonText}\" or press Ctrl+N to add one.";
     public string NoSelectionText => $"Select {(Type == RecordType.Organization || Type == RecordType.Item ? "an" : "a")} {TypeNameLower} to see it here";

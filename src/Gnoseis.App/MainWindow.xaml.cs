@@ -9,6 +9,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Gnoseis.App.Views;
+using Gnoseis.Core.Domain;
 using Microsoft.Data.Sqlite;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -26,6 +27,9 @@ public sealed partial class MainWindow : Window
     private readonly TaskCompletionSource _loaded = new();
     private RectInt32? _normalBounds;
     private int _searchVersion;
+
+    // Every record the title bar suggestions search, loaded on first use and again after data changes.
+    private Task<SearchIndex>? _suggestionIndex;
 
     public MainWindow()
     {
@@ -69,6 +73,7 @@ public sealed partial class MainWindow : Window
             {
                 var database = await Task.Run(() => GnoseisDatabase.Open(AppPaths.DatabaseFile));
                 App.Container = new AppContainer(database);
+                database.DataChanged += (_, _) => _suggestionIndex = null;
                 break;
             }
             catch (Exception e) when (e is DatabaseIncompatibleException or SqliteException or IOException or UnauthorizedAccessException)
@@ -312,16 +317,36 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var results = await App.Container.Search.SearchAsync(query);
+        SearchIndex index;
+        try
+        {
+            index = await (_suggestionIndex ??= LoadSuggestionIndexAsync());
+        }
+        catch (Exception)
+        {
+            // Try again on the next keystroke.
+            _suggestionIndex = null;
+            if (version == _searchVersion)
+            {
+                sender.ItemsSource = null;
+            }
+            return;
+        }
         if (version == _searchVersion)
         {
-            sender.ItemsSource = results.Take(10).Select(r => RecordRows.FromSearchResult(r)).ToList();
+            sender.ItemsSource = index.Find(query).Take(SearchLogic.SuggestionLimit).Select(r => SearchRow.For(r, query)).ToList();
         }
+    }
+
+    private static async Task<SearchIndex> LoadSuggestionIndexAsync()
+    {
+        var all = await App.Container.Search.GetAllAsync();
+        return await Task.Run(() => new SearchIndex(all));
     }
 
     private async void SearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
-        if (args.ChosenSuggestion is RecordRow row)
+        if (args.ChosenSuggestion is SearchRow row)
         {
             sender.Text = "";
             sender.ItemsSource = null;

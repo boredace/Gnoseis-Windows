@@ -29,6 +29,7 @@ public sealed class RecordSearchModel : PageViewModel
     private int _loadVersion;
     private int _recentVersion;
     private bool _isLinking;
+    private bool _hasLoaded;
 
     private SearchRow? _bestMatch;
     private List<SearchRowGroup> _groups = [];
@@ -198,6 +199,7 @@ public sealed class RecordSearchModel : PageViewModel
             _linked = linkedTask.Result;
             _index = new SearchIndex(all);
             _bestMatchLinks = null;
+            _hasLoaded = true;
             var unticked = Selection.SetLinked(_linked) | Selection.Refresh(all);
             await LoadRecentAsync();
             Update();
@@ -285,8 +287,9 @@ public sealed class RecordSearchModel : PageViewModel
         OnPropertyChanged(nameof(Hint));
         OnPropertyChanged(nameof(HasHint));
 
-        if (!IsSearching)
+        if (!IsSearching || !_hasLoaded)
         {
+            // Before typing, and until the records are loaded (so "No matches" doesn't flash).
             UpdateChips(null);
             BestMatch = null;
             NoMatchText = "";
