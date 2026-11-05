@@ -15,7 +15,7 @@ The Windows app does everything the Android app does:
 - Notes, contacts, organizations, categories and items: list, view, add, edit and delete.
 - Link any record to records of other types, either by picking existing records or by creating a
   new linked record from a record's page.
-- All records linked to a record shown on its page, grouped by type.
+- All records linked to a record shown on its page, by type with counts, and unlinked with Undo.
 - Search across all record types.
 - Back up the database to a file and restore it (Android: Settings › Import / Export).
 
@@ -175,12 +175,22 @@ switching and seeing related information at a glance.
 - **List and record side by side** in every section, like Mail and Outlook. You can move through the
   list with the arrow keys. A filter box narrows the list. Notes are grouped by *Today*,
   *Yesterday*, weekday and date, and the other lists by first letter.
-- **Record page**: the note text is readable, with clickable web and e-mail links. A contact shows
-  initials and field cards, and phone numbers and e-mail addresses open the calling or mail app.
-  **All linked records are visible at once**, grouped by type with counts. Right-click a linked
-  record to remove the link.
-- **Editing happens in place** in the record pane, with Save (Ctrl+S) and Cancel (Esc). You're asked
-  before unsaved changes are lost, including when you click another record.
+- **Record page**, the same for every record type: a header with the type, the title and the
+  commands, the record's details, and its linked records. The note text is readable, with
+  clickable web and e-mail links. A contact shows initials and field cards (Work, Phone, E-mail),
+  and phone numbers and e-mail addresses open the calling or mail app.
+- **Linked records by type**: a selector shows **All**, then each linked type with its count, the
+  type with the most links first. **All** shows the 3 latest records of each type, with *Show all*.
+  Notes are grouped by day. Each row shows what the record holds (a note's first line, a contact's
+  job, company and phone or e-mail, a category's or item's parent path) and how many records are
+  linked to it. On a wide record pane the details and the linked records sit side by side, and the
+  linked records flow into columns; on a narrower one they are tabs: **Details**, **All**, then the
+  types.
+- **Unlink** from a linked record's context menu (right-click, Shift+F10 or the menu key). There's
+  no confirmation: a message offers **Undo** until you close it or leave the page.
+- **Editing happens in place** in the record pane, on one edit page for every type, with Save
+  (Ctrl+S) and Cancel (Esc). A record created with **New linked** shows which record it will be
+  linked to. You're asked before unsaved changes are lost, including when you click another record.
 - **Linking** existing records uses a picker dialog with search and multi-select. Records that are
   already linked are dimmed.
 - **Delete** asks first (the safe answer is the default), then moves on to the next record.
@@ -200,7 +210,8 @@ switching and seeing related information at a glance.
 | Separate list and details screens | List and record side by side |
 | Floating "Add" button | **New** button in the list header (Ctrl+N) |
 | Expandable FAB (link existing / new linked record) | **Link** (Ctrl+L) and **New linked** menu in the record's command bar |
-| Linked-record tab row | Linked records panel showing every type at once |
+| Linked-record tab row | Selector with **All** and each linked type, beside the details on a wide pane, tabs with **Details** on a narrow one |
+| Snackbar with Undo after unlinking | Info bar with **Undo** at the bottom of the record page |
 | Link Records page | Link picker dialog |
 | Search page | Search box in the title bar, with suggestions and a results page |
 | Import / Export page | Settings page cards: theme, database location, back up, restore, shortcuts |
