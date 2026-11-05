@@ -162,6 +162,23 @@ public sealed class RecordSearchModel : PageViewModel
 
     // ---------------------------------------------------------------- Link picker
 
+    private string _sourceTitle = "";
+
+    /// <summary>The link source's title, once loaded.</summary>
+    public string SourceTitle
+    {
+        get => _sourceTitle;
+        private set
+        {
+            if (SetProperty(ref _sourceTitle, value))
+            {
+                OnPropertyChanged(nameof(PickerTitle));
+            }
+        }
+    }
+
+    public string PickerTitle => SourceTitle.Length > 0 ? $"Link records to \"{SourceTitle}\"" : "Link records";
+
     public int SelectedCount => Selection.Count;
 
     public bool HasSelection => !Selection.IsEmpty;
@@ -195,6 +212,10 @@ public sealed class RecordSearchModel : PageViewModel
                 return;
             }
 
+            if (LinkSource is { } linkSource)
+            {
+                SourceTitle = allTask.Result.FirstOrDefault(r => r.RecordId == linkSource.Id)?.RecordTitle ?? "";
+            }
             var all = allTask.Result.Where(r => _chipTypeSet.Contains(r.RecordType) && r.RecordId != LinkSource?.Id).ToList();
             _linked = linkedTask.Result;
             _index = new SearchIndex(all);
