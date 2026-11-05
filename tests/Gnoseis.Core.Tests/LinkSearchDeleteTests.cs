@@ -135,7 +135,7 @@ public class LinkSearchDeleteTests : IDisposable
 
         var results = await _data.Search.SearchAsync("walk");
 
-        Assert.Equal(new[] { RecordType.Note, RecordType.Organization, RecordType.Category, RecordType.Item }, results.Select(r => r.RecordType));
+        Assert.Equal(new[] { RecordType.Note, RecordType.Organization, RecordType.Category, RecordType.Item }, results.Select(r => r.RecordType).Order());
     }
 
     [Fact]

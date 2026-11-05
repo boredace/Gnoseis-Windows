@@ -74,16 +74,14 @@ public sealed class SearchRepository(GnoseisDatabase database) : RepositoryBase(
             return results;
         });
 
-    /// <summary>Records whose title contains <paramref name="query"/> (all records when the query is empty).</summary>
+    /// <summary>
+    /// Records whose title contains <paramref name="query"/>, ranked best first (see <see cref="SearchIndex.Find"/>);
+    /// all records, unranked, when the query is empty.
+    /// </summary>
     public async Task<List<SearchResult>> SearchAsync(string? query)
     {
         var all = await GetAllAsync().ConfigureAwait(false);
-        var trimmed = query?.Trim() ?? "";
-        return all
-            .Where(r => trimmed.Length == 0 || CreateFromSearch.ResultContains(r, trimmed))
-            .OrderBy(r => r.RecordTypeId)
-            .ThenBy(r => r.RecordTitle, StringComparer.CurrentCultureIgnoreCase)
-            .ToList();
+        return string.IsNullOrWhiteSpace(query) ? all : new SearchIndex(all).Find(query);
     }
 
     /// <summary>
