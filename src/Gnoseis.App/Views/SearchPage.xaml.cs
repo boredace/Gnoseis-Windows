@@ -7,6 +7,7 @@
  */
 
 using System.ComponentModel;
+using Gnoseis.App.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
@@ -53,13 +54,15 @@ public sealed partial class SearchPage : Page
         }
         else if (e.PropertyName == nameof(SearchViewModel.CreateOffer))
         {
-            CreatePanel.Show(ViewModel.CreateOffer.Query, ViewModel.CreateOffer.Offer, ViewModel.CreateTypes);
+            var noResults = CreateFromSearchPanel.ShowOffer(NoResultsCreatePanel, CreatePanel,
+                ViewModel.CreateOffer.Query, ViewModel.CreateOffer.Offer, ViewModel.CreateTypes);
+            ResultList.Visibility = noResults ? Visibility.Collapsed : Visibility.Visible;
         }
     }
 
     /// <summary>Opens the editor for a new record of the type, named after the query, in the type's section.</summary>
     private async void CreatePanel_CreateRequested(object? sender, RecordType type) =>
-        await Navigator.ShowEditorAsync(new EditRequest(type, PrefillName: CreatePanel.Query));
+        await Navigator.ShowEditorAsync(new EditRequest(type, PrefillName: ((CreateFromSearchPanel)sender!).Query));
 
     private async void ResultList_ItemClick(object sender, ItemClickEventArgs e)
     {

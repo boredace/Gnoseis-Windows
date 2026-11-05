@@ -39,6 +39,7 @@
             Grid.Row="2"
             Margin="20,8,20,0"
             Padding="0,0,0,24"
+            VerticalAlignment="Top"
             AutomationProperties.Name="Search results"
             IsItemClickEnabled="True"
             ItemClick="ResultList_ItemClick"
@@ -48,10 +49,18 @@
             <ListView.GroupStyle>
                 <GroupStyle HeaderTemplate="{StaticResource RecordGroupHeaderTemplate}" />
             </ListView.GroupStyle>
-            <!-- After the results, or in their place when there are none; scrolls with the list. -->
+            <!-- After the results when none has exactly the name searched for; scrolls with the list. -->
             <ListView.Footer>
                 <controls:CreateFromSearchPanel x:Name="CreatePanel" CreateRequested="CreatePanel_CreateRequested" />
             </ListView.Footer>
         </ListView>
+
+        <!-- In place of the list when there are no results. -->
+        <controls:CreateFromSearchPanel
+            x:Name="NoResultsCreatePanel"
+            Grid.Row="2"
+            Margin="20,8,20,0"
+            VerticalAlignment="Top"
+            CreateRequested="CreatePanel_CreateRequested" />
     </Grid>
 </Page>

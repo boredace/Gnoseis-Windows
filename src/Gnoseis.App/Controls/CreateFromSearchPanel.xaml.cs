@@ -36,6 +36,20 @@ public sealed partial class CreateFromSearchPanel : UserControl
     /// <summary>The trimmed query the offer is for.</summary>
     public string Query => _query;
 
+    /// <summary>
+    /// Shows a finished search's offer in a page's two panels: <paramref name="inPlaceOfList"/> (in the
+    /// list's place, with no results) and <paramref name="afterResults"/> (the list's footer). An empty
+    /// list puts its footer at the bottom, so the no-results case needs its own panel. Returns true when
+    /// the list should be hidden.
+    /// </summary>
+    public static bool ShowOffer(CreateFromSearchPanel inPlaceOfList, CreateFromSearchPanel afterResults,
+        string query, CreateFromSearchOffer offer, IReadOnlyList<RecordType> types)
+    {
+        inPlaceOfList.Show(query, offer == CreateFromSearchOffer.NoResults ? offer : CreateFromSearchOffer.None, types);
+        afterResults.Show(query, offer == CreateFromSearchOffer.AfterResults ? offer : CreateFromSearchOffer.None, types);
+        return offer == CreateFromSearchOffer.NoResults;
+    }
+
     /// <summary>Shows the offer for a finished search, or hides the panel for <see cref="CreateFromSearchOffer.None"/>.</summary>
     public void Show(string query, CreateFromSearchOffer offer, IReadOnlyList<RecordType> types)
     {
