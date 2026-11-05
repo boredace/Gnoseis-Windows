@@ -6,18 +6,37 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
+using Gnoseis.Core.Domain;
+
 namespace Gnoseis.App.ViewModels;
+
+/// <summary>What a finished search offers to create: the query it searched for and where the offer goes.</summary>
+public sealed record CreateOffer(string Query, CreateFromSearchOffer Offer)
+{
+    public static CreateOffer None { get; } = new("", CreateFromSearchOffer.None);
+}
 
 /// <summary>Search across all records (Android SearchPage).</summary>
 public sealed class SearchViewModel : PageViewModel
 {
-    /// <summary>Results are shown from the second character on.</summary>
-    public const int MinimumQueryLength = 2;
+    /// <summary>Results, and the offer to create a record, are shown from the third character on.</summary>
+    public const int MinimumQueryLength = CreateFromSearch.MinimumQueryLength;
 
     private string _query = "";
     private List<RecordGroup> _groups = [];
     private int _resultCount;
     private int _searchVersion;
+    private CreateOffer _createOffer = CreateOffer.None;
+
+    /// <summary>The types the search results page offers to create: all of them.</summary>
+    public IReadOnlyList<RecordType> CreateTypes { get; } = CreateFromSearch.TypesFor(null);
+
+    /// <summary>Set when a search has finished, so the offer doesn't flash while the user types.</summary>
+    public CreateOffer CreateOffer
+    {
+        get => _createOffer;
+        private set => SetProperty(ref _createOffer, value);
+    }
 
     public string Query
     {
@@ -54,7 +73,7 @@ public sealed class SearchViewModel : PageViewModel
         ? $"Type at least {MinimumQueryLength} characters to search notes, contacts, organizations, categories and items."
         : ResultCount switch
         {
-            0 => $"No results for \"{Query.Trim()}\"",
+            0 => "No results",
             1 => "1 result",
             _ => $"{ResultCount} results",
         };
@@ -67,6 +86,8 @@ public sealed class SearchViewModel : PageViewModel
         {
             Groups = [];
             ResultCount = 0;
+            CreateOffer = CreateOffer.None;
+            IsLoading = false;
             return;
         }
 
@@ -80,6 +101,7 @@ public sealed class SearchViewModel : PageViewModel
             }
             Groups = RecordRows.GroupByType(results.Select(r => RecordRows.FromSearchResult(r)));
             ResultCount = results.Count;
+            CreateOffer = new CreateOffer(query, CreateFromSearch.OfferFor(query, results));
         }
         finally
         {
@@ -108,8 +130,19 @@ public sealed class LinkRecordsViewModel(RecordRef source) : PageViewModel
     private string _sourceTitle = "";
     private int _visibleCount;
     private bool _isLinking;
+    private CreateOffer _createOffer = CreateOffer.None;
 
     public RecordRef Source { get; } = source;
+
+    /// <summary>The types the picker offers to create: all but the source's.</summary>
+    public IReadOnlyList<RecordType> CreateTypes { get; } = CreateFromSearch.TypesFor(source.Type);
+
+    /// <summary>What the picker offers to create for its query, after its own filters.</summary>
+    public CreateOffer CreateOffer
+    {
+        get => _createOffer;
+        private set => SetProperty(ref _createOffer, value);
+    }
 
     public string SourceTitle
     {
@@ -190,6 +223,7 @@ public sealed class LinkRecordsViewModel(RecordRef source) : PageViewModel
         }
     }
 
+    /// <summary>Links the picked records; does nothing when none is picked.</summary>
     public async Task LinkSelectedAsync()
     {
         if (!CanLink)
@@ -215,12 +249,13 @@ public sealed class LinkRecordsViewModel(RecordRef source) : PageViewModel
     private void ApplyFilter()
     {
         var query = Query.Trim();
-        var rows = _allRecords
-            .Where(r => query.Length == 0 || r.RecordTitle.Contains(query, StringComparison.CurrentCultureIgnoreCase))
-            .Select(r => RecordRows.FromSearchResult(r, _alreadyLinked.Contains(r.RecordId)))
+        var results = _allRecords
+            .Where(r => query.Length == 0 || CreateFromSearch.ResultContains(r, query))
             .ToList();
+        var rows = results.Select(r => RecordRows.FromSearchResult(r, _alreadyLinked.Contains(r.RecordId))).ToList();
         _visibleCount = rows.Count;
         Groups = RecordRows.GroupByType(rows);
+        CreateOffer = new CreateOffer(query, CreateFromSearch.OfferFor(query, results));
         OnPropertyChanged(nameof(StatusText));
     }
 

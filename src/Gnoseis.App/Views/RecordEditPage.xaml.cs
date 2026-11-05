@@ -17,6 +17,9 @@ public interface IEditFields
 {
     /// <summary>Moves keyboard focus to the first field.</summary>
     void FocusFirst();
+
+    /// <summary>Moves keyboard focus to the field a search prefilled, with the caret at the end.</summary>
+    void FocusPrefilled();
 }
 
 /// <summary>
@@ -33,7 +36,17 @@ public sealed partial class RecordEditPage : Page, IConfirmLeave
     public RecordEditPage()
     {
         InitializeComponent();
-        Loaded += (_, _) => _fields?.FocusFirst();
+        Loaded += (_, _) =>
+        {
+            if (ViewModel.IsPrefilled)
+            {
+                _fields?.FocusPrefilled();
+            }
+            else
+            {
+                _fields?.FocusFirst();
+            }
+        };
     }
 
     public EditViewModelBase ViewModel { get; private set; } = null!;

@@ -116,6 +116,16 @@ public class LinkSearchDeleteTests : IDisposable
     }
 
     [Fact]
+    public async Task Search_finds_a_contact_as_first_last_and_ignores_runs_of_spaces()
+    {
+        await _data.Contacts.AddContactAsync(new Contact { NameLast = "Smithers", NameFirst = "Waylon" });
+        await _data.Organizations.AddOrganizationAsync(new Organization { OrganizationName = "Acme  Ltd" });
+
+        Assert.Equal(new[] { "Smithers, Waylon" }, (await _data.Search.SearchAsync(" waylon  smith")).Select(r => r.RecordTitle));
+        Assert.Equal(new[] { "Acme  Ltd" }, (await _data.Search.SearchAsync("acme ltd")).Select(r => r.RecordTitle));
+    }
+
+    [Fact]
     public async Task Search_covers_every_record_type_and_ignores_case()
     {
         await _data.Organizations.AddOrganizationAsync(new Organization { OrganizationName = "Walker Inc" });

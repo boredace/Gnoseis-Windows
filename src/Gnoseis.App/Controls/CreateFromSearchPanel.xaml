@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Offers to create a record named after a search query: a heading, "Create "…" as:" and a button per type.
+    Used at the end of the search results and of the link picker's list.
+-->
+<UserControl
+    x:Class="Gnoseis.App.Controls.CreateFromSearchPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    IsTabStop="False">
+
+    <StackPanel x:Name="Root" Padding="16,16,16,24" Spacing="8">
+        <TextBlock
+            x:Name="HeadingText"
+            AutomationProperties.HeadingLevel="Level2"
+            MaxLines="1"
+            Style="{StaticResource BodyStrongTextBlockStyle}"
+            TextTrimming="CharacterEllipsis"
+            TextWrapping="NoWrap" />
+        <TextBlock
+            x:Name="PromptText"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            MaxLines="1"
+            Style="{StaticResource BodyTextBlockStyle}"
+            TextTrimming="CharacterEllipsis"
+            TextWrapping="NoWrap" />
+        <ItemsRepeater x:Name="TypeButtons" Margin="0,4,0,0" TabFocusNavigation="Local">
+            <ItemsRepeater.Layout>
+                <UniformGridLayout
+                    ItemsJustification="Start"
+                    ItemsStretch="Fill"
+                    MaximumRowsOrColumns="5"
+                    MinColumnSpacing="8"
+                    MinItemWidth="132"
+                    MinRowSpacing="8" />
+            </ItemsRepeater.Layout>
+        </ItemsRepeater>
+    </StackPanel>
+</UserControl>

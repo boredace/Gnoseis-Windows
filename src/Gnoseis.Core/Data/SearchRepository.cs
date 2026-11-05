@@ -6,13 +6,15 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
+using Gnoseis.Core.Domain;
 using Gnoseis.Core.Models;
 
 namespace Gnoseis.Core.Data;
 
 /// <summary>
 /// Search across all record types by title. Like the Android app, the title of a contact is
-/// "Last, First" and the query matches anywhere in the title, ignoring case.
+/// "Last, First" and the query matches anywhere in the title, ignoring case and runs of spaces;
+/// a contact is also found as "First Last".
 /// </summary>
 public sealed class SearchRepository(GnoseisDatabase database) : RepositoryBase(database)
 {
@@ -37,7 +39,7 @@ public sealed class SearchRepository(GnoseisDatabase database) : RepositoryBase(
 
         var trimmed = query?.Trim() ?? "";
         return all
-            .Where(r => trimmed.Length == 0 || r.RecordTitle.Contains(trimmed, StringComparison.CurrentCultureIgnoreCase))
+            .Where(r => trimmed.Length == 0 || CreateFromSearch.ResultContains(r, trimmed))
             .OrderBy(r => r.RecordTypeId)
             .ThenBy(r => r.RecordTitle, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
