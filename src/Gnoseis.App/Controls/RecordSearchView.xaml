@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    One search: the search box, the filter chips, then the results (best match, one group per type,
+    more in other types, create from search) or, before typing, the recently changed records.
+    Used by the search page and the link picker (with check boxes).
+-->
+<UserControl
+    x:Class="Gnoseis.App.Controls.RecordSearchView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls"
+    xmlns:helpers="using:Gnoseis.App.Helpers"
+    xmlns:vm="using:Gnoseis.App.ViewModels"
+    IsTabStop="False">
+
+    <UserControl.Resources>
+        <CollectionViewSource x:Name="GroupsSource" IsSourceGrouped="True" />
+
+        <!-- The All chip: the standard toggle button (accent when selected), as a pill. -->
+        <Style x:Key="AllChipStyle" TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
+            <Setter Property="CornerRadius" Value="16" />
+            <Setter Property="Padding" Value="12,5,12,6" />
+        </Style>
+
+        <Style x:Key="SearchRowContainerStyle" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="MinHeight" Value="48" />
+        </Style>
+
+        <!-- A result row: tile or picture, highlighted title, context line; in the picker a check box or "Linked". -->
+        <DataTemplate x:Key="SearchRowTemplate" x:DataType="vm:SearchRow">
+            <Grid AutomationProperties.Name="{x:Bind AutomationName}">
+                <!-- A ticked row takes its type's fill. -->
+                <Border Style="{x:Bind helpers:RecordTypeStyles.Fill(Type)}" Visibility="{x:Bind IsChecked, Mode=OneWay}" />
+                <Grid Padding="12,6" ColumnSpacing="12" Opacity="{x:Bind RowOpacity}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <PersonPicture
+                        Width="32"
+                        Height="32"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AccessibilityView="Raw"
+                        DisplayName="{x:Bind Title}"
+                        Style="{StaticResource ContactPictureStyle}"
+                        Visibility="{x:Bind IsPerson}" />
+                    <controls:TypeTile
+                        Width="32"
+                        Height="32"
+                        VerticalAlignment="Center"
+                        CornerRadius="6"
+                        FontSize="15"
+                        Type="{x:Bind Type}"
+                        Visibility="{x:Bind ShowTile}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                        <controls:HighlightedText
+                            Ranges="{x:Bind Highlights}"
+                            Text="{x:Bind Title}"
+                            TextStyle="{StaticResource BodyTextBlockStyle}"
+                            Type="{x:Bind Type}" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            MaxLines="1"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind Context}"
+                            TextTrimming="CharacterEllipsis"
+                            TextWrapping="NoWrap" />
+                    </StackPanel>
+                    <CheckBox
+                        Grid.Column="2"
+                        MinWidth="0"
+                        Margin="0,0,-8,0"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="{x:Bind Title}"
+                        Click="Check_Click"
+                        IsChecked="{x:Bind IsChecked, Mode=OneWay}"
+                        Tag="{x:Bind}"
+                        Visibility="{x:Bind CanCheck}" />
+                    <StackPanel
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="4"
+                        Visibility="{x:Bind IsLinked}">
+                        <FontIcon FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Glyph="{x:Bind helpers:Glyphs.Link}" />
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="Linked" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </DataTemplate>
+
+        <!-- Sticky group header: the type glyph and name in its outline colour, then "· N"; or "Recently changed". -->
+        <DataTemplate x:Key="SearchGroupHeaderTemplate" x:DataType="vm:SearchRowGroup">
+            <StackPanel
+                AutomationProperties.HeadingLevel="Level2"
+                AutomationProperties.Name="{x:Bind AutomationName}"
+                Orientation="Horizontal"
+                Spacing="8">
+                <FontIcon
+                    VerticalAlignment="Center"
+                    AutomationProperties.AccessibilityView="Raw"
+                    FontSize="14"
+                    Glyph="{x:Bind Glyph}"
+                    Style="{x:Bind helpers:RecordTypeStyles.Glyph(GlyphType)}"
+                    Visibility="{x:Bind HasType}" />
+                <TextBlock Style="{x:Bind helpers:Converters.SearchGroupHeaderStyle(Type)}" Text="{x:Bind Header}" />
+                <TextBlock
+                    VerticalAlignment="Center"
+                    AutomationProperties.AccessibilityView="Raw"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind CountText}" />
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- The best match: a card on the type's fill with its links per type. -->
+        <DataTemplate x:Key="BestMatchTemplate" x:DataType="vm:SearchRow">
+            <Grid>
+                <Border Style="{x:Bind helpers:RecordTypeStyles.Card(Type)}" />
+                <Button
+                    Padding="16,14"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch"
+                    AutomationProperties.Name="{x:Bind BestMatchAutomationName}"
+                    Click="BestMatch_Click"
+                    CornerRadius="8"
+                    Style="{StaticResource RowButtonStyle}">
+                    <Grid ColumnSpacing="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <PersonPicture
+                            Width="48"
+                            Height="48"
+                            VerticalAlignment="Top"
+                            AutomationProperties.AccessibilityView="Raw"
+                            DisplayName="{x:Bind Title}"
+                            Style="{StaticResource ContactPictureStyle}"
+                            Visibility="{x:Bind IsPerson}" />
+                        <controls:TypeTile
+                            Width="48"
+                            Height="48"
+                            VerticalAlignment="Top"
+                            CornerRadius="8"
+                            FontSize="20"
+                            Type="{x:Bind Type}"
+                            Visibility="{x:Bind ShowTile}" />
+                        <StackPanel Grid.Column="1" Margin="0,0,32,0" Spacing="2">
+                            <TextBlock Style="{x:Bind helpers:RecordTypeStyles.Label(Type)}" Text="Best match" />
+                            <controls:HighlightedText
+                                Ranges="{x:Bind Highlights}"
+                                Text="{x:Bind Title}"
+                                TextStyle="{StaticResource BodyLargeTextBlockStyle}"
+                                Type="{x:Bind Type}" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                MaxLines="1"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind TypeAndContext}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="NoWrap" />
+                            <ItemsControl
+                                Margin="0,6,0,0"
+                                IsTabStop="False"
+                                ItemsSource="{x:Bind LinkCounts, Mode=OneWay}"
+                                Visibility="{x:Bind HasLinkCounts, Mode=OneWay}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="16" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:TypeLinkCountView">
+                                        <StackPanel
+                                            AutomationProperties.Name="{x:Bind AutomationName}"
+                                            Orientation="Horizontal"
+                                            Spacing="5"
+                                            ToolTipService.ToolTip="{x:Bind AutomationName}">
+                                            <FontIcon FontSize="13" Glyph="{x:Bind Glyph}" Style="{x:Bind helpers:RecordTypeStyles.Glyph(Type)}" />
+                                            <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind CountText}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Grid>
+                </Button>
+                <CheckBox
+                    MinWidth="0"
+                    Margin="0,12,4,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    AutomationProperties.Name="{x:Bind Title}"
+                    Click="Check_Click"
+                    IsChecked="{x:Bind IsChecked, Mode=OneWay}"
+                    Tag="{x:Bind}"
+                    Visibility="{x:Bind CanCheck}" />
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <AutoSuggestBox
+            x:Name="QueryBox"
+            QueryIcon="Find"
+            Text="{x:Bind Model.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, FallbackValue=''}" />
+
+        <TextBlock
+            Grid.Row="1"
+            Margin="0,8,0,0"
+            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+            Style="{StaticResource CaptionTextBlockStyle}"
+            Text="{x:Bind Model.Hint, Mode=OneWay, FallbackValue=''}"
+            Visibility="{x:Bind Model.HasHint, Mode=OneWay, FallbackValue=Collapsed}" />
+
+        <ScrollViewer
+            Grid.Row="2"
+            Margin="0,12,0,0"
+            HorizontalScrollBarVisibility="Auto"
+            HorizontalScrollMode="Auto"
+            IsTabStop="False"
+            VerticalScrollBarVisibility="Disabled"
+            VerticalScrollMode="Disabled">
+            <StackPanel
+                x:Name="ChipsPanel"
+                Padding="0,0,0,4"
+                AutomationProperties.Name="Filter by type"
+                Orientation="Horizontal"
+                Spacing="8"
+                TabFocusNavigation="Once"
+                XYFocusKeyboardNavigation="Enabled" />
+        </ScrollViewer>
+
+        <ListView
+            x:Name="ResultList"
+            Grid.Row="3"
+            Margin="0,8,0,0"
+            Padding="0,0,0,24"
+            VerticalAlignment="Top"
+            IsItemClickEnabled="True"
+            IsSynchronizedWithCurrentItem="False"
+            ItemClick="ResultList_ItemClick"
+            ItemContainerStyle="{StaticResource SearchRowContainerStyle}"
+            ItemTemplate="{StaticResource SearchRowTemplate}"
+            SelectionMode="None">
+            <ListView.GroupStyle>
+                <GroupStyle HeaderTemplate="{StaticResource SearchGroupHeaderTemplate}" />
+            </ListView.GroupStyle>
+            <ListView.Header>
+                <StackPanel>
+                    <TextBlock
+                        Margin="0,12,0,8"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource BodyTextBlockStyle}"
+                        Text="{x:Bind Model.NoMatchText, Mode=OneWay, FallbackValue=''}"
+                        Visibility="{x:Bind Model.HasNoMatchText, Mode=OneWay, FallbackValue=Collapsed}" />
+                    <ContentPresenter
+                        x:Name="BestMatchPresenter"
+                        Margin="0,4,0,4"
+                        HorizontalContentAlignment="Stretch"
+                        Content="{x:Bind Model.BestMatch, Mode=OneWay, FallbackValue={x:Null}}"
+                        ContentTemplate="{StaticResource BestMatchTemplate}"
+                        Visibility="{x:Bind Model.HasBestMatch, Mode=OneWay, FallbackValue=Collapsed}" />
+                </StackPanel>
+            </ListView.Header>
+            <ListView.Footer>
+                <StackPanel>
+                    <!-- From a section: the matches of the types the chips hide. -->
+                    <Grid Margin="0,16,0,0" Visibility="{x:Bind Model.ShowsMore, Mode=OneWay, FallbackValue=Collapsed}">
+                        <Rectangle
+                            RadiusX="8"
+                            RadiusY="8"
+                            Stroke="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                            StrokeDashArray="4,3"
+                            StrokeThickness="1" />
+                        <Grid Padding="16,8,8,8" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel
+                                x:Name="MoreDots"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AccessibilityView="Raw"
+                                Orientation="Horizontal"
+                                Spacing="3" />
+                            <TextBlock
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind Model.MoreText, Mode=OneWay, FallbackValue=''}" />
+                            <Button Grid.Column="2" Click="ShowAllTypes_Click" Content="Show all types" />
+                        </Grid>
+                    </Grid>
+                    <!-- After the results when none has exactly the name searched for. -->
+                    <controls:CreateFromSearchPanel x:Name="CreatePanel" CreateRequested="CreatePanel_CreateRequested" />
+                </StackPanel>
+            </ListView.Footer>
+        </ListView>
+
+        <!-- In place of the list when nothing matches. -->
+        <controls:CreateFromSearchPanel
+            x:Name="NoResultsCreatePanel"
+            Grid.Row="3"
+            Margin="0,8,0,0"
+            VerticalAlignment="Top"
+            CreateRequested="CreatePanel_CreateRequested" />
+    </Grid>
+</UserControl>

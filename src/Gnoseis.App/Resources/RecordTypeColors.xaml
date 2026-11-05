@@ -267,4 +267,222 @@
         <Setter Property="Foreground" Value="{ThemeResource ItemOutlineBrush}" />
     </Style>
 
+    <!--
+        Search (results, best match and the link picker). Picked by type through RecordTypeStyles:
+        "<Type>CardStyle" the best match card (fill and outline), "<Type>FillStyle" a ticked row (fill),
+        "<Type>LabelTextStyle" a small label in the outline colour, "<Type>DotStyle" a dot in the outline colour.
+    -->
+    <Style x:Key="NoteCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource NoteFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource NoteOutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style x:Key="ContactCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource ContactFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ContactOutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style x:Key="OrganizationCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource OrganizationFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource OrganizationOutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style x:Key="CategoryCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CategoryFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CategoryOutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style x:Key="ItemCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource ItemFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ItemOutlineBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style x:Key="UnknownCardStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+    <Style x:Key="NoteFillStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource NoteFillBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style x:Key="ContactFillStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource ContactFillBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style x:Key="OrganizationFillStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource OrganizationFillBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style x:Key="CategoryFillStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource CategoryFillBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style x:Key="ItemFillStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource ItemFillBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style x:Key="UnknownFillStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+        <Setter Property="CornerRadius" Value="4" />
+    </Style>
+    <Style x:Key="NoteLabelTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource NoteOutlineBrush}" />
+    </Style>
+    <Style x:Key="ContactLabelTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource ContactOutlineBrush}" />
+    </Style>
+    <Style x:Key="OrganizationLabelTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource OrganizationOutlineBrush}" />
+    </Style>
+    <Style x:Key="CategoryLabelTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource CategoryOutlineBrush}" />
+    </Style>
+    <Style x:Key="ItemLabelTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource ItemOutlineBrush}" />
+    </Style>
+    <Style x:Key="UnknownLabelTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+    </Style>
+    <Style x:Key="NoteDotStyle" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{ThemeResource NoteOutlineBrush}" />
+    </Style>
+    <Style x:Key="ContactDotStyle" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{ThemeResource ContactOutlineBrush}" />
+    </Style>
+    <Style x:Key="OrganizationDotStyle" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{ThemeResource OrganizationOutlineBrush}" />
+    </Style>
+    <Style x:Key="CategoryDotStyle" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{ThemeResource CategoryOutlineBrush}" />
+    </Style>
+    <Style x:Key="ItemDotStyle" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{ThemeResource ItemOutlineBrush}" />
+    </Style>
+    <Style x:Key="UnknownDotStyle" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+
+    <!--
+        A search filter chip for a type: a pill with the default control look; selected, the type's fill
+        with its outline border. Picked by "<Type>ChipStyle". (The All chip is the standard toggle button.)
+    -->
+    <Style x:Key="TypeChipBaseStyle" TargetType="ToggleButton">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="16" />
+        <Setter Property="Padding" Value="12,5,12,6" />
+        <Setter Property="FontFamily" Value="{ThemeResource ContentControlThemeFontFamily}" />
+        <Setter Property="FontSize" Value="{ThemeResource ControlContentThemeFontSize}" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualMargin" Value="-3" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid>
+                        <Border
+                            x:Name="PlainLayer"
+                            Background="{ThemeResource ControlFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}" />
+                        <Border
+                            x:Name="SelectedLayer"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Opacity="0" />
+                        <ContentPresenter
+                            x:Name="ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}" />
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="PlainLayer.Background" Value="{ThemeResource ControlFillColorSecondaryBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="PlainLayer.Background" Value="{ThemeResource ControlFillColorTertiaryBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="SelectedLayer.Opacity" Value="1" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="SelectedLayer.Opacity" Value="0.9" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="SelectedLayer.Opacity" Value="0.8" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedDisabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="SelectedLayer.Opacity" Value="1" />
+                                        <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="NoteChipStyle" TargetType="ToggleButton" BasedOn="{StaticResource TypeChipBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource NoteFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource NoteOutlineBrush}" />
+    </Style>
+    <Style x:Key="ContactChipStyle" TargetType="ToggleButton" BasedOn="{StaticResource TypeChipBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource ContactFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ContactOutlineBrush}" />
+    </Style>
+    <Style x:Key="OrganizationChipStyle" TargetType="ToggleButton" BasedOn="{StaticResource TypeChipBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource OrganizationFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource OrganizationOutlineBrush}" />
+    </Style>
+    <Style x:Key="CategoryChipStyle" TargetType="ToggleButton" BasedOn="{StaticResource TypeChipBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource CategoryFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource CategoryOutlineBrush}" />
+    </Style>
+    <Style x:Key="ItemChipStyle" TargetType="ToggleButton" BasedOn="{StaticResource TypeChipBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource ItemFillBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ItemOutlineBrush}" />
+    </Style>
+    <Style x:Key="UnknownChipStyle" TargetType="ToggleButton" BasedOn="{StaticResource TypeChipBaseStyle}">
+        <Setter Property="Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{ThemeResource ControlStrongStrokeColorDefaultBrush}" />
+    </Style>
+
 </ResourceDictionary>

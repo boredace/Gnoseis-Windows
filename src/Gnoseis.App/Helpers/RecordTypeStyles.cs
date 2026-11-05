@@ -37,6 +37,21 @@ public static class RecordTypeStyles
     public static Style GroupHeader(RecordType? type) =>
         Find(type is { } t && KeyOf(t) is { } key ? $"{key}GroupHeaderTextStyle" : "GroupHeaderTextStyle");
 
+    /// <summary>A card on the type's fill with its outline border (the best match in search).</summary>
+    public static Style Card(RecordType type) => Find($"{KeyOf(type) ?? "Unknown"}CardStyle");
+
+    /// <summary>A background in the type's fill (a ticked row in the link picker).</summary>
+    public static Style Fill(RecordType type) => Find($"{KeyOf(type) ?? "Unknown"}FillStyle");
+
+    /// <summary>A small semibold label in the type's outline colour ("Best match").</summary>
+    public static Style Label(RecordType type) => Find($"{KeyOf(type) ?? "Unknown"}LabelTextStyle");
+
+    /// <summary>A dot in the type's outline colour.</summary>
+    public static Style Dot(RecordType type) => Find($"{KeyOf(type) ?? "Unknown"}DotStyle");
+
+    /// <summary>A search filter chip that takes the type's fill and outline when selected.</summary>
+    public static Style Chip(RecordType type) => Find($"{KeyOf(type) ?? "Unknown"}ChipStyle");
+
     /// <summary>True if the user has a high-contrast theme on.</summary>
     public static bool IsHighContrast => Accessibility.HighContrast;
 
