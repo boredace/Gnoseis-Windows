@@ -16,8 +16,8 @@ The Windows app does everything the Android app does:
 - Link any record to records of other types, either by picking existing records or by creating a
   new linked record from a record's page.
 - All records linked to a record shown on its page, by type with counts, and unlinked with Undo.
-- Search across all record types, and create a record from a search that finds no record with that
-  name.
+- Search across all record types, with ranked results, type filters and a best match, and create a
+  record from a search that finds no record with that name.
 - Back up the database to a file and restore it (Android: Settings › Import / Export).
 
 ## Solution layout
@@ -170,8 +170,15 @@ Gnoseis is meant to stay open all day, so the Windows version is built around qu
 switching and seeing related information at a glance.
 
 - **Windows 11 title bar** with Back, the navigation pane toggle, and a search box that is always
-  there (Ctrl+F). Search suggests matching records as you type; Enter shows all results, from 3
-  characters. A contact is found as "Last, First" and as "First Last". When nothing is found, or
+  there (Ctrl+F). Search suggests the best matching records as you type; Enter opens the search
+  page, from 3 characters. Results are ranked: an exact title first, then titles that start with
+  the search, then a word that starts with it, then the rest, and the record with more links first
+  within each. The top result is shown as the **best match**, with its links per type; the others
+  are grouped by type, with the matched part highlighted and a line of context (a contact's job and
+  company, a note's day, the link count). Type chips with counts narrow the results to one or more
+  types. Before you type, the page shows the recently changed records. Enter in a section's filter
+  box opens the search for that section's type. Back returns to the same search. A contact is
+  found as "Last, First" and as "First Last". When nothing is found, or
   nothing has exactly the name searched for, the results offer to create a note, contact,
   organization, category or item with that name: it opens ready to edit, with the name filled in (a
   contact's words split into first and last name).
@@ -204,8 +211,10 @@ switching and seeing related information at a glance.
 - **Editing happens in place** in the record pane, on one edit page for every type, with Save
   (Ctrl+S) and Cancel (Esc). A record created with **New linked** shows which record it will be
   linked to. You're asked before unsaved changes are lost, including when you click another record.
-- **Linking** existing records uses a picker dialog with search and multi-select. Records that are
-  already linked are dimmed. When the search finds no record with that name, the picker offers to
+- **Linking** existing records uses a picker dialog with the same search, chips and best match as
+  the search page, and multi-select. Records stay ticked through later searches and chips until
+  you untick them; a strip shows how many are ticked, and **Show selected** lists them all. Records
+  that are already linked are dimmed. When the search finds no record with that name, the picker offers to
   create one, linked to the record it was opened from; records already ticked are linked too.
 - **Delete** asks first (the safe answer is the default), then moves on to the next record.
 - **Colours per record type**: the same colours as Gnoseis for Android, in light and dark theme, so
