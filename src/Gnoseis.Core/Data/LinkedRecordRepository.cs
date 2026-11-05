@@ -43,63 +43,12 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
         {
             using var connection = Database.OpenConnection();
             var records = new List<LinkedRecordSummary>();
-
-            Read(connection, "Note", recordId, records, r =>
+            var withParents = new List<(RecordType Type, string Id, string ParentId)>();
+            foreach (var type in RecordTypeExtensions.UserTypes)
             {
-                var note = MapNote(r);
-                return new LinkedRecordSummary
-                {
-                    Id = note.Id,
-                    Type = RecordType.Note,
-                    Name = note.Title?.Trim() ?? "",
-                    FirstLine = RecordText.FirstLine(note.TextContents),
-                    Text = RecordText.OneLine(note.TextContents),
-                    NoteDate = note.CreateDate,
-                    NoteDateTime = note.CreateDateTime,
-                };
-            });
-            Read(connection, "Contact", recordId, records, r =>
-            {
-                var contact = MapContact(r);
-                return new LinkedRecordSummary
-                {
-                    Id = contact.Id,
-                    Type = RecordType.Contact,
-                    Name = RecordText.ContactFullName(contact),
-                    JobAndCompany = RecordText.JobAndCompany(contact),
-                    MainContact = RecordText.MainContact(contact),
-                    SortName = $"{contact.NameLast.Trim()}\u0001{contact.NameFirst?.Trim()}",
-                };
-            });
-            Read(connection, "Organization", recordId, records, r =>
-            {
-                var organization = MapOrganization(r);
-                return Named(organization.Id, RecordType.Organization, organization.OrganizationName, organization.Comments);
-            });
-
-            var categoryParents = new List<(string Id, string ParentId)>();
-            Read(connection, "Category", recordId, records, r =>
-            {
-                var category = MapCategory(r);
-                if (!string.IsNullOrEmpty(category.ParentId))
-                {
-                    categoryParents.Add((category.Id, category.ParentId));
-                }
-                return Named(category.Id, RecordType.Category, category.CategoryName, category.Comments);
-            });
-            var itemParents = new List<(string Id, string ParentId)>();
-            Read(connection, "Item", recordId, records, r =>
-            {
-                var item = MapItem(r);
-                if (!string.IsNullOrEmpty(item.ParentId))
-                {
-                    itemParents.Add((item.Id, item.ParentId));
-                }
-                return Named(item.Id, RecordType.Item, item.ItemName, item.Comments);
-            });
-
-            AddParentPaths(connection, RecordType.Category, "categoryName", categoryParents, records);
-            AddParentPaths(connection, RecordType.Item, "itemName", itemParents, records);
+                Read(connection, type, recordId, records, withParents);
+            }
+            RecordSummaries.AddParentPaths(connection, withParents, records);
             return new LinkedRecordSet(records);
         });
 
@@ -116,49 +65,23 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
         "(SELECT count(*) FROM (SELECT record2Id FROM LinkedRecord WHERE record1Id = t.id " +
         "UNION SELECT record1Id FROM LinkedRecord WHERE record2Id = t.id))";
 
-    private static void Read(SqliteConnection connection, string table, string recordId, List<LinkedRecordSummary> records,
-        Func<SqliteDataReader, LinkedRecordSummary> map)
+    private static void Read(SqliteConnection connection, RecordType type, string recordId, List<LinkedRecordSummary> records,
+        List<(RecordType Type, string Id, string ParentId)> withParents)
     {
         using var command = CreateCommand(connection,
             $"SELECT t.*, lr.linkedAt AS linkedAt, {LinkCountSql} AS linkCount " +
-            $"FROM ({LinkedIdsWithTimeSql}) AS lr JOIN `{table}` AS t ON t.id = lr.linkedRecordId;",
+            $"FROM ({LinkedIdsWithTimeSql}) AS lr JOIN `{RecordSummaries.TableOf(type)}` AS t ON t.id = lr.linkedRecordId;",
             [("$recordId", recordId)]);
         using var reader = command.ExecuteReader();
         var linkedAt = reader.GetOrdinal("linkedAt");
         var linkCount = reader.GetOrdinal("linkCount");
         while (reader.Read())
         {
-            records.Add(map(reader) with
+            records.Add(RecordSummaries.Map(type, reader, withParents) with
             {
                 LinkedAt = reader.IsDBNull(linkedAt) ? null : reader.GetInt64(linkedAt),
                 LinkCount = reader.GetInt32(linkCount),
             });
-        }
-    }
-
-    private static LinkedRecordSummary Named(string id, RecordType type, string name, string? comments) => new()
-    {
-        Id = id,
-        Type = type,
-        Name = name.Trim(),
-        FirstLine = RecordText.FirstLine(comments),
-        SortName = name.Trim(),
-    };
-
-    /// <summary>Sets the parent path of each record: its parents' names, top first, joined by " › ".</summary>
-    private static void AddParentPaths(SqliteConnection connection, RecordType type, string nameColumn,
-        List<(string Id, string ParentId)> withParents, List<LinkedRecordSummary> records)
-    {
-        if (withParents.Count == 0)
-        {
-            return;
-        }
-
-        var tree = LoadParentTree(connection, type, nameColumn);
-        foreach (var (id, parentId) in withParents)
-        {
-            var index = records.FindIndex(r => r.Type == type && r.Id == id);
-            records[index] = records[index] with { ParentPath = ParentPath(tree, id, parentId) };
         }
     }
 

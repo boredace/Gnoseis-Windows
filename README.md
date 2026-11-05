@@ -175,8 +175,16 @@ switching and seeing related information at a glance.
   nothing has exactly the name searched for, the results offer to create a note, contact,
   organization, category or item with that name: it opens ready to edit, with the name filled in (a
   contact's words split into first and last name).
-- **Home**: a quick-note box (Ctrl+Enter adds the note), the number of notes, contacts, organizations,
-  categories and items, recent notes, and the records you opened recently.
+- **Home**: an overview of the whole database. Buttons at the top add a note, contact,
+  organization, category or item. Count tiles show how many records of each type there are (each
+  opens its list) and how many links. **Most linked** shows the records with the most links as
+  bubbles in their type's colours, bigger for more links, with dashed lines between records linked
+  to each other; a type picker shows one type at a time, and a bubble opens its record. A chart
+  shows the notes written on each of the last 14 days, and **Unlinked notes** lists the newest notes
+  not linked to anything yet, each with a **Link** button. **Recent notes** and **Recently opened**
+  list records with what they hold and their link counts. A reminder at the bottom says when the
+  database has never been backed up, or when records changed or were deleted since the last backup,
+  with **Back up now**. On a narrow window the sections stack in one column.
 - **List and record side by side** in every section, like Mail and Outlook. You can move through the
   list with the arrow keys. A filter box narrows the list. Notes are grouped by *Today*,
   *Yesterday*, weekday and date, and the other lists by first letter.

@@ -64,7 +64,7 @@
     <Style x:Key="RowBodyPrimaryTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}" />
 
     <!--
-        A linked record's row (record page, and later Home): the type tile (initials for contacts),
+        A linked record's row (record page and Home): the type tile (initials for contacts),
         up to three lines of stored data, and the record's link count on the right.
     -->
     <DataTemplate x:Key="LinkedRowTemplate" x:DataType="vm:LinkedRow">
@@ -130,7 +130,8 @@
                 AutomationProperties.Name="{x:Bind LinkCountAutomationName}"
                 Orientation="Horizontal"
                 Spacing="4"
-                ToolTipService.ToolTip="{x:Bind LinkCountAutomationName}">
+                ToolTipService.ToolTip="{x:Bind LinkCountAutomationName}"
+                Visibility="{x:Bind ShowsLinkCount}">
                 <FontIcon
                     FontSize="11"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
@@ -150,6 +151,87 @@
             Style="{x:Bind helpers:RecordTypeStyles.GroupHeader(Type)}"
             Text="{x:Bind Header}" />
     </DataTemplate>
+
+    <!-- Home's notes chart: bars in the Note outline colour, days without notes as a thin neutral line -->
+    <Style x:Key="NotesChartBarStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource NoteOutlineBrush}" />
+        <Setter Property="CornerRadius" Value="2,2,0,0" />
+    </Style>
+    <Style x:Key="NotesChartEmptyBarStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource ControlStrongStrokeColorDisabledBrush}" />
+    </Style>
+    <Style x:Key="NotesChartDayTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
+    <Style x:Key="NotesChartTodayTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
+
+    <!--
+        A Most linked bubble on Home: a circle in the record's type fill with a 1 px outline. The colours,
+        size and corner radius are set in code (Controls/MostLinkedChart), from the record type colours.
+    -->
+    <Style x:Key="BubbleButtonStyle" TargetType="Button">
+        <Setter Property="Padding" Value="8" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualMargin" Value="-3" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid>
+                        <Ellipse
+                            x:Name="Circle"
+                            Fill="{TemplateBinding Background}"
+                            Stroke="{TemplateBinding BorderBrush}"
+                            StrokeThickness="1" />
+                        <ContentPresenter
+                            x:Name="ContentPresenter"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Content="{TemplateBinding Content}"
+                            Foreground="{TemplateBinding Foreground}" />
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal" />
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Circle.StrokeThickness" Value="2" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Circle.StrokeThickness" Value="2" />
+                                        <Setter Target="ContentPresenter.Opacity" Value="0.8" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- A bubble's name: primary text; the glyph and count take the type's outline colour from the bubble. -->
+    <Style x:Key="BubbleNameTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="MaxLines" Value="2" />
+        <Setter Property="TextAlignment" Value="Center" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- A dashed line between two Most linked bubbles whose records are linked to each other. -->
+    <Style x:Key="BubbleLinkLineStyle" TargetType="Line">
+        <Setter Property="Stroke" Value="{ThemeResource ControlStrongStrokeColorDefaultBrush}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="StrokeDashArray" Value="4,3" />
+    </Style>
 
     <!-- A list row button used where rows sit inside a scrolling page (linked records, Home). -->
     <Style x:Key="RowButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
