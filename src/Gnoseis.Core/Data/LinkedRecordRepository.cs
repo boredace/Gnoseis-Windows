@@ -154,33 +154,11 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
             return;
         }
 
-        var tree = new Dictionary<string, (string? ParentId, string Name)>(StringComparer.Ordinal);
-        using (var command = CreateCommand(connection, $"SELECT id, parentId, {nameColumn} FROM `{type}`;", []))
-        using (var reader = command.ExecuteReader())
-        {
-            while (reader.Read())
-            {
-                tree[reader.GetString(0)] = (reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? "" : reader.GetString(2).Trim());
-            }
-        }
-
+        var tree = LoadParentTree(connection, type, nameColumn);
         foreach (var (id, parentId) in withParents)
         {
-            var names = new List<string>();
-            var seen = new HashSet<string>(StringComparer.Ordinal) { id };
-            var current = parentId;
-            // Stops at a missing parent or a loop.
-            while (current != null && seen.Add(current) && tree.TryGetValue(current, out var parent))
-            {
-                if (parent.Name.Length > 0)
-                {
-                    names.Add(parent.Name);
-                }
-                current = string.IsNullOrEmpty(parent.ParentId) ? null : parent.ParentId;
-            }
-            names.Reverse();
             var index = records.FindIndex(r => r.Type == type && r.Id == id);
-            records[index] = records[index] with { ParentPath = string.Join(" › ", names) };
+            records[index] = records[index] with { ParentPath = ParentPath(tree, id, parentId) };
         }
     }
 

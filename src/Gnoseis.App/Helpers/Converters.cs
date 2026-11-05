@@ -17,6 +17,10 @@ public static class Converters
 
     public static Visibility VisibleWhenFalse(bool value) => value ? Visibility.Collapsed : Visibility.Visible;
 
+    /// <summary>The style of a linked row's body line (see RecordTemplates.xaml).</summary>
+    public static Style RowBodyStyle(bool primary) =>
+        (Style)Application.Current.Resources[primary ? "RowBodyPrimaryTextStyle" : "RowBodyTextStyle"];
+
     /// <summary>Tooltip text with its keyboard shortcut, e.g. "New note (Ctrl+N)".</summary>
     public static string Shortcut(string text, string keys) => $"{text} ({keys})";
 }

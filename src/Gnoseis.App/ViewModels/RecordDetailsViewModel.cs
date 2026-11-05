@@ -8,7 +8,7 @@
 
 namespace Gnoseis.App.ViewModels;
 
-/// <summary>One value on the details tab, e.g. a phone number with its label.</summary>
+/// <summary>One value in the Details section, e.g. a phone number with its label.</summary>
 public sealed class DetailField(string value, string label, Uri? link = null)
 {
     public string Value { get; } = value;
@@ -16,24 +16,18 @@ public sealed class DetailField(string value, string label, Uri? link = null)
     public Uri? Link { get; } = link;
     public bool HasLink => Link != null;
     public bool HasNoLink => Link == null;
+
+    /// <summary>A divider above the field: every field of a group but the first.</summary>
+    public bool HasDivider { get; init; }
+
+    public Microsoft.UI.Xaml.Thickness DividerThickness => new(0, HasDivider ? 1 : 0, 0, 0);
 }
 
-/// <summary>A titled block of fields on the details tab (e.g. "Phone").</summary>
-public sealed class DetailSection(string header, string glyph, IReadOnlyList<DetailField> fields)
+/// <summary>A titled group of fields in the Details section (e.g. "Phone"), shown as one card.</summary>
+public sealed class DetailSection(string header, IReadOnlyList<DetailField> fields)
 {
     public string Header { get; } = header;
-    public string Glyph { get; } = glyph;
     public IReadOnlyList<DetailField> Fields { get; } = fields;
-}
-
-/// <summary>A tab of linked records of one type ("Contacts (3)").</summary>
-public sealed class LinkedTab(RecordType type, IReadOnlyList<RecordRow> rows)
-{
-    public RecordType Type { get; } = type;
-    public IReadOnlyList<RecordRow> Rows { get; } = rows;
-    public string Header => Type.PluralDisplayName();
-    public string CountText => Rows.Count.ToString(System.Globalization.CultureInfo.CurrentCulture);
-    public string Glyph => Glyphs.For(Type);
 }
 
 /// <summary>Details of one record and the records linked to it (all five Android details pages).</summary>
@@ -43,7 +37,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
     private string _subtitle = "";
     private string _body = "";
     private IReadOnlyList<DetailSection> _sections = [];
-    private IReadOnlyList<LinkedTab> _tabs = [];
+    private LinkedRecordSet _linked = LinkedRecordSet.Empty;
     private bool _isMissing;
     private bool _isLoaded;
     private int _loadVersion;
@@ -108,30 +102,27 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
 
     public bool HasNoDetails => IsLoaded && !HasBody && !HasSections;
 
-    public string NoDetailsText => Type == RecordType.Note ? "This note has no content" : $"This {TypeName.ToLowerInvariant()} has no details";
+    public string NoDetailsText => "No details";
 
-    public IReadOnlyList<LinkedTab> Tabs
+    /// <summary>The linked records by type, sorted by count (most first).</summary>
+    public LinkedRecordSet Linked
     {
-        get => _tabs;
+        get => _linked;
         private set
         {
-            if (SetProperty(ref _tabs, value))
-            {
-                OnPropertyChanged(nameof(LinkedRecordCount));
-                OnPropertyChanged(nameof(HasLinks));
-                OnPropertyChanged(nameof(HasNoLinks));
-                OnPropertyChanged(nameof(LinkedHeader));
-            }
+            _linked = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(LinkedRecordCount));
+            OnPropertyChanged(nameof(HasLinks));
+            OnPropertyChanged(nameof(HasNoLinks));
         }
     }
 
-    public int LinkedRecordCount => Tabs.Sum(t => t.Rows.Count);
+    public int LinkedRecordCount => Linked.TotalCount;
 
     public bool HasLinks => LinkedRecordCount > 0;
 
     public bool HasNoLinks => IsLoaded && LinkedRecordCount == 0;
-
-    public string LinkedHeader => LinkedRecordCount == 0 ? "Linked records" : $"Linked records ({LinkedRecordCount})";
 
     public bool IsNote => Type == RecordType.Note;
 
@@ -140,7 +131,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
     public bool ShowTypeTile => !IsContact;
 
     /// <summary>Heading of the comments card of contacts, organizations, categories and items.</summary>
-    public string BodyHeader => Type == RecordType.Contact ? "Comments" : "Description";
+    public string BodyHeader => "Comments";
 
     public bool ShowBodyCard => HasBody && !IsNote;
 
@@ -174,7 +165,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
         }
     }
 
-    /// <summary>Raised after a load, so the page can rebuild its tab bar.</summary>
+    /// <summary>Raised after a load, so the page can rebuild its selector and linked records.</summary>
     public event EventHandler? Loaded;
 
     public async Task LoadAsync()
@@ -184,7 +175,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
         try
         {
             var found = await LoadRecordAsync();
-            var linked = found ? await Data.LinkedRecords.GetLinkedRecordsAsync(Record.Id) : LinkedRecords.Empty;
+            var linked = found ? await Data.LinkedRecords.GetLinkedRecordSetAsync(Record.Id) : LinkedRecordSet.Empty;
             if (version != _loadVersion)
             {
                 return;
@@ -198,7 +189,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
                 Body = "";
                 Sections = [];
             }
-            Tabs = BuildTabs(linked);
+            Linked = linked;
             IsLoaded = true;
             if (found && !_addedToRecents)
             {
@@ -218,7 +209,11 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
 
     public Task DeleteAsync() => Data.DeleteRecord.InvokeAsync(Record.Id, Type);
 
-    public Task UnlinkAsync(RecordRow row) => Data.UnlinkRecords.InvokeAsync(Record.Id, row.Id);
+    /// <summary>Unlinks the row's record from this one. Returns the removed link (for Undo), or null if they weren't linked.</summary>
+    public Task<LinkedRecord?> UnlinkAsync(LinkedRow row) => Data.UnlinkRecords.InvokeAsync(Record.Id, row.Id);
+
+    /// <summary>Undo of <see cref="UnlinkAsync"/>: links the two records again, the same way round.</summary>
+    public Task UndoUnlinkAsync(LinkedRecord removed) => Data.UnlinkRecords.UndoAsync(removed);
 
     /// <summary>Text of the delete confirmation (same wording as the Android dialog).</summary>
     public string DeleteConfirmationText
@@ -253,7 +248,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
                     return false;
                 }
                 Title = RecordRows.NoteTitleAndPreview(note).Title;
-                Subtitle = RecordRows.FormatNoteDate(note);
+                Subtitle = RecordRows.NoteDayText(note);
                 Body = note.TextContents ?? "";
                 return true;
 
@@ -263,8 +258,8 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
                 {
                     return false;
                 }
-                Title = contact.DisplayName;
-                Subtitle = "";
+                Title = RecordText.ContactFullName(contact) is { Length: > 0 } name ? name : TypeName;
+                Subtitle = RecordText.JobAndCompany(contact);
                 Sections = BuildContactSections(contact);
                 Body = contact.Comments ?? "";
                 return true;
@@ -286,6 +281,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
                     return false;
                 }
                 Title = category.CategoryName;
+                Subtitle = await Data.Categories.GetParentPathAsync(category);
                 Body = category.Comments ?? "";
                 return true;
 
@@ -296,6 +292,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
                     return false;
                 }
                 Title = item.ItemName;
+                Subtitle = await Data.Items.GetParentPathAsync(item);
                 Body = item.Comments ?? "";
                 return true;
 
@@ -307,37 +304,28 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
     private static List<DetailSection> BuildContactSections(Contact contact)
     {
         var sections = new List<DetailSection>();
-
-        var company = Fields((contact.Company, "Company", null), (contact.JobTitle, "Job title", null));
-        if (company.Count > 0)
-        {
-            sections.Add(new DetailSection("Company", Glyphs.Organization, company));
-        }
-
-        var phones = Fields(
+        AddSection(sections, "Work", (contact.Company, "Company", null), (contact.JobTitle, "Job title", null));
+        AddSection(sections, "Phone",
             (contact.PhoneMain, "Main", "tel:"), (contact.PhoneWork, "Work", "tel:"),
             (contact.PhoneHome, "Home", "tel:"), (contact.PhoneMobile, "Mobile", "tel:"));
-        if (phones.Count > 0)
-        {
-            sections.Add(new DetailSection("Phone", Glyphs.Phone, phones));
-        }
-
-        var emails = Fields(
+        AddSection(sections, "E-mail",
             (contact.EmailMain, "Main", "mailto:"), (contact.EmailWork, "Work", "mailto:"),
             (contact.EmailHome, "Home", "mailto:"), (contact.EmailMobile, "Mobile", "mailto:"));
-        if (emails.Count > 0)
-        {
-            sections.Add(new DetailSection("Email", Glyphs.Mail, emails));
-        }
-
         return sections;
     }
 
-    private static List<DetailField> Fields(params (string? Value, string Label, string? Scheme)[] values) =>
-        values
+    /// <summary>Adds a group with the values that aren't blank; an empty group is left out.</summary>
+    private static void AddSection(List<DetailSection> sections, string header, params (string? Value, string Label, string? Scheme)[] values)
+    {
+        var fields = values
             .Where(v => !string.IsNullOrWhiteSpace(v.Value))
-            .Select(v => new DetailField(v.Value!, v.Label, MakeLink(v.Scheme, v.Value!)))
+            .Select((v, index) => new DetailField(v.Value!.Trim(), v.Label, MakeLink(v.Scheme, v.Value!)) { HasDivider = index > 0 })
             .ToList();
+        if (fields.Count > 0)
+        {
+            sections.Add(new DetailSection(header, fields));
+        }
+    }
 
     private static Uri? MakeLink(string? scheme, string value)
     {
@@ -347,19 +335,5 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
         }
         var target = scheme == "tel:" ? new string(value.Where(c => char.IsDigit(c) || c == '+').ToArray()) : value.Trim();
         return target.Length > 0 && Uri.TryCreate(scheme + target, UriKind.Absolute, out var uri) ? uri : null;
-    }
-
-    private static List<LinkedTab> BuildTabs(LinkedRecords linked)
-    {
-        var tabs = new List<LinkedTab>
-        {
-            new(RecordType.Note, linked.Notes.Select(n => RecordRows.FromNote(n, mixedList: true)).ToList()),
-            new(RecordType.Contact, linked.Contacts.Select(c => RecordRows.FromContact(c, mixedList: true)).ToList()),
-            new(RecordType.Organization, linked.Organizations.Select(o => RecordRows.FromOrganization(o, mixedList: true)).ToList()),
-            new(RecordType.Category, linked.Categories.Select(c => RecordRows.FromCategory(c, mixedList: true)).ToList()),
-            new(RecordType.Item, linked.Items.Select(i => RecordRows.FromItem(i, mixedList: true)).ToList()),
-        };
-        // Same order as Android: the type with the most links first.
-        return tabs.Where(t => t.Rows.Count > 0).OrderByDescending(t => t.Rows.Count).ToList();
     }
 }

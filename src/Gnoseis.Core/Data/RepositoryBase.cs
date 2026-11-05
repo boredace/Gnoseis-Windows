@@ -73,6 +73,52 @@ public abstract class RepositoryBase(GnoseisDatabase database)
         return reader.IsDBNull(ordinal) ? 0 : reader.GetInt64(ordinal);
     }
 
+    // ---------- Parent paths of categories and items
+
+    /// <summary>Every row's parent and name, for building parent paths.</summary>
+    internal static Dictionary<string, (string? ParentId, string Name)> LoadParentTree(SqliteConnection connection, RecordType type, string nameColumn)
+    {
+        var tree = new Dictionary<string, (string? ParentId, string Name)>(StringComparer.Ordinal);
+        using var command = CreateCommand(connection, $"SELECT id, parentId, {nameColumn} FROM `{type}`;", []);
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            tree[reader.GetString(0)] = (reader.IsDBNull(1) ? null : reader.GetString(1), reader.IsDBNull(2) ? "" : reader.GetString(2).Trim());
+        }
+        return tree;
+    }
+
+    /// <summary>
+    /// The names of a record's parents, top first, joined by " › ". Stops at a missing parent or a loop;
+    /// empty for a top-level record.
+    /// </summary>
+    internal static string ParentPath(Dictionary<string, (string? ParentId, string Name)> tree, string id, string? parentId)
+    {
+        var names = new List<string>();
+        var seen = new HashSet<string>(StringComparer.Ordinal) { id };
+        var current = string.IsNullOrEmpty(parentId) ? null : parentId;
+        while (current != null && seen.Add(current) && tree.TryGetValue(current, out var parent))
+        {
+            if (parent.Name.Length > 0)
+            {
+                names.Add(parent.Name);
+            }
+            current = string.IsNullOrEmpty(parent.ParentId) ? null : parent.ParentId;
+        }
+        names.Reverse();
+        return string.Join(" › ", names);
+    }
+
+    /// <summary>The parent path of a category or item (see <see cref="ParentPath"/>).</summary>
+    protected Task<string> GetParentPathAsync(RecordType type, string nameColumn, string id, string? parentId) =>
+        string.IsNullOrEmpty(parentId)
+            ? Task.FromResult("")
+            : Task.Run(() =>
+            {
+                using var connection = Database.OpenConnection();
+                return ParentPath(LoadParentTree(connection, type, nameColumn), id, parentId);
+            });
+
     // ---------- Mappers (column names are case-insensitive in SQLite and in GetOrdinal) ----------
 
     internal static Note MapNote(SqliteDataReader r) => new()

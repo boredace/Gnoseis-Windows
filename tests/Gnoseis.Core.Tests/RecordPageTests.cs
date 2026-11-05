@@ -146,6 +146,8 @@ public class RecordPageTests : IDisposable
         Assert.Equal("", Row(root.Id).ParentPath);
         Assert.Equal("", Row(orphan.Id).ParentPath);
         Assert.NotNull(Row(note.Id).LinkedAt);
+        Assert.Equal("Flooring › Oak", await _data.Categories.GetParentPathAsync(leaf));
+        Assert.Equal("", await _data.Categories.GetParentPathAsync(root));
     }
 
     [Fact]

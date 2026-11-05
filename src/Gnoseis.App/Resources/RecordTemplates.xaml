@@ -57,6 +57,92 @@
         </Grid>
     </DataTemplate>
 
+    <!-- The body line of a linked row: secondary text, or primary for a note without a title -->
+    <Style x:Key="RowBodyTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Style>
+    <Style x:Key="RowBodyPrimaryTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}" />
+
+    <!--
+        A linked record's row (record page, and later Home): the type tile (initials for contacts),
+        up to three lines of stored data, and the record's link count on the right.
+    -->
+    <DataTemplate x:Key="LinkedRowTemplate" x:DataType="vm:LinkedRow">
+        <Grid Padding="0,8" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <PersonPicture
+                Width="32"
+                Height="32"
+                VerticalAlignment="Top"
+                AutomationProperties.AccessibilityView="Raw"
+                DisplayName="{x:Bind Title}"
+                Style="{StaticResource ContactPictureStyle}"
+                Visibility="{x:Bind IsPerson}" />
+            <controls:TypeTile
+                Width="32"
+                Height="32"
+                VerticalAlignment="Top"
+                AutomationProperties.AccessibilityView="Raw"
+                CornerRadius="6"
+                FontSize="15"
+                Type="{x:Bind Type}"
+                Visibility="{x:Bind ShowTile}" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock
+                    MaxLines="1"
+                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                    Text="{x:Bind Title}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"
+                    Visibility="{x:Bind HasTitle}" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    MaxLines="1"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind Path}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"
+                    Visibility="{x:Bind HasPath}" />
+                <TextBlock
+                    MaxLines="{x:Bind BodyMaxLines}"
+                    Style="{x:Bind helpers:Converters.RowBodyStyle(BodyIsPrimary)}"
+                    Text="{x:Bind Body}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="Wrap"
+                    Visibility="{x:Bind HasBody}" />
+                <TextBlock
+                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                    MaxLines="1"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind Accent}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap"
+                    Visibility="{x:Bind HasAccent}" />
+            </StackPanel>
+            <StackPanel
+                Grid.Column="2"
+                Margin="0,2,0,0"
+                VerticalAlignment="Top"
+                AutomationProperties.Name="{x:Bind LinkCountAutomationName}"
+                Orientation="Horizontal"
+                Spacing="4"
+                ToolTipService.ToolTip="{x:Bind LinkCountAutomationName}">
+                <FontIcon
+                    FontSize="11"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Glyph="{x:Bind helpers:Glyphs.Link}" />
+                <TextBlock
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind LinkCountText}" />
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
     <!-- Sticky group header: a day or first letter in the accent colour, a record type in its outline colour. -->
     <DataTemplate x:Key="RecordGroupHeaderTemplate" x:DataType="vm:RecordGroup">
         <TextBlock
