@@ -36,6 +36,27 @@ public sealed class LinksCard(int count)
     public string AutomationName => $"{CountText} {Label}";
 }
 
+/// <summary>A type in the Most linked legend: its glyph and plural name.</summary>
+public sealed class LegendEntry(RecordType type)
+{
+    public RecordType Type { get; } = type;
+    public string Glyph => Glyphs.For(Type);
+    public string Name => Type.PluralDisplayName();
+}
+
+/// <summary>What the Most linked card shows.</summary>
+public enum MostLinkedState
+{
+    /// <summary>Nothing is linked yet: a message, no type picker.</summary>
+    NoLinks,
+
+    /// <summary>The picked type has no linked records: a message and "Show all types".</summary>
+    TypeEmpty,
+
+    /// <summary>The bubbles.</summary>
+    Bubbles,
+}
+
 /// <summary>
 /// Home: counts, Most linked, notes per day, unlinked notes, recent notes, recently opened records
 /// and the backup reminder. Reloads whenever data changes.
@@ -51,7 +72,12 @@ public sealed class HomeViewModel : PageViewModel
     private IReadOnlyList<LinkedCard> _unlinkedNotes = [];
     private int _unlinkedCount;
     private IReadOnlyList<LinkedRow> _recentlyOpened = [];
+    private IReadOnlyList<MostLinkedRecord> _mostLinked = [];
+    private IReadOnlyList<LinkEnds> _mostLinkedLinks = [];
+    private IReadOnlyList<TypeLinkCount> _linksPerType = [];
+    private RecordType? _selectedType;
     private int _loadVersion;
+    private int _mostLinkedVersion;
 
     public string Greeting => DateTime.Now.Hour switch
     {
@@ -69,6 +95,75 @@ public sealed class HomeViewModel : PageViewModel
     public IReadOnlyList<object> CountTiles { get => _countTiles; private set => SetProperty(ref _countTiles, value); }
 
     public IEnumerable<StatCard> TypeCounts => CountTiles.OfType<StatCard>();
+
+    // ---------- Most linked
+
+    /// <summary>The bubbles: the records with the most links, most first.</summary>
+    public IReadOnlyList<MostLinkedRecord> MostLinked => _mostLinked;
+
+    /// <summary>The links between the records shown (the dashed lines).</summary>
+    public IReadOnlyList<LinkEnds> MostLinkedLinks => _mostLinkedLinks;
+
+    /// <summary>The types with links, in type order, for the type picker.</summary>
+    public IReadOnlyList<TypeLinkCount> LinksPerType => _linksPerType;
+
+    /// <summary>The type picked in the type picker, or null for all types.</summary>
+    public RecordType? SelectedType => _selectedType;
+
+    public MostLinkedState MostLinkedState =>
+        _mostLinked.Count > 0 ? MostLinkedState.Bubbles
+        : _selectedType != null ? MostLinkedState.TypeEmpty
+        : MostLinkedState.NoLinks;
+
+    /// <summary>"Bigger bubble, more records link to it", or "Items with the most links".</summary>
+    public string MostLinkedSubtitle => _selectedType is { } type
+        ? $"{type.PluralDisplayName()} with the most links"
+        : "Bigger bubble, more records link to it";
+
+    /// <summary>"No linked items yet".</summary>
+    public string TypeEmptyText => _selectedType is { } type
+        ? $"No linked {type.PluralDisplayName().ToLower(CultureInfo.CurrentCulture)} yet"
+        : "";
+
+    /// <summary>The types among the bubbles, in type order (the All view only).</summary>
+    public IReadOnlyList<LegendEntry> Legend => _selectedType == null
+        ? _mostLinked.Select(r => r.Type).Distinct().Order().Select(t => new LegendEntry(t)).ToList()
+        : [];
+
+    /// <summary>Shows the records of one type, or of all types (null).</summary>
+    public async Task SelectTypeAsync(RecordType? type)
+    {
+        if (_selectedType == type)
+        {
+            return;
+        }
+        _selectedType = type;
+        await LoadMostLinkedAsync();
+    }
+
+    private async Task LoadMostLinkedAsync()
+    {
+        var version = ++_mostLinkedVersion;
+        var perTypeTask = Data.Home.GetLinksPerTypeAsync();
+        var top = await Data.Home.GetMostLinkedAsync(_selectedType);
+        var links = await Data.Home.GetLinksAmongAsync(top.Select(r => r.Id).ToList());
+        var perType = await perTypeTask;
+        if (version != _mostLinkedVersion)
+        {
+            return;
+        }
+        _mostLinked = top;
+        _mostLinkedLinks = links;
+        _linksPerType = perType;
+        OnPropertyChanged(nameof(MostLinked));
+        OnPropertyChanged(nameof(MostLinkedLinks));
+        OnPropertyChanged(nameof(LinksPerType));
+        OnPropertyChanged(nameof(SelectedType));
+        OnPropertyChanged(nameof(MostLinkedState));
+        OnPropertyChanged(nameof(MostLinkedSubtitle));
+        OnPropertyChanged(nameof(TypeEmptyText));
+        OnPropertyChanged(nameof(Legend));
+    }
 
     // ---------- Notes, last 14 days
 
@@ -161,7 +256,8 @@ public sealed class HomeViewModel : PageViewModel
             var unlinkedTask = home.GetUnlinkedNotesAsync(UnlinkedNoteCount);
             var recentTask = home.GetRecentNotesAsync(RecentNoteCount);
             var openedTask = home.GetRecordSummariesAsync(App.Settings.RecentRecords.Select(r => (r.Type, r.Id)).ToList());
-            await Task.WhenAll(countsTask, perDayTask, unlinkedTask, recentTask, openedTask);
+            var mostLinkedTask = LoadMostLinkedAsync();
+            await Task.WhenAll(countsTask, perDayTask, unlinkedTask, recentTask, openedTask, mostLinkedTask);
             if (version != _loadVersion)
             {
                 return;

@@ -248,6 +248,84 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel x:Name="MainColumn" Spacing="16">
+                        <!-- Most linked -->
+                        <Border x:Name="MostLinkedCard" Style="{StaticResource CardStyle}">
+                            <Grid RowSpacing="8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Most linked" />
+                                        <TextBlock Style="{StaticResource HomeCardSubtitleStyle}" Text="{x:Bind ViewModel.MostLinkedSubtitle, Mode=OneWay}" />
+                                    </StackPanel>
+                                    <DropDownButton
+                                        x:Name="TypePicker"
+                                        Grid.Column="1"
+                                        VerticalAlignment="Top">
+                                        <DropDownButton.Flyout>
+                                            <MenuFlyout x:Name="TypeMenu" Placement="BottomEdgeAlignedRight" />
+                                        </DropDownButton.Flyout>
+                                    </DropDownButton>
+                                </Grid>
+
+                                <Grid x:Name="BubbleArea" Grid.Row="1" Height="440">
+                                    <controls:MostLinkedChart x:Name="Bubbles" RecordInvoked="Bubbles_RecordInvoked" />
+                                    <TextBlock
+                                        x:Name="NoLinksText"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource SecondaryTextStyle}"
+                                        Text="Link records to see them here" />
+                                    <StackPanel
+                                        x:Name="TypeEmptyPanel"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Spacing="8">
+                                        <controls:TypeTile
+                                            x:Name="TypeEmptyTile"
+                                            Width="48"
+                                            Height="48"
+                                            HorizontalAlignment="Center"
+                                            CornerRadius="24"
+                                            FontSize="20" />
+                                        <TextBlock
+                                            HorizontalAlignment="Center"
+                                            Style="{StaticResource SecondaryTextStyle}"
+                                            Text="{x:Bind ViewModel.TypeEmptyText, Mode=OneWay}" />
+                                        <HyperlinkButton HorizontalAlignment="Center" Click="ShowAllTypes_Click" Content="Show all types" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <ItemsControl
+                                    x:Name="LegendList"
+                                    Grid.Row="2"
+                                    AutomationProperties.Name="Legend"
+                                    IsTabStop="False"
+                                    ItemsSource="{x:Bind ViewModel.Legend, Mode=OneWay}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="16" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:LegendEntry">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <FontIcon FontSize="12" Glyph="{x:Bind Glyph}" Style="{x:Bind helpers:RecordTypeStyles.Glyph(Type)}" />
+                                                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Name}" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </Grid>
+                        </Border>
+
                         <Grid x:Name="PairGrid" ColumnSpacing="16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />

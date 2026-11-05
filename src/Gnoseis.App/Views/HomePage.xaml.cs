@@ -7,7 +7,9 @@
  */
 
 using System.ComponentModel;
+using System.Globalization;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
@@ -32,6 +34,8 @@ public sealed partial class HomePage : Page
     {
         InitializeComponent();
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        TypeMenu.Opening += (_, _) => BuildTypeMenu();
+        UpdateMostLinked();
     }
 
     public HomeViewModel ViewModel { get; } = new();
@@ -59,6 +63,9 @@ public sealed partial class HomePage : Page
                 break;
             case nameof(HomeViewModel.HasNoUnlinkedNotes):
                 UpdatePair();
+                break;
+            case nameof(HomeViewModel.MostLinkedState):
+                UpdateMostLinked();
                 break;
         }
     }
@@ -94,6 +101,75 @@ public sealed partial class HomePage : Page
         PairSecondColumn.Width = ViewModel.HasNoUnlinkedNotes ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
         PairGrid.ColumnSpacing = ViewModel.HasNoUnlinkedNotes ? 0 : 16;
     }
+
+    // ---------- Most linked
+
+    /// <summary>The bubbles or an empty state, and the type picker's label.</summary>
+    private void UpdateMostLinked()
+    {
+        var state = ViewModel.MostLinkedState;
+        Bubbles.Show(ViewModel.MostLinked, ViewModel.MostLinkedLinks);
+        Bubbles.Visibility = state == MostLinkedState.Bubbles ? Visibility.Visible : Visibility.Collapsed;
+        NoLinksText.Visibility = state == MostLinkedState.NoLinks ? Visibility.Visible : Visibility.Collapsed;
+        TypeEmptyPanel.Visibility = state == MostLinkedState.TypeEmpty ? Visibility.Visible : Visibility.Collapsed;
+        TypePicker.Visibility = state == MostLinkedState.NoLinks ? Visibility.Collapsed : Visibility.Visible;
+        LegendList.Visibility = state == MostLinkedState.Bubbles && ViewModel.SelectedType == null ? Visibility.Visible : Visibility.Collapsed;
+        if (ViewModel.SelectedType is { } type)
+        {
+            TypeEmptyTile.Type = type;
+        }
+
+        var label = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        if (ViewModel.SelectedType is { } picked)
+        {
+            label.Children.Add(new FontIcon { FontSize = 14, Glyph = Glyphs.For(picked), Style = RecordTypeStyles.Glyph(picked) });
+            label.Children.Add(new TextBlock { Text = picked.PluralDisplayName() });
+        }
+        else
+        {
+            label.Children.Add(new TextBlock { Text = "All types" });
+        }
+        TypePicker.Content = label;
+        AutomationProperties.SetName(TypePicker,
+            $"Most linked type: {(ViewModel.SelectedType is { } t ? t.PluralDisplayName() : "All types")}");
+    }
+
+    /// <summary>All types, then the types with links, each with its number of links; a check on the current one.</summary>
+    private void BuildTypeMenu()
+    {
+        TypeMenu.Items.Clear();
+        TypeMenu.Items.Add(TypeMenuItem(null, "All types", ""));
+        TypeMenu.Items.Add(new MenuFlyoutSeparator());
+        foreach (var perType in ViewModel.LinksPerType)
+        {
+            var count = perType.LinkCount == 1 ? "1 link" : $"{perType.LinkCount.ToString("N0", CultureInfo.CurrentCulture)} links";
+            TypeMenu.Items.Add(TypeMenuItem(perType.Type, perType.Type.PluralDisplayName(), count));
+        }
+    }
+
+    private ToggleMenuFlyoutItem TypeMenuItem(RecordType? type, string text, string count)
+    {
+        var item = new ToggleMenuFlyoutItem
+        {
+            Text = text,
+            IsChecked = ViewModel.SelectedType == type,
+            // Shown right-aligned, where a shortcut would be.
+            KeyboardAcceleratorTextOverride = count,
+        };
+        if (type is { } t)
+        {
+            // Menus are popups and don't follow the page's theme: brushes for the theme the page shows.
+            item.Icon = new FontIcon { Glyph = Glyphs.For(t), Foreground = RecordTypeStyles.Brush(this, t, ColorRole.Outline) };
+            AutomationProperties.SetName(item, $"{text}, {count}");
+        }
+        item.Click += async (_, _) => await ViewModel.SelectTypeAsync(type);
+        return item;
+    }
+
+    private async void ShowAllTypes_Click(object sender, RoutedEventArgs e) => await ViewModel.SelectTypeAsync(null);
+
+    private async void Bubbles_RecordInvoked(object? sender, MostLinkedRecord record) =>
+        await Navigator.OpenRecordAsync(new RecordRef(record.Type, record.Id));
 
     private async void AddNew_Click(object sender, RoutedEventArgs e)
     {
