@@ -81,7 +81,7 @@ public class LinkSearchDeleteTests : IDisposable
         var contact = await _data.Contacts.AddContactAsync(new Contact { NameLast = "Smith" });
         await _data.LinkedRecords.AddLinkedRecordAsync(Link(note.Id, RecordType.Note, contact.Id, RecordType.Contact));
 
-        await _data.LinkedRecords.DeleteLinkAsync(contact.Id, note.Id);
+        await _data.UnlinkRecords.InvokeAsync(contact.Id, note.Id);
 
         Assert.Equal(0, (await _data.LinkedRecords.GetLinkedRecordsAsync(note.Id)).TotalCount);
         Assert.NotNull(await _data.Contacts.GetContactAsync(contact.Id));

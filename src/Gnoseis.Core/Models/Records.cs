@@ -83,6 +83,9 @@ public sealed record LinkedRecord
     public required string Record2Id { get; init; }
     public required int Record1TypeId { get; init; }
     public required int Record2TypeId { get; init; }
+
+    /// <summary>UTC epoch ms when the link was made; null for links made before schema v3.</summary>
+    public long? CreatedAt { get; init; }
 }
 
 public sealed record LinkedRecordTypeCount(int RecordTypeId, int Count)

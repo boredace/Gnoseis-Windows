@@ -218,7 +218,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
 
     public Task DeleteAsync() => Data.DeleteRecord.InvokeAsync(Record.Id, Type);
 
-    public Task UnlinkAsync(RecordRow row) => Data.LinkedRecords.DeleteLinkAsync(Record.Id, row.Id);
+    public Task UnlinkAsync(RecordRow row) => Data.UnlinkRecords.InvokeAsync(Record.Id, row.Id);
 
     /// <summary>Text of the delete confirmation (same wording as the Android dialog).</summary>
     public string DeleteConfirmationText

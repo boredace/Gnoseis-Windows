@@ -100,12 +100,12 @@ public class SettingsTests : IDisposable
         var a = await _data.Contacts.AddContactAsync(new Contact { NameLast = "A" });
         var b = await _data.Contacts.AddContactAsync(new Contact { NameLast = "B" });
 
-        Assert.Equal(0, await _data.LinkedRecords.DeleteLinkAsync(a.Id, b.Id));
+        Assert.Null(await _data.UnlinkRecords.InvokeAsync(a.Id, b.Id));
         Assert.Null(await _data.Settings.GetLastDeletionAtAsync());
 
         await _data.LinkedRecords.AddLinkedRecordsAsync(a.Id, RecordType.Contact, [new SearchResult(b.Id, (int)RecordType.Contact, "B")]);
         var before = EpochTime.UtcNowMillis();
-        Assert.Equal(1, await _data.LinkedRecords.DeleteLinkAsync(b.Id, a.Id));
+        Assert.NotNull(await _data.UnlinkRecords.InvokeAsync(b.Id, a.Id));
 
         Assert.InRange((await _data.Settings.GetLastDeletionAtAsync())!.Value, before, EpochTime.UtcNowMillis());
     }
