@@ -129,6 +129,10 @@ public sealed class CategoryRepository(GnoseisDatabase database) : RepositoryBas
     public Task<Category?> GetCategoryAsync(string id) =>
         QuerySingleAsync("SELECT * FROM Category WHERE id = $id;", MapCategory, ("$id", id));
 
+    /// <summary>The names of the category's parents, top first, joined by " › "; empty for a top-level category.</summary>
+    public Task<string> GetParentPathAsync(Category category) =>
+        GetParentPathAsync(RecordType.Category, "categoryName", category.Id, category.ParentId);
+
     public async Task<Category> AddCategoryAsync(Category category)
     {
         await ExecuteAsync(RecordType.Category,
@@ -159,6 +163,10 @@ public sealed class ItemRepository(GnoseisDatabase database) : RepositoryBase(da
 
     public Task<Item?> GetItemAsync(string id) =>
         QuerySingleAsync("SELECT * FROM Item WHERE id = $id;", MapItem, ("$id", id));
+
+    /// <summary>The names of the item's parents, top first, joined by " › "; empty for a top-level item.</summary>
+    public Task<string> GetParentPathAsync(Item item) =>
+        GetParentPathAsync(RecordType.Item, "itemName", item.Id, item.ParentId);
 
     public async Task<Item> AddItemAsync(Item item)
     {

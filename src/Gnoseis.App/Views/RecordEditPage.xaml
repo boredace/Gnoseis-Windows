@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Gnoseis.App.Views.RecordEditPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls"
+    xmlns:helpers="using:Gnoseis.App.Helpers"
+    SizeChanged="Page_SizeChanged">
+
+    <!-- One edit page for every record type: header, then the type's fields -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header: title, Save and Cancel (under the title in a narrow pane) -->
+        <Grid
+            x:Name="Header"
+            Margin="{StaticResource PageMargin}"
+            ColumnSpacing="8"
+            RowSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock
+                VerticalAlignment="Center"
+                AutomationProperties.HeadingLevel="Level1"
+                Style="{StaticResource TitleTextBlockStyle}"
+                Text="{x:Bind ViewModel.PageTitle}"
+                TextTrimming="CharacterEllipsis" />
+            <StackPanel
+                x:Name="Commands"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="8">
+                <Button
+                    MinWidth="96"
+                    Click="Save_Click"
+                    Content="Save"
+                    IsEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
+                    Style="{StaticResource AccentButtonStyle}"
+                    ToolTipService.ToolTip="Save (Ctrl+S)">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="S" Modifiers="Control" />
+                    </Button.KeyboardAccelerators>
+                </Button>
+                <Button
+                    MinWidth="96"
+                    Click="Cancel_Click"
+                    Content="Cancel"
+                    ToolTipService.ToolTip="Cancel (Esc)">
+                    <Button.KeyboardAccelerators>
+                        <KeyboardAccelerator Key="Escape" />
+                    </Button.KeyboardAccelerators>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- "Will be linked to": a new record created from another record. Outside the scrolling area, so it stays visible. -->
+        <Grid Grid.Row="1" Margin="36,0,36,4" Visibility="{x:Bind ViewModel.HasLinkSource, Mode=OneWay}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="{StaticResource FormMaxWidth}" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <!-- Not clickable. Screen readers get one text: "Will be linked to <type> <name>". -->
+            <Border Padding="14,10" Style="{StaticResource CardStyle}">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <PersonPicture
+                        Width="36"
+                        Height="36"
+                        AutomationProperties.AccessibilityView="Raw"
+                        DisplayName="{x:Bind ViewModel.LinkSourceName, Mode=OneWay}"
+                        Style="{StaticResource ContactPictureStyle}"
+                        Visibility="{x:Bind ViewModel.LinkSourceIsContact, Mode=OneWay}" />
+                    <controls:TypeTile
+                        Width="36"
+                        Height="36"
+                        AutomationProperties.AccessibilityView="Raw"
+                        CornerRadius="8"
+                        FontSize="16"
+                        Type="{x:Bind ViewModel.LinkSourceType, Mode=OneWay}"
+                        Visibility="{x:Bind ViewModel.LinkSourceShowsTile, Mode=OneWay}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock
+                            AutomationProperties.AccessibilityView="Raw"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.LinkSourceCaption, Mode=OneWay}" />
+                        <TextBlock
+                            AutomationProperties.Name="{x:Bind ViewModel.LinkSourceAutomationName, Mode=OneWay}"
+                            MaxLines="1"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="{x:Bind ViewModel.LinkSourceName, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis"
+                            TextWrapping="NoWrap" />
+                    </StackPanel>
+                    <FontIcon
+                        Grid.Column="2"
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="14"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Glyph="{x:Bind helpers:Glyphs.Link}" />
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- The type's fields: a left-aligned form that grows up to FormMaxWidth -->
+        <ScrollViewer Grid.Row="2" Padding="{StaticResource PageContentMargin}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="{StaticResource FormMaxWidth}" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ContentPresenter x:Name="FieldsPresenter" />
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>

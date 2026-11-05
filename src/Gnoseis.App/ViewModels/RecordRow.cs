@@ -165,6 +165,13 @@ public static class RecordRows
         return $"{utc.ToString("D", CultureInfo.CurrentCulture)}, {utc.ToString("t", CultureInfo.CurrentCulture)}";
     }
 
+    /// <summary>A note's day and short weekday, "2026-10-28 · Wed" (the day as the note list groups it).</summary>
+    public static string NoteDayText(Note note)
+    {
+        var day = EpochTime.ToUtcDate(note.CreateDate);
+        return $"{day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)} · {day.ToString("ddd", CultureInfo.CurrentCulture)}";
+    }
+
     public static string FormatNoteTime(Note note) =>
         EpochTime.ToUtc(note.CreateDateTime).UtcDateTime.ToString("t", CultureInfo.CurrentCulture);
 

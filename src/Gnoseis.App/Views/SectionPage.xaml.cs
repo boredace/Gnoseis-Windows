@@ -212,12 +212,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
             return;
         }
 
-        var page = request.Type switch
-        {
-            RecordType.Note => typeof(NoteEditPage),
-            RecordType.Contact => typeof(ContactEditPage),
-            _ => typeof(NamedRecordEditPage),
-        };
+        var page = typeof(RecordEditPage);
 
         if (request.IsNew && request.LinkFrom == null)
         {

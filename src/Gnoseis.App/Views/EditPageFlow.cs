@@ -10,7 +10,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Gnoseis.App.Views;
 
-/// <summary>Load / save / cancel behaviour shared by the three editors, which open in a section's detail pane.</summary>
+/// <summary>Load / save / cancel behaviour of the edit page, which opens in a section's detail pane.</summary>
 internal static class EditPageFlow
 {
     /// <summary>Loads the record; if it no longer exists, tells the user and closes the editor.</summary>
@@ -33,6 +33,11 @@ internal static class EditPageFlow
         var saved = await TrySaveAsync(viewModel);
         if (saved != null)
         {
+            if (viewModel.Request is { IsNew: true, LinkFrom: { } source })
+            {
+                // Back on the source record, show the new record's type.
+                RecordDetailsPage.SelectTypeOnReturn(source.Id, saved.Type);
+            }
             await Navigator.CloseEditorAsync(viewModel.Request, saved);
         }
     }

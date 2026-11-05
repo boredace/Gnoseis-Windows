@@ -11,17 +11,36 @@ using Gnoseis.Core.Domain;
 namespace Gnoseis.Core.Data;
 
 /// <summary>Holds the database and the repositories used by the app (the Android AppContainer).</summary>
-public sealed class AppContainer(GnoseisDatabase database)
+public sealed class AppContainer
 {
-    public GnoseisDatabase Database { get; } = database;
-    public NoteRepository Notes { get; } = new(database);
-    public ContactRepository Contacts { get; } = new(database);
-    public OrganizationRepository Organizations { get; } = new(database);
-    public CategoryRepository Categories { get; } = new(database);
-    public ItemRepository Items { get; } = new(database);
-    public LinkedRecordRepository LinkedRecords { get; } = new(database);
-    public SearchRepository Search { get; } = new(database);
-    public BackupRepository Backup { get; } = new(database);
-    public SettingsRepository Settings { get; } = new(database);
-    public DeleteRecordUseCase DeleteRecord { get; } = new(database);
+    public AppContainer(GnoseisDatabase database)
+    {
+        Database = database;
+        Notes = new(database);
+        Contacts = new(database);
+        Organizations = new(database);
+        Categories = new(database);
+        Items = new(database);
+        LinkedRecords = new(database);
+        Search = new(database);
+        Backup = new(database);
+        Settings = new(database);
+        DeleteRecord = new(database);
+        UnlinkRecords = new(database, LinkedRecords);
+        GetLinkSource = new(Notes, Contacts, Organizations, Categories, Items);
+    }
+
+    public GnoseisDatabase Database { get; }
+    public NoteRepository Notes { get; }
+    public ContactRepository Contacts { get; }
+    public OrganizationRepository Organizations { get; }
+    public CategoryRepository Categories { get; }
+    public ItemRepository Items { get; }
+    public LinkedRecordRepository LinkedRecords { get; }
+    public SearchRepository Search { get; }
+    public BackupRepository Backup { get; }
+    public SettingsRepository Settings { get; }
+    public DeleteRecordUseCase DeleteRecord { get; }
+    public UnlinkRecordsUseCase UnlinkRecords { get; }
+    public GetLinkSourceUseCase GetLinkSource { get; }
 }

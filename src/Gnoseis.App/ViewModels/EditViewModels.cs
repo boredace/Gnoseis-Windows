@@ -64,6 +64,7 @@ public abstract class EditViewModelBase : PageViewModel
     private bool _isValid;
     private bool _isSaving;
     private string _savedSnapshot = "";
+    private LinkSource? _linkSource;
 
     protected EditViewModelBase(EditRequest request)
     {
@@ -104,9 +105,53 @@ public abstract class EditViewModelBase : PageViewModel
 
     public bool IsDirty => Snapshot() != _savedSnapshot;
 
+    /// <summary>
+    /// The record a new linked record will be linked to, shown in the "Will be linked to" card.
+    /// Null for New and Edit, and when that record no longer exists.
+    /// </summary>
+    public LinkSource? LinkSource
+    {
+        get => _linkSource;
+        private set
+        {
+            if (SetProperty(ref _linkSource, value))
+            {
+                OnPropertyChanged(nameof(HasLinkSource));
+                OnPropertyChanged(nameof(LinkSourceType));
+                OnPropertyChanged(nameof(LinkSourceIsContact));
+                OnPropertyChanged(nameof(LinkSourceShowsTile));
+                OnPropertyChanged(nameof(LinkSourceCaption));
+                OnPropertyChanged(nameof(LinkSourceName));
+                OnPropertyChanged(nameof(LinkSourceAutomationName));
+            }
+        }
+    }
+
+    public bool HasLinkSource => LinkSource != null;
+
+    public RecordType LinkSourceType => LinkSource?.Type ?? RecordType.Note;
+
+    /// <summary>A contact source shows its initials, the other types their tile.</summary>
+    public bool LinkSourceIsContact => LinkSource?.Type == RecordType.Contact;
+
+    public bool LinkSourceShowsTile => LinkSource is { Type: not RecordType.Contact };
+
+    /// <summary>"Will be linked to contact".</summary>
+    public string LinkSourceCaption => LinkSource is { } source ? $"Will be linked to {source.Type.DisplayName().ToLowerInvariant()}" : "";
+
+    public string LinkSourceName => LinkSource?.Name ?? "";
+
+    /// <summary>"Will be linked to contact Maria Lindqvist".</summary>
+    public string LinkSourceAutomationName => LinkSource is null ? "" : $"{LinkSourceCaption} {LinkSourceName}";
+
     /// <summary>Loads the record being edited. Returns false if it no longer exists.</summary>
     public async Task<bool> LoadAsync()
     {
+        if (IsNew && Request.LinkFrom is { } linkFrom)
+        {
+            // One lookup when the editor opens; if the source is gone the card stays hidden.
+            LinkSource = await Data.GetLinkSource.InvokeAsync(linkFrom.Type, linkFrom.Id);
+        }
         var found = IsNew || await LoadRecordAsync();
         UpdateValidity();
         _savedSnapshot = Snapshot();
@@ -169,7 +214,7 @@ public abstract class EditViewModelBase : PageViewModel
     protected void UpdateValidity() => IsValid = Validate();
 }
 
-/// <summary>New / edit note (Android NoteEditPage).</summary>
+/// <summary>New / edit note.</summary>
 public sealed class NoteEditViewModel : EditViewModelBase
 {
     private Note? _note;
@@ -238,7 +283,7 @@ public sealed class NoteEditViewModel : EditViewModelBase
     protected override string Snapshot() => $"{NoteTitle.Value}\u0001{Text.Value}\u0001{SelectedDay}";
 }
 
-/// <summary>New / edit contact (Android ContactEditPage).</summary>
+/// <summary>New / edit contact.</summary>
 public sealed class ContactEditViewModel : EditViewModelBase
 {
     private Contact? _contact;
