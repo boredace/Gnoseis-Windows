@@ -169,7 +169,7 @@ public abstract class EditViewModelBase : PageViewModel
     protected void UpdateValidity() => IsValid = Validate();
 }
 
-/// <summary>New / edit note (Android NoteEditPage).</summary>
+/// <summary>New / edit note.</summary>
 public sealed class NoteEditViewModel : EditViewModelBase
 {
     private Note? _note;
@@ -238,7 +238,7 @@ public sealed class NoteEditViewModel : EditViewModelBase
     protected override string Snapshot() => $"{NoteTitle.Value}\u0001{Text.Value}\u0001{SelectedDay}";
 }
 
-/// <summary>New / edit contact (Android ContactEditPage).</summary>
+/// <summary>New / edit contact.</summary>
 public sealed class ContactEditViewModel : EditViewModelBase
 {
     private Contact? _contact;

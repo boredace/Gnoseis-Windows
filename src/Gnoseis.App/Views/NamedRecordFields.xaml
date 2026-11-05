@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Gnoseis.App.Views.NamedRecordFields"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls">
+
+    <!-- The fields of an organization, category or item inside the shared edit page -->
+    <StackPanel Margin="0,16,0,0" Spacing="16">
+        <controls:FormTextBox x:Name="NameBox" Field="{x:Bind ViewModel.Name}" IsRequired="True" />
+        <controls:FormTextBox Field="{x:Bind ViewModel.Description}" Kind="Multiline" />
+    </StackPanel>
+</UserControl>

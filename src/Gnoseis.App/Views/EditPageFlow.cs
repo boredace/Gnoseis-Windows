@@ -10,7 +10,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Gnoseis.App.Views;
 
-/// <summary>Load / save / cancel behaviour shared by the three editors, which open in a section's detail pane.</summary>
+/// <summary>Load / save / cancel behaviour of the edit page, which opens in a section's detail pane.</summary>
 internal static class EditPageFlow
 {
     /// <summary>Loads the record; if it no longer exists, tells the user and closes the editor.</summary>

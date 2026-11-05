@@ -14,8 +14,10 @@ public sealed record RecordRef(RecordType Type, string Id);
 /// <summary>
 /// What an editor edits. <see cref="Id"/> is null for a new record. When <see cref="LinkFrom"/> is
 /// set, the new record is linked to that record after it is saved (the Android NEWLINK mode).
+/// <see cref="PrefillName"/> is a name to fill in for a new record (for creating a record from a
+/// search); not used yet.
 /// </summary>
-public sealed record EditRequest(RecordType Type, string? Id = null, RecordRef? LinkFrom = null)
+public sealed record EditRequest(RecordType Type, string? Id = null, RecordRef? LinkFrom = null, string? PrefillName = null)
 {
     public bool IsNew => Id == null;
 }
