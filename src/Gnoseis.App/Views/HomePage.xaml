@@ -4,146 +4,329 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Gnoseis.App.Controls"
+    xmlns:helpers="using:Gnoseis.App.Helpers"
     xmlns:vm="using:Gnoseis.App.ViewModels"
     SizeChanged="Page_SizeChanged">
 
-    <ScrollViewer>
-        <StackPanel MaxWidth="1180" Margin="36,28,36,36" Spacing="24">
+    <Page.Resources>
+        <Style x:Key="HomeCardTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+            <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
+        </Style>
+        <Style x:Key="HomeCardSubtitleStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
 
-            <!-- Greeting -->
-            <StackPanel Spacing="2">
-                <TextBlock AutomationProperties.HeadingLevel="Level1" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind ViewModel.Greeting}" />
-                <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind ViewModel.DateText}" />
+        <!-- One day of notes in a Home list: the date left and the short weekday right, then the rows, as in the record page's note lists. -->
+        <DataTemplate x:Key="HomeNoteDayTemplate" x:DataType="vm:LinkedCard">
+            <StackPanel>
+                <Grid Margin="0,6,0,0">
+                    <TextBlock
+                        AutomationProperties.HeadingLevel="Level3"
+                        Style="{StaticResource NoteGroupHeaderTextStyle}"
+                        Text="{x:Bind DayHeader}" />
+                    <TextBlock
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Weekday}" />
+                </Grid>
+                <ItemsControl Margin="-10,0" IsTabStop="False" ItemsSource="{x:Bind Rows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LinkedRow">
+                            <Button
+                                AutomationProperties.Name="{x:Bind AutomationName}"
+                                Click="Row_Click"
+                                Content="{x:Bind}"
+                                ContentTemplate="{StaticResource LinkedRowTemplate}"
+                                Style="{StaticResource RowButtonStyle}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
+        </DataTemplate>
 
-            <!-- Quick note -->
-            <Border Style="{StaticResource CardStyle}">
-                <StackPanel Spacing="10">
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <FontIcon FontSize="16" Foreground="{ThemeResource NoteOutlineBrush}" Glyph="&#xE70B;" />
-                        <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Quick note" />
+        <!-- One day of unlinked notes: as above, with a Link button in place of the link count. -->
+        <DataTemplate x:Key="HomeUnlinkedDayTemplate" x:DataType="vm:LinkedCard">
+            <StackPanel>
+                <Grid Margin="0,6,0,0">
+                    <TextBlock
+                        AutomationProperties.HeadingLevel="Level3"
+                        Style="{StaticResource NoteGroupHeaderTextStyle}"
+                        Text="{x:Bind DayHeader}" />
+                    <TextBlock
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Weekday}" />
+                </Grid>
+                <ItemsControl Margin="-10,0,0,0" IsTabStop="False" ItemsSource="{x:Bind Rows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LinkedRow">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Button
+                                    AutomationProperties.Name="{x:Bind AutomationName}"
+                                    Click="Row_Click"
+                                    Content="{x:Bind}"
+                                    ContentTemplate="{StaticResource LinkedRowTemplate}"
+                                    Style="{StaticResource RowButtonStyle}" />
+                                <Button
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.Name="{x:Bind LinkActionName}"
+                                    Click="LinkNote_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon FontSize="14" Glyph="{x:Bind helpers:Glyphs.Link}" />
+                                        <TextBlock Text="Link" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- A count tile that opens its type's list -->
+        <DataTemplate x:Key="TypeCountTemplate" x:DataType="vm:StatCard">
+            <Button
+                AutomationProperties.Name="{x:Bind AutomationName}"
+                Click="StatCard_Click"
+                HorizontalContentAlignment="Stretch"
+                Style="{StaticResource CardButtonStyle}">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <controls:TypeTile Width="40" Height="40" CornerRadius="8" FontSize="18" Type="{x:Bind Type}" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind CountText}" TextWrapping="NoWrap" />
+                        <TextBlock
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind Label}"
+                            TextTrimming="CharacterEllipsis"
+                            TextWrapping="NoWrap" />
                     </StackPanel>
-                    <TextBox
-                        x:Name="QuickTitleBox"
-                        AutomationProperties.Name="Quick note title"
-                        MaxLength="60"
-                        PlaceholderText="Title (optional)"
-                        Text="{x:Bind ViewModel.QuickTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBox
-                        AcceptsReturn="True"
-                        AutomationProperties.Name="Quick note text"
-                        IsSpellCheckEnabled="True"
-                        MinHeight="88"
-                        PlaceholderText="Write down anything. It is saved as a note for today."
-                        Text="{x:Bind ViewModel.QuickText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                        TextWrapping="Wrap" />
-                    <Grid ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <InfoBar
-                            x:Name="QuickNoteInfo"
-                            Padding="0"
-                            VerticalAlignment="Center"
-                            IsClosable="True"
-                            IsOpen="False"
-                            Severity="Success"
-                            Title="Note added" />
-                        <Button
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Click="AddQuickNote_Click"
-                            Content="Add note"
-                            IsEnabled="{x:Bind ViewModel.CanAddQuickNote, Mode=OneWay}"
-                            Style="{StaticResource NoteButtonStyle}"
-                            ToolTipService.ToolTip="Add note (Ctrl+Enter)">
-                            <Button.KeyboardAccelerators>
-                                <KeyboardAccelerator Key="Enter" Modifiers="Control" />
-                            </Button.KeyboardAccelerators>
-                        </Button>
-                    </Grid>
+                    <FontIcon
+                        Grid.Column="2"
+                        VerticalAlignment="Center"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Glyph="&#xE76C;"
+                        Visibility="{x:Bind ShowChevron, Mode=OneWay}" />
+                </Grid>
+            </Button>
+        </DataTemplate>
+
+        <!-- The Links count: not clickable, no chevron -->
+        <DataTemplate x:Key="LinksCountTemplate" x:DataType="vm:LinksCard">
+            <Border
+                Padding="16,14"
+                AutomationProperties.AccessibilityView="Content"
+                AutomationProperties.Name="{x:Bind AutomationName}"
+                Style="{StaticResource CardStyle}">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Border
+                        Width="40"
+                        Height="40"
+                        Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                        <FontIcon FontSize="18" Foreground="{ThemeResource TextFillColorPrimaryBrush}" Glyph="{x:Bind helpers:Glyphs.Link}" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind CountText}" TextWrapping="NoWrap" />
+                        <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Label}" TextWrapping="NoWrap" />
+                    </StackPanel>
                 </StackPanel>
             </Border>
+        </DataTemplate>
+    </Page.Resources>
 
-            <!-- Counts -->
-            <ItemsRepeater ItemsSource="{x:Bind ViewModel.Stats, Mode=OneWay}">
-                <ItemsRepeater.Layout>
-                    <UniformGridLayout ItemsStretch="Fill" MinColumnSpacing="12" MinItemWidth="170" MinRowSpacing="12" />
-                </ItemsRepeater.Layout>
-                <ItemsRepeater.ItemTemplate>
-                    <DataTemplate x:DataType="vm:StatCard">
-                        <Button
-                            AutomationProperties.Name="{x:Bind AutomationName}"
-                            Click="StatCard_Click"
-                            Style="{StaticResource CardButtonStyle}">
-                            <StackPanel Orientation="Horizontal" Spacing="14">
-                                <controls:TypeTile Width="40" Height="40" CornerRadius="8" FontSize="18" Type="{x:Bind Type}" />
-                                <StackPanel VerticalAlignment="Center">
-                                    <TextBlock Style="{StaticResource SubtitleTextBlockStyle}" Text="{x:Bind CountText}" />
-                                    <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Label}" />
-                                </StackPanel>
-                            </StackPanel>
-                        </Button>
-                    </DataTemplate>
-                </ItemsRepeater.ItemTemplate>
-            </ItemsRepeater>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-            <!-- Recent notes and recently opened records -->
-            <Grid x:Name="ListsGrid" ColumnSpacing="16" RowSpacing="16">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition x:Name="SecondListColumn" Width="*" />
-                </Grid.ColumnDefinitions>
+        <ScrollViewer x:Name="PageScroller">
+            <Grid x:Name="ContentRoot" MaxWidth="1180" Margin="36,28" RowSpacing="20">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Border VerticalAlignment="Top" Style="{StaticResource CardStyle}">
-                    <StackPanel Spacing="6">
-                        <Grid>
-                            <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Recent notes" />
-                            <HyperlinkButton Padding="4,0" HorizontalAlignment="Right" Click="AllNotes_Click" Content="All notes" />
-                        </Grid>
-                        <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="No notes yet." Visibility="{x:Bind ViewModel.HasNoRecentNotes, Mode=OneWay}" />
-                        <ItemsControl ItemsSource="{x:Bind ViewModel.RecentNotes, Mode=OneWay}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:RecordRow">
-                                    <Button
-                                        AutomationProperties.Name="{x:Bind AutomationName}"
-                                        Click="Row_Click"
-                                        Content="{x:Bind}"
-                                        ContentTemplate="{StaticResource RecordRowTemplate}"
-                                        Style="{StaticResource RowButtonStyle}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                <!-- Header: greeting and date, Add new -->
+                <Grid x:Name="HeaderGrid" ColumnSpacing="24" RowSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock AutomationProperties.HeadingLevel="Level1" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind ViewModel.Greeting}" />
+                        <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind ViewModel.DateText}" />
                     </StackPanel>
-                </Border>
+                    <StackPanel
+                        x:Name="AddNewPanel"
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        AutomationProperties.Name="Add new"
+                        Orientation="Horizontal"
+                        Spacing="8">
+                        <Button AutomationProperties.Name="New note" Click="AddNew_Click" Style="{StaticResource NoteButtonStyle}" Tag="Note">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="{x:Bind helpers:Glyphs.Note}" />
+                                <TextBlock Text="Note" />
+                            </StackPanel>
+                        </Button>
+                        <Button AutomationProperties.Name="New contact" Click="AddNew_Click" Style="{StaticResource ContactButtonStyle}" Tag="Contact">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="{x:Bind helpers:Glyphs.Contact}" />
+                                <TextBlock Text="Contact" />
+                            </StackPanel>
+                        </Button>
+                        <Button AutomationProperties.Name="New organization" Click="AddNew_Click" Style="{StaticResource OrganizationButtonStyle}" Tag="Organization">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="{x:Bind helpers:Glyphs.Organization}" />
+                                <TextBlock Text="Organization" />
+                            </StackPanel>
+                        </Button>
+                        <Button AutomationProperties.Name="New category" Click="AddNew_Click" Style="{StaticResource CategoryButtonStyle}" Tag="Category">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="{x:Bind helpers:Glyphs.Category}" />
+                                <TextBlock Text="Category" />
+                            </StackPanel>
+                        </Button>
+                        <Button AutomationProperties.Name="New item" Click="AddNew_Click" Style="{StaticResource ItemButtonStyle}" Tag="Item">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="{x:Bind helpers:Glyphs.Item}" />
+                                <TextBlock Text="Item" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </Grid>
 
-                <Border x:Name="RecentlyOpenedCard" Grid.Column="1" VerticalAlignment="Top" Style="{StaticResource CardStyle}">
-                    <StackPanel Spacing="6">
-                        <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Recently opened" />
-                        <TextBlock
-                            Style="{StaticResource SecondaryTextStyle}"
-                            Text="Records you open appear here, so you can get back to them quickly."
-                            Visibility="{x:Bind ViewModel.HasNoRecentlyOpened, Mode=OneWay}" />
-                        <ItemsControl ItemsSource="{x:Bind ViewModel.RecentlyOpened, Mode=OneWay}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:RecordRow">
-                                    <Button
-                                        AutomationProperties.Name="{x:Bind AutomationName}"
-                                        Click="Row_Click"
-                                        Content="{x:Bind}"
-                                        ContentTemplate="{StaticResource RecordRowTemplate}"
-                                        Style="{StaticResource RowButtonStyle}" />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                <!-- Counts: the five types, then Links -->
+                <ItemsRepeater
+                    x:Name="CountTiles"
+                    Grid.Row="1"
+                    SizeChanged="CountTiles_SizeChanged"
+                    ItemsSource="{x:Bind ViewModel.CountTiles, Mode=OneWay}">
+                    <ItemsRepeater.ItemTemplate>
+                        <helpers:CountTileTemplateSelector LinksTemplate="{StaticResource LinksCountTemplate}" TypeTemplate="{StaticResource TypeCountTemplate}" />
+                    </ItemsRepeater.ItemTemplate>
+                    <ItemsRepeater.Layout>
+                        <UniformGridLayout
+                            x:Name="CountTilesLayout"
+                            ItemsStretch="Fill"
+                            MaximumRowsOrColumns="6"
+                            MinColumnSpacing="12"
+                            MinItemWidth="100"
+                            MinRowSpacing="12" />
+                    </ItemsRepeater.Layout>
+                </ItemsRepeater>
+
+                <!-- Two columns: Most linked, chart and unlinked notes; recent notes and recently opened -->
+                <Grid x:Name="ColumnsGrid" Grid.Row="2" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="MainColumnDefinition" Width="2*" />
+                        <ColumnDefinition x:Name="SideColumnDefinition" Width="*" MinWidth="300" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel x:Name="MainColumn" Spacing="16">
+                        <Grid x:Name="PairGrid" ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition x:Name="PairSecondColumn" Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Notes, last 14 days -->
+                            <Border x:Name="ChartCard" VerticalAlignment="Top" Style="{StaticResource CardStyle}">
+                                <StackPanel Spacing="12">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Notes, last 14 days" />
+                                        <TextBlock Style="{StaticResource HomeCardSubtitleStyle}" Text="{x:Bind ViewModel.NotesPerDayText, Mode=OneWay}" />
+                                    </StackPanel>
+                                    <controls:NotesChart Days="{x:Bind ViewModel.NotesPerDay, Mode=OneWay}" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Unlinked notes (hidden when every note is linked) -->
+                            <Border
+                                x:Name="UnlinkedCard"
+                                Grid.Column="1"
+                                VerticalAlignment="Top"
+                                Style="{StaticResource CardStyle}">
+                                <StackPanel Spacing="4">
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Unlinked notes" />
+                                        <TextBlock Style="{StaticResource HomeCardSubtitleStyle}" Text="Notes that aren't linked to anything yet" />
+                                    </StackPanel>
+                                    <ItemsControl
+                                        IsTabStop="False"
+                                        ItemTemplate="{StaticResource HomeUnlinkedDayTemplate}"
+                                        ItemsSource="{x:Bind ViewModel.UnlinkedNotes, Mode=OneWay}" />
+                                    <TextBlock
+                                        Margin="0,8,0,0"
+                                        Style="{StaticResource HomeCardSubtitleStyle}"
+                                        Text="{x:Bind ViewModel.UnlinkedCountText, Mode=OneWay}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
                     </StackPanel>
-                </Border>
+
+                    <StackPanel x:Name="SideColumn" Grid.Column="1" Spacing="16">
+                        <!-- Recent notes -->
+                        <Border x:Name="RecentNotesCard" Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="2">
+                                <Grid>
+                                    <TextBlock VerticalAlignment="Center" Style="{StaticResource HomeCardTitleStyle}" Text="Recent notes" />
+                                    <HyperlinkButton Padding="4,0" HorizontalAlignment="Right" Click="AllNotes_Click" Content="All notes" />
+                                </Grid>
+                                <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="No notes yet." Visibility="{x:Bind ViewModel.HasNoRecentNotes, Mode=OneWay}" />
+                                <ItemsControl IsTabStop="False" ItemTemplate="{StaticResource HomeNoteDayTemplate}" ItemsSource="{x:Bind ViewModel.RecentNotes, Mode=OneWay}" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Recently opened -->
+                        <Border x:Name="RecentlyOpenedCard" Style="{StaticResource CardStyle}">
+                            <StackPanel Spacing="4">
+                                <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Recently opened" />
+                                <TextBlock
+                                    Style="{StaticResource SecondaryTextStyle}"
+                                    Text="Records you open appear here, so you can get back to them quickly."
+                                    Visibility="{x:Bind ViewModel.HasNoRecentlyOpened, Mode=OneWay}" />
+                                <ItemsControl Margin="-10,0" IsTabStop="False" ItemsSource="{x:Bind ViewModel.RecentlyOpened, Mode=OneWay}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:LinkedRow">
+                                            <Button
+                                                AutomationProperties.Name="{x:Bind AutomationName}"
+                                                Click="Row_Click"
+                                                Content="{x:Bind}"
+                                                ContentTemplate="{StaticResource LinkedRowTemplate}"
+                                                Style="{StaticResource RowButtonStyle}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
             </Grid>
-        </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+    </Grid>
 </Page>

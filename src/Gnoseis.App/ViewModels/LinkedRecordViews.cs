@@ -16,9 +16,11 @@ namespace Gnoseis.App.ViewModels;
 /// </summary>
 public sealed class LinkedRow
 {
-    public LinkedRow(LinkedRecordSummary record)
+    /// <param name="showsLinkCount">False where the row has an action in place of its link count (Home's unlinked notes).</param>
+    public LinkedRow(LinkedRecordSummary record, bool showsLinkCount = true)
     {
         Record = record;
+        ShowsLinkCount = showsLinkCount;
         switch (record.Type)
         {
             case RecordType.Note when record.Name.Length > 0:
@@ -76,6 +78,8 @@ public sealed class LinkedRow
     public bool IsPerson => Type == RecordType.Contact;
     public bool ShowTile => Type != RecordType.Contact;
 
+    public bool ShowsLinkCount { get; }
+
     public string LinkCountText => Record.LinkCount.ToString(CultureInfo.CurrentCulture);
 
     public string LinkCountAutomationName => Record.LinkCount == 1 ? "1 linked record" : $"{Record.LinkCount} linked records";
@@ -85,9 +89,12 @@ public sealed class LinkedRow
         ? Record.Name
         : Type == RecordType.Note && Record.NoteDate != 0 ? NoteDay.Format(Record.NoteDate) : Type.DisplayName();
 
+    /// <summary>The name of a Link button beside the row: "Link Paint colours to records".</summary>
+    public string LinkActionName => $"Link {DisplayName} to records";
+
     /// <summary>Text read by screen readers.</summary>
     public string AutomationName =>
-        string.Join(". ", new[] { $"{Type.DisplayName()}: {(HasTitle ? Title : DisplayName)}", Path, Body, Accent, LinkCountAutomationName }
+        string.Join(". ", new[] { $"{Type.DisplayName()}: {(HasTitle ? Title : DisplayName)}", Path, Body, Accent, ShowsLinkCount ? LinkCountAutomationName : "" }
             .Where(s => s.Length > 0));
 
     public RecordRef ToRef() => new(Type, Id);
@@ -115,11 +122,11 @@ public sealed class LinkedCard(IReadOnlyList<LinkedRow> rows, string dayHeader =
     public bool HasDayHeader => DayHeader.Length > 0;
 
     /// <summary>Notes of one day, in the order given (newest first), one card per day.</summary>
-    public static List<LinkedCard> ByDay(IEnumerable<LinkedRecordSummary> notes) =>
+    public static List<LinkedCard> ByDay(IEnumerable<LinkedRecordSummary> notes, bool showsLinkCount = true) =>
         notes
             .GroupBy(n => NoteDay.Of(n.NoteDate))
             .Select(g => new LinkedCard(
-                g.Select(n => new LinkedRow(n)).ToList(),
+                g.Select(n => new LinkedRow(n, showsLinkCount)).ToList(),
                 NoteDay.Format(g.First().NoteDate),
                 NoteDay.Weekday(g.First().NoteDate)))
             .ToList();

@@ -64,7 +64,7 @@
     <Style x:Key="RowBodyPrimaryTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}" />
 
     <!--
-        A linked record's row (record page, and later Home): the type tile (initials for contacts),
+        A linked record's row (record page and Home): the type tile (initials for contacts),
         up to three lines of stored data, and the record's link count on the right.
     -->
     <DataTemplate x:Key="LinkedRowTemplate" x:DataType="vm:LinkedRow">
@@ -130,7 +130,8 @@
                 AutomationProperties.Name="{x:Bind LinkCountAutomationName}"
                 Orientation="Horizontal"
                 Spacing="4"
-                ToolTipService.ToolTip="{x:Bind LinkCountAutomationName}">
+                ToolTipService.ToolTip="{x:Bind LinkCountAutomationName}"
+                Visibility="{x:Bind ShowsLinkCount}">
                 <FontIcon
                     FontSize="11"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
@@ -150,6 +151,23 @@
             Style="{x:Bind helpers:RecordTypeStyles.GroupHeader(Type)}"
             Text="{x:Bind Header}" />
     </DataTemplate>
+
+    <!-- Home's notes chart: bars in the Note outline colour, days without notes as a thin neutral line -->
+    <Style x:Key="NotesChartBarStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource NoteOutlineBrush}" />
+        <Setter Property="CornerRadius" Value="2,2,0,0" />
+    </Style>
+    <Style x:Key="NotesChartEmptyBarStyle" TargetType="Border">
+        <Setter Property="Background" Value="{ThemeResource ControlStrongStrokeColorDisabledBrush}" />
+    </Style>
+    <Style x:Key="NotesChartDayTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
+    <Style x:Key="NotesChartTodayTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
 
     <!-- A list row button used where rows sit inside a scrolling page (linked records, Home). -->
     <Style x:Key="RowButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">

@@ -6,29 +6,32 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
+using System.ComponentModel;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace Gnoseis.App.Views;
 
-/// <summary>Home: quick note, counts, recent notes and recently opened records.</summary>
+/// <summary>
+/// Home: greeting and Add new, counts, Most linked, notes per day, unlinked notes, recent notes,
+/// recently opened records and the backup reminder.
+/// </summary>
 public sealed partial class HomePage : Page
 {
-    private RecordRef? _lastAdded;
+    /// <summary>Count tiles at least this wide show a chevron.</summary>
+    private const double ChevronTileWidth = 170;
+
+    /// <summary>Below this tile width six tiles don't fit a five-digit count: three per row instead.</summary>
+    private const double MinTileWidth = 136;
+
+    /// <summary>Below this page width: one column, and three count tiles per row.</summary>
+    public const double NarrowWidth = 700;
 
     public HomePage()
     {
         InitializeComponent();
-        var open = new Button { Content = "Open" };
-        open.Click += async (_, _) =>
-        {
-            if (_lastAdded != null)
-            {
-                await Navigator.OpenRecordAsync(_lastAdded);
-            }
-        };
-        QuickNoteInfo.ActionButton = open;
+        ViewModel.PropertyChanged += ViewModel_PropertyChanged;
     }
 
     public HomeViewModel ViewModel { get; } = new();
@@ -47,30 +50,56 @@ public sealed partial class HomePage : Page
         ViewModel.Deactivate();
     }
 
-    private void Page_SizeChanged(object sender, SizeChangedEventArgs e)
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // Two lists side by side when there is room.
-        var twoColumns = e.NewSize.Width >= 900;
-        SecondListColumn.Width = twoColumns ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-        Grid.SetColumn(RecentlyOpenedCard, twoColumns ? 1 : 0);
-        Grid.SetRow(RecentlyOpenedCard, twoColumns ? 0 : 1);
-        ListsGrid.ColumnSpacing = twoColumns ? 16 : 0;
+        switch (e.PropertyName)
+        {
+            case nameof(HomeViewModel.CountTiles):
+                UpdateChevrons();
+                break;
+            case nameof(HomeViewModel.HasNoUnlinkedNotes):
+                UpdatePair();
+                break;
+        }
     }
 
-    private async void AddQuickNote_Click(object sender, RoutedEventArgs e)
+    private void Page_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateChevrons();
+
+    private void CountTiles_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateChevrons();
+
+    /// <summary>
+    /// Six count tiles in a row, or three per row on a narrow page or when six would be too narrow;
+    /// chevrons on the tiles where they are wide enough.
+    /// </summary>
+    private void UpdateChevrons()
     {
-        try
+        var spacing = CountTilesLayout.MinColumnSpacing;
+        var width = CountTiles.ActualWidth;
+        var columns = ActualWidth < NarrowWidth || (width - 5 * spacing) / 6 < MinTileWidth ? 3 : 6;
+        if (CountTilesLayout.MaximumRowsOrColumns != columns)
         {
-            _lastAdded = await ViewModel.AddQuickNoteAsync();
-            if (_lastAdded != null)
-            {
-                QuickNoteInfo.IsOpen = true;
-                QuickTitleBox.Focus(FocusState.Programmatic);
-            }
+            CountTilesLayout.MaximumRowsOrColumns = columns;
         }
-        catch (Exception ex)
+        var tileWidth = (width - (columns - 1) * spacing) / columns;
+        foreach (var card in ViewModel.TypeCounts)
         {
-            await Dialogs.ShowErrorAsync("Couldn't add the note", ex);
+            card.ShowChevron = tileWidth >= ChevronTileWidth;
+        }
+    }
+
+    /// <summary>The chart and unlinked notes side by side; the chart alone when every note is linked.</summary>
+    private void UpdatePair()
+    {
+        UnlinkedCard.Visibility = ViewModel.HasNoUnlinkedNotes ? Visibility.Collapsed : Visibility.Visible;
+        PairSecondColumn.Width = ViewModel.HasNoUnlinkedNotes ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        PairGrid.ColumnSpacing = ViewModel.HasNoUnlinkedNotes ? 0 : 16;
+    }
+
+    private async void AddNew_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string tag && Enum.TryParse<RecordType>(tag, out var type))
+        {
+            await Navigator.ShowEditorAsync(new EditRequest(type));
         }
     }
 
@@ -84,9 +113,24 @@ public sealed partial class HomePage : Page
 
     private async void Row_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is RecordRow row)
+        if ((sender as FrameworkElement)?.DataContext is LinkedRow row)
         {
             await Navigator.OpenRecordAsync(row.ToRef());
+        }
+    }
+
+    private async void LinkNote_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is LinkedRow row)
+        {
+            try
+            {
+                await LinkRecordsDialog.ShowAsync(row.ToRef());
+            }
+            catch (Exception ex)
+            {
+                await Dialogs.ShowErrorAsync("Couldn't link the note", ex);
+            }
         }
     }
 
