@@ -23,6 +23,7 @@ public sealed class AppContainer
         Items = new(database);
         LinkedRecords = new(database);
         Search = new(database);
+        Home = new(database);
         Backup = new(database);
         Settings = new(database);
         DeleteRecord = new(database);
@@ -38,6 +39,7 @@ public sealed class AppContainer
     public ItemRepository Items { get; }
     public LinkedRecordRepository LinkedRecords { get; }
     public SearchRepository Search { get; }
+    public HomeRepository Home { get; }
     public BackupRepository Backup { get; }
     public SettingsRepository Settings { get; }
     public DeleteRecordUseCase DeleteRecord { get; }
