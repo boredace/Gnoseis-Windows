@@ -516,7 +516,7 @@ public sealed partial class RecordDetailsPage : Page
         }
     }
 
-    /// <summary>Right-click, Shift+F10 or the context-menu key: Open and Remove link.</summary>
+    /// <summary>Right-click, Shift+F10 or the context-menu key: Open and Unlink.</summary>
     private void LinkedRow_ContextRequested(UIElement sender, ContextRequestedEventArgs args)
     {
         if ((sender as ContentControl)?.Content is not LinkedRow row)
@@ -526,17 +526,8 @@ public sealed partial class RecordDetailsPage : Page
 
         var open = new MenuFlyoutItem { Text = "Open", Icon = new FontIcon { Glyph = "" } };
         open.Click += async (_, _) => await Navigator.OpenRecordAsync(row.ToRef());
-        var unlink = new MenuFlyoutItem { Text = "Remove link", Icon = new FontIcon { Glyph = "" } };
-        unlink.Click += async (_, _) =>
-        {
-            var confirmed = await Dialogs.ConfirmAsync("Remove link?",
-                $"\"{row.DisplayName}\" will no longer be linked to this {ViewModel.TypeName.ToLowerInvariant()}. Neither record is deleted.",
-                "Remove link");
-            if (confirmed)
-            {
-                await ViewModel.UnlinkAsync(row);
-            }
-        };
+        var unlink = new MenuFlyoutItem { Text = "Unlink", Icon = new FontIcon { Glyph = "" } };
+        unlink.Click += async (_, _) => await UnlinkAsync(row);
 
         var menu = new MenuFlyout();
         menu.Items.Add(open);
@@ -550,5 +541,64 @@ public sealed partial class RecordDetailsPage : Page
             menu.ShowAt((FrameworkElement)sender);
         }
         args.Handled = true;
+    }
+
+    // ---------------------------------------------------------------- Unlink and Undo
+
+    private LinkedRecord? _removedLink;
+    private string _selectedBeforeUnlink = "";
+
+    /// <summary>Unlinks without asking; the InfoBar offers Undo.</summary>
+    private async Task UnlinkAsync(LinkedRow row)
+    {
+        try
+        {
+            var selected = _selected;
+            var removed = await ViewModel.UnlinkAsync(row);
+            if (removed == null)
+            {
+                return;
+            }
+            _removedLink = removed;
+            _selectedBeforeUnlink = selected;
+            UnlinkInfoBar.Message = $"Unlinked {row.DisplayName}";
+            UnlinkInfoBar.IsOpen = false;
+            UnlinkInfoBar.IsOpen = true;
+        }
+        catch (Exception ex)
+        {
+            await Dialogs.ShowErrorAsync("Couldn't unlink", ex);
+        }
+    }
+
+    /// <summary>Links the records again, the same way round, and shows the row where it was.</summary>
+    private async void Undo_Click(object sender, RoutedEventArgs e)
+    {
+        if (_removedLink is not { } removed)
+        {
+            return;
+        }
+        _removedLink = null;
+        UnlinkInfoBar.IsOpen = false;
+        try
+        {
+            if (_selectedBeforeUnlink.Length > 0)
+            {
+                SetSelected(_selectedBeforeUnlink);
+            }
+            await ViewModel.UndoUnlinkAsync(removed);
+        }
+        catch (Exception ex)
+        {
+            await Dialogs.ShowErrorAsync("Couldn't undo", ex);
+        }
+    }
+
+    private void UnlinkInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
+    {
+        if (args.Reason == InfoBarCloseReason.CloseButton)
+        {
+            _removedLink = null;
+        }
     }
 }

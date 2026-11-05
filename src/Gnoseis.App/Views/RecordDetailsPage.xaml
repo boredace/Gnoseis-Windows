@@ -371,6 +371,24 @@
             </Grid>
         </ScrollViewer>
 
+        <!-- After Unlink: Undo. Stays until closed, the next unlink, or leaving the page. -->
+        <InfoBar
+            x:Name="UnlinkInfoBar"
+            Grid.Row="0"
+            Grid.RowSpan="3"
+            MaxWidth="560"
+            Margin="16"
+            VerticalAlignment="Bottom"
+            AutomationProperties.LiveSetting="Polite"
+            Closed="UnlinkInfoBar_Closed"
+            IsClosable="True"
+            IsOpen="False"
+            Severity="Informational">
+            <InfoBar.ActionButton>
+                <Button Click="Undo_Click" Content="Undo" />
+            </InfoBar.ActionButton>
+        </InfoBar>
+
         <!-- The record was deleted (e.g. while this page was in the back stack) -->
         <StackPanel
             Grid.Row="2"
