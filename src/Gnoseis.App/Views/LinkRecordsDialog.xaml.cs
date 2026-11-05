@@ -6,42 +6,63 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
-using System.ComponentModel;
 using Gnoseis.App.Controls;
+using Gnoseis.Core.Domain;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Gnoseis.App.Views;
 
-/// <summary>Picks existing records to link to a record (the Android Link Records page).</summary>
+/// <summary>
+/// Picks existing records to link to a record (the Android Link Records page), with the same search as
+/// the search page. Records ticked in one search stay ticked through later searches and chips, of any
+/// types, until unticked or linked; Link links them all, shown or not.
+/// </summary>
 public sealed partial class LinkRecordsDialog : ContentDialog
 {
-    // Set while the list is refilled, so programmatic selection changes are not treated as user input.
-    private bool _updatingList;
+    /// <summary>The selected strip shows this many ticked records' tiles.</summary>
+    private const int StripTiles = 5;
+
+    /// <summary>The dialog's title, padding and buttons around the content, and the cap on its height.</summary>
+    private const double DialogChrome = 200;
+    private const double MaxDialogHeight = 860;
+    private const double ContentWidth = 720;
 
     // The new record to create after the dialog closes, when the user picked a type in the create offer.
     private EditRequest? _createAfterClose;
 
-    private LinkRecordsDialog(LinkRecordsViewModel viewModel)
+    private LinkRecordsDialog(RecordSearchModel model)
     {
-        ViewModel = viewModel;
+        Model = model;
         InitializeComponent();
-        ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-        Opened += (_, _) => QueryBox.Focus(FocusState.Programmatic);
+        Search.Model = model;
+        model.SelectionChanged += (_, _) => ShowSelectedTiles();
+        Opened += (_, _) =>
+        {
+            FitToWindow();
+            XamlRoot.Changed += XamlRoot_Changed;
+            Search.FocusSearchBox();
+        };
+        Closed += (_, _) =>
+        {
+            XamlRoot.Changed -= XamlRoot_Changed;
+            model.Deactivate();
+        };
     }
 
-    public LinkRecordsViewModel ViewModel { get; }
+    public RecordSearchModel Model { get; }
 
     /// <summary>
     /// Shows the picker for a record and links what the user picks. When the user creates a record
-    /// from the search instead, the picked records are linked, the dialog closes and the editor opens
+    /// from the search instead, the ticked records are linked, the dialog closes and the editor opens
     /// for a new record linked to <paramref name="source"/>.
     /// </summary>
     public static async Task ShowAsync(RecordRef source)
     {
-        var viewModel = new LinkRecordsViewModel(source);
-        var dialog = new LinkRecordsDialog(viewModel);
-        await viewModel.LoadAsync();
+        var model = new RecordSearchModel(SearchLogic.ChipTypes(source.Type), null, CreateFromSearch.TypesFor(source.Type), source);
+        var dialog = new LinkRecordsDialog(model);
+        model.Activate();
+        await model.LoadAsync();
         await Dialogs.ShowCustomAsync(dialog);
         if (dialog._createAfterClose is { } request)
         {
@@ -49,59 +70,53 @@ public sealed partial class LinkRecordsDialog : ContentDialog
         }
     }
 
-    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(LinkRecordsViewModel.CreateOffer))
-        {
-            var noResults = CreateFromSearchPanel.ShowOffer(NoResultsCreatePanel, CreatePanel,
-                ViewModel.CreateOffer.Query, ViewModel.CreateOffer.Offer, ViewModel.CreateTypes);
-            ResultList.Visibility = noResults ? Visibility.Collapsed : Visibility.Visible;
-            return;
-        }
-        if (e.PropertyName != nameof(LinkRecordsViewModel.Groups))
-        {
-            return;
-        }
+    private void XamlRoot_Changed(XamlRoot sender, XamlRootChangedEventArgs args) => FitToWindow();
 
-        // Refill the list and restore the selection, which survives changes to the search text.
-        _updatingList = true;
-        try
+    /// <summary>About 720 wide; the height follows the window, up to the dialog's cap.</summary>
+    private void FitToWindow()
+    {
+        var size = XamlRoot.Size;
+        Root.Width = Math.Max(320, Math.Min(ContentWidth, size.Width - 96));
+        Root.Height = Math.Max(240, Math.Min(MaxDialogHeight, size.Height - 48) - DialogChrome);
+    }
+
+    /// <summary>The first ticked records' tiles, overlapping, in the order picked.</summary>
+    private void ShowSelectedTiles()
+    {
+        SelectedTiles.Children.Clear();
+        foreach (var (record, i) in Model.Selection.Picked.Take(StripTiles).Select((r, i) => (r, i)))
         {
-            GroupsSource.Source = ViewModel.Groups;
-            ResultList.ItemsSource = GroupsSource.View;
-            foreach (var row in ViewModel.Groups.SelectMany(g => g).Where(r => ViewModel.IsSelected(r.Id)))
-            {
-                ResultList.SelectedItems.Add(row);
-            }
+            FrameworkElement tile = record.RecordType == RecordType.Contact
+                ? new PersonPicture
+                {
+                    DisplayName = record.RecordTitle,
+                    Style = (Style)Application.Current.Resources["ContactPictureStyle"],
+                }
+                : new TypeTile { Type = record.RecordType, CornerRadius = new CornerRadius(6), FontSize = 13 };
+            tile.Width = 28;
+            tile.Height = 28;
+            tile.Margin = new Thickness(i == 0 ? 0 : -8, 0, 0, 0);
+            Canvas.SetZIndex(tile, StripTiles - i);
+            SelectedTiles.Children.Add(tile);
         }
-        finally
+        if (Model.Selection.IsEmpty)
         {
-            _updatingList = false;
+            SelectedFlyout.Hide();
         }
     }
 
-    private void ResultList_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args)
-    {
-        // Records that are already linked are shown but cannot be picked.
-        if (args.Item is RecordRow row)
-        {
-            args.ItemContainer.IsEnabled = !row.IsLinked;
-        }
-    }
+    private void ShowSelectedButton_Click(object sender, RoutedEventArgs e) =>
+        Microsoft.UI.Xaml.Controls.Primitives.FlyoutBase.ShowAttachedFlyout(ShowSelectedButton);
 
-    private void ResultList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void SelectedFlyout_Opening(object? sender, object e) => SelectedList.ItemsSource = Model.SelectedRows();
+
+    /// <summary>Unticking a record in the flyout removes it from the selection and the list.</summary>
+    private void SelectedCheck_Click(object sender, RoutedEventArgs e)
     {
-        if (_updatingList)
+        if (sender is CheckBox { Tag: SearchRow row } box && box.IsChecked != true)
         {
-            return;
-        }
-        foreach (var row in e.AddedItems.OfType<RecordRow>())
-        {
-            ViewModel.SetSelected(row, true);
-        }
-        foreach (var row in e.RemovedItems.OfType<RecordRow>())
-        {
-            ViewModel.SetSelected(row, false);
+            Model.SetChecked(row.Result, false);
+            SelectedList.ItemsSource = Model.SelectedRows();
         }
     }
 
@@ -110,7 +125,7 @@ public sealed partial class LinkRecordsDialog : ContentDialog
         var deferral = args.GetDeferral();
         try
         {
-            await ViewModel.LinkSelectedAsync();
+            await Model.LinkSelectedAsync();
         }
         catch (Exception ex)
         {
@@ -124,19 +139,18 @@ public sealed partial class LinkRecordsDialog : ContentDialog
     }
 
     /// <summary>Links the ticked records, as Link would, then closes so the new record's editor can open.</summary>
-    private async void CreatePanel_CreateRequested(object? sender, RecordType type)
+    private async void Search_CreateRequested(object? sender, CreateFromSearchRequest request)
     {
-        var query = ((CreateFromSearchPanel)sender!).Query;
         try
         {
-            await ViewModel.LinkSelectedAsync();
+            await Model.LinkSelectedAsync();
         }
         catch (Exception ex)
         {
             StatusFallback(ex.Message);
             return;
         }
-        _createAfterClose = new EditRequest(type, LinkFrom: ViewModel.Source, PrefillName: query);
+        _createAfterClose = new EditRequest(request.Type, LinkFrom: Model.LinkSource, PrefillName: request.Query);
         Hide();
     }
 

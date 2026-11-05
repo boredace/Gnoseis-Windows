@@ -24,9 +24,6 @@ public sealed class RecordRow
     /// <summary>Show the record's picture: initials for contacts, a colored type tile for the rest.</summary>
     public bool ShowIcon { get; init; }
 
-    /// <summary>Used by the link picker: the record is already linked to the source.</summary>
-    public bool IsLinked { get; init; }
-
     public string Glyph => Glyphs.For(Type);
     public bool IsPerson => ShowIcon && Type == RecordType.Contact;
     public bool ShowTile => ShowIcon && Type != RecordType.Contact;
@@ -107,16 +104,6 @@ public static class RecordRows
         ShowIcon = true,
     };
 
-    public static RecordRow FromSearchResult(SearchResult result, bool isLinked = false) => new()
-    {
-        Id = result.RecordId,
-        Type = result.RecordType,
-        Title = result.RecordTitle,
-        Subtitle = isLinked ? "Already linked" : result.RecordType.DisplayName(),
-        ShowIcon = true,
-        IsLinked = isLinked,
-    };
-
     /// <summary>Notes grouped by day, newest first: "Today", "Yesterday", weekday, then the date.</summary>
     public static List<RecordGroup> GroupNotes(IEnumerable<Note> notes) =>
         notes
@@ -128,10 +115,6 @@ public static class RecordRows
     /// <summary>Rows grouped by the first letter of their title, keeping the list order.</summary>
     public static List<RecordGroup> GroupByFirstLetter(IEnumerable<RecordRow> rows) =>
         rows.GroupBy(r => FirstLetter(r.Title)).Select(g => new RecordGroup(g.Key, g)).ToList();
-
-    /// <summary>Rows grouped by record type (search and link results).</summary>
-    public static List<RecordGroup> GroupByType(IEnumerable<RecordRow> rows) =>
-        rows.GroupBy(r => r.Type).OrderBy(g => (int)g.Key).Select(g => new RecordGroup(g.Key.PluralDisplayName(), g, g.Key)).ToList();
 
     public static string DayHeader(DateOnly day)
     {

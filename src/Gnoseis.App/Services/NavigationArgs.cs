@@ -25,6 +25,9 @@ public sealed record EditRequest(RecordType Type, string? Id = null, RecordRef? 
 /// <summary>Parameter of a section page: its record type, the record to show and an editor to open.</summary>
 public sealed record SectionArgs(RecordType Type, string? SelectedId = null, EditRequest? Edit = null);
 
+/// <summary>Parameter of the search page: the query, and the section searched from (its type's chip starts selected).</summary>
+public sealed record SearchArgs(string Query, RecordType? Scope = null);
+
 /// <summary>Implemented by pages that may need to confirm before the user leaves them.</summary>
 public interface IConfirmLeave
 {

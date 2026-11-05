@@ -6,69 +6,78 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
-using System.ComponentModel;
 using Gnoseis.App.Controls;
+using Gnoseis.Core.Domain;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
 namespace Gnoseis.App.Views;
 
-/// <summary>Search results across all record types.</summary>
+/// <summary>
+/// Search across all record types. The page is kept when the user leaves it, so Back returns to the
+/// same query, chips and scroll position; a new search (title bar, a section's filter box) starts over.
+/// </summary>
 public sealed partial class SearchPage : Page
 {
+    private bool _changedWhileAway;
+    private bool _focusOnLoaded;
+
     public SearchPage()
     {
         InitializeComponent();
         Loaded += (_, _) =>
         {
-            QueryBox.Focus(FocusState.Programmatic);
-            QueryBox.SelectionStart = QueryBox.Text.Length;
+            if (_focusOnLoaded)
+            {
+                _focusOnLoaded = false;
+                Search.FocusSearchBox();
+            }
         };
     }
 
-    public SearchViewModel ViewModel { get; private set; } = null!;
+    public RecordSearchModel? ViewModel { get; private set; }
 
-    protected override void OnNavigatedTo(NavigationEventArgs e)
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        ViewModel = new SearchViewModel();
-        ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-        ViewModel.Activate();
-        ViewModel.Query = e.Parameter as string ?? "";
+        App.Container.Database.DataChanged -= Database_DataChanged;
+
+        if (e.NavigationMode == NavigationMode.Back && ViewModel is { } kept)
+        {
+            kept.Activate();
+            if (_changedWhileAway)
+            {
+                await kept.LoadAsync();
+            }
+            return;
+        }
+
+        var args = e.Parameter as SearchArgs ?? new SearchArgs(e.Parameter as string ?? "");
+        var model = new RecordSearchModel(SearchLogic.ChipTypes(), args.Scope, CreateFromSearch.TypesFor(null));
+        ViewModel = model;
+        model.Query = args.Query;
+        Search.Model = model;
+        model.Activate();
+        _focusOnLoaded = true;
+        await model.LoadAsync();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
-        ViewModel.Deactivate();
-        ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        ViewModel?.Deactivate();
+        // Reload on Back only when something changed meanwhile, so the list keeps its scroll position.
+        _changedWhileAway = false;
+        App.Container.Database.DataChanged += Database_DataChanged;
     }
 
-    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(SearchViewModel.Groups))
-        {
-            GroupsSource.Source = ViewModel.Groups;
-            ResultList.ItemsSource = GroupsSource.View;
-        }
-        else if (e.PropertyName == nameof(SearchViewModel.CreateOffer))
-        {
-            var noResults = CreateFromSearchPanel.ShowOffer(NoResultsCreatePanel, CreatePanel,
-                ViewModel.CreateOffer.Query, ViewModel.CreateOffer.Offer, ViewModel.CreateTypes);
-            ResultList.Visibility = noResults ? Visibility.Collapsed : Visibility.Visible;
-        }
-    }
+    private void Database_DataChanged(object? sender, DataChangedEventArgs e) => _changedWhileAway = true;
 
     /// <summary>Opens the editor for a new record of the type, named after the query, in the type's section.</summary>
-    private async void CreatePanel_CreateRequested(object? sender, RecordType type) =>
-        await Navigator.ShowEditorAsync(new EditRequest(type, PrefillName: ((CreateFromSearchPanel)sender!).Query));
+    private async void Search_CreateRequested(object? sender, CreateFromSearchRequest request) =>
+        await Navigator.ShowEditorAsync(new EditRequest(request.Type, PrefillName: request.Query));
 
-    private async void ResultList_ItemClick(object sender, ItemClickEventArgs e)
-    {
-        if (e.ClickedItem is RecordRow row)
-        {
-            await Navigator.OpenRecordAsync(row.ToRef());
-        }
-    }
+    private async void Search_RecordInvoked(object? sender, SearchRow row) =>
+        await Navigator.OpenRecordAsync(row.ToRef());
 }

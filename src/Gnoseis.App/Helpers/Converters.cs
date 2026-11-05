@@ -21,6 +21,10 @@ public static class Converters
     public static Style RowBodyStyle(bool primary) =>
         (Style)Application.Current.Resources[primary ? "RowBodyPrimaryTextStyle" : "RowBodyTextStyle"];
 
+    /// <summary>A search group header: a type's in its outline colour, Recently changed in the body strong style.</summary>
+    public static Style SearchGroupHeaderStyle(RecordType? type) =>
+        type is { } t ? RecordTypeStyles.GroupHeader(t) : (Style)Application.Current.Resources["BodyStrongTextBlockStyle"];
+
     /// <summary>Tooltip text with its keyboard shortcut, e.g. "New note (Ctrl+N)".</summary>
     public static string Shortcut(string text, string keys) => $"{text} ({keys})";
 }

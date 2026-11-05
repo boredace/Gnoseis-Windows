@@ -78,8 +78,9 @@ public static class Navigator
 
     public static void RecordDeleted(string id) => ActiveSection?.OnRecordDeleted(id);
 
-    public static Task ShowSearchAsync(string query) =>
-        NavigateAsync(typeof(SearchPage), query, new EntranceNavigationTransitionInfo(), allowSamePage: true);
+    /// <summary>Shows the search page with a query, and from a section with that type's chip selected.</summary>
+    public static Task ShowSearchAsync(string query, RecordType? scope = null) =>
+        NavigateAsync(typeof(SearchPage), new SearchArgs(query, scope), new EntranceNavigationTransitionInfo(), allowSamePage: true);
 
     public static Task ShowSettingsAsync() =>
         NavigateAsync(typeof(SettingsPage), null, new SuppressNavigationTransitionInfo());

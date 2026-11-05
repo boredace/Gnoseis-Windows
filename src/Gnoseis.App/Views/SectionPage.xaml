@@ -68,6 +68,7 @@
                 AutomationProperties.Name="{x:Bind ViewModel.FilterPlaceholder}"
                 PlaceholderText="{x:Bind ViewModel.FilterPlaceholder}"
                 QueryIcon="Filter"
+                QuerySubmitted="FilterBox_QuerySubmitted"
                 Text="{x:Bind ViewModel.Filter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
             <ListView

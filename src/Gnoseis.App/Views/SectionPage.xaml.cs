@@ -132,6 +132,19 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         ShowDetails(row.Id);
     }
 
+    /// <summary>
+    /// Enter (or the box's icon) with at least 3 characters opens the search page for this section's
+    /// type with the filter text; the filter stays as it is in the section.
+    /// </summary>
+    private async void FilterBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        var query = (args.QueryText ?? "").Trim();
+        if (query.Length >= Gnoseis.Core.Domain.CreateFromSearch.MinimumQueryLength)
+        {
+            await Navigator.ShowSearchAsync(query, ViewModel.Type);
+        }
+    }
+
     private async void RecordList_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Delete && DetailFrame.Content is RecordDetailsPage details)

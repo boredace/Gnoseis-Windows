@@ -45,7 +45,7 @@
                 MaxWidth="560"
                 VerticalAlignment="Center"
                 AutomationProperties.Name="Search all records"
-                ItemTemplate="{StaticResource RecordRowTemplate}"
+                ItemTemplate="{StaticResource SearchSuggestionTemplate}"
                 PlaceholderText="Search notes, contacts, organizations… (Ctrl+F)"
                 QueryIcon="Find"
                 QuerySubmitted="SearchBox_QuerySubmitted"
