@@ -70,7 +70,41 @@ public sealed partial class HomePage : Page
         }
     }
 
-    private void Page_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateChevrons();
+    private bool? _narrow;
+
+    private void Page_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateLayoutMode(e.NewSize.Width < NarrowWidth);
+        UpdateChevrons();
+    }
+
+    private void HeaderGrid_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateHeader(e.NewSize.Width);
+
+    /// <summary>Wide or narrow (one column) by the page's width.</summary>
+    private void UpdateLayoutMode(bool narrow)
+    {
+        if (_narrow == narrow)
+        {
+            return;
+        }
+        _narrow = narrow;
+        VisualStateManager.GoToState(this, narrow ? "Narrow" : "Wide", false);
+    }
+
+    /// <summary>Add new beside the greeting, or under it when there isn't room for both.</summary>
+    private void UpdateHeader(double width)
+    {
+        AddNewPanel.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        // Room for the buttons and a greeting of about 280 px beside them.
+        var below = width < AddNewPanel.DesiredSize.Width + HeaderGrid.ColumnSpacing + 280;
+        if (Grid.GetRow(AddNewPanel) == (below ? 1 : 0))
+        {
+            return;
+        }
+        Grid.SetRow(AddNewPanel, below ? 1 : 0);
+        Grid.SetColumn(AddNewPanel, below ? 0 : 1);
+        AddNewPanel.HorizontalAlignment = below ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+    }
 
     private void CountTiles_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateChevrons();
 
@@ -94,13 +128,9 @@ public sealed partial class HomePage : Page
         }
     }
 
-    /// <summary>The chart and unlinked notes side by side; the chart alone when every note is linked.</summary>
-    private void UpdatePair()
-    {
+    /// <summary>Unlinked notes are hidden when every note is linked (the chart then takes their room).</summary>
+    private void UpdatePair() =>
         UnlinkedCard.Visibility = ViewModel.HasNoUnlinkedNotes ? Visibility.Collapsed : Visibility.Visible;
-        PairSecondColumn.Width = ViewModel.HasNoUnlinkedNotes ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-        PairGrid.ColumnSpacing = ViewModel.HasNoUnlinkedNotes ? 0 : 16;
-    }
 
     // ---------- Most linked
 

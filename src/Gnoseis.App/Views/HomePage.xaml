@@ -158,6 +158,23 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <!--
+            Wide: two columns (Controls/HomeColumnsPanel). Narrow (page below 700 px): one column, smaller
+            margins and bubble area. The page switches state on its own width (HomePage.Page_SizeChanged).
+        -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="WidthStates">
+                <VisualState x:Name="Wide" />
+                <VisualState x:Name="Narrow">
+                    <VisualState.Setters>
+                        <Setter Target="ContentRoot.Margin" Value="16,20" />
+                        <Setter Target="BubbleArea.Height" Value="380" />
+                        <Setter Target="Cards.IsNarrow" Value="True" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
         <ScrollViewer x:Name="PageScroller">
             <Grid x:Name="ContentRoot" MaxWidth="1180" Margin="36,28" RowSpacing="20">
                 <Grid.RowDefinitions>
@@ -167,7 +184,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Header: greeting and date, Add new -->
-                <Grid x:Name="HeaderGrid" ColumnSpacing="24" RowSpacing="16">
+                <Grid x:Name="HeaderGrid" ColumnSpacing="24" RowSpacing="16" SizeChanged="HeaderGrid_SizeChanged">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -240,170 +257,151 @@
                     </ItemsRepeater.Layout>
                 </ItemsRepeater>
 
-                <!-- Two columns: Most linked, chart and unlinked notes; recent notes and recently opened -->
-                <Grid x:Name="ColumnsGrid" Grid.Row="2" ColumnSpacing="16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition x:Name="MainColumnDefinition" Width="2*" />
-                        <ColumnDefinition x:Name="SideColumnDefinition" Width="*" MinWidth="300" />
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel x:Name="MainColumn" Spacing="16">
-                        <!-- Most linked -->
-                        <Border x:Name="MostLinkedCard" Style="{StaticResource CardStyle}">
-                            <Grid RowSpacing="8">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <Grid ColumnSpacing="12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Most linked" />
-                                        <TextBlock Style="{StaticResource HomeCardSubtitleStyle}" Text="{x:Bind ViewModel.MostLinkedSubtitle, Mode=OneWay}" />
-                                    </StackPanel>
-                                    <DropDownButton
-                                        x:Name="TypePicker"
-                                        Grid.Column="1"
-                                        VerticalAlignment="Top">
-                                        <DropDownButton.Flyout>
-                                            <MenuFlyout x:Name="TypeMenu" Placement="BottomEdgeAlignedRight" />
-                                        </DropDownButton.Flyout>
-                                    </DropDownButton>
-                                </Grid>
-
-                                <Grid x:Name="BubbleArea" Grid.Row="1" Height="440">
-                                    <controls:MostLinkedChart x:Name="Bubbles" RecordInvoked="Bubbles_RecordInvoked" />
-                                    <TextBlock
-                                        x:Name="NoLinksText"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Style="{StaticResource SecondaryTextStyle}"
-                                        Text="Link records to see them here" />
-                                    <StackPanel
-                                        x:Name="TypeEmptyPanel"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Spacing="8">
-                                        <controls:TypeTile
-                                            x:Name="TypeEmptyTile"
-                                            Width="48"
-                                            Height="48"
-                                            HorizontalAlignment="Center"
-                                            CornerRadius="24"
-                                            FontSize="20" />
-                                        <TextBlock
-                                            HorizontalAlignment="Center"
-                                            Style="{StaticResource SecondaryTextStyle}"
-                                            Text="{x:Bind ViewModel.TypeEmptyText, Mode=OneWay}" />
-                                        <HyperlinkButton HorizontalAlignment="Center" Click="ShowAllTypes_Click" Content="Show all types" />
-                                    </StackPanel>
-                                </Grid>
-
-                                <ItemsControl
-                                    x:Name="LegendList"
-                                    Grid.Row="2"
-                                    AutomationProperties.Name="Legend"
-                                    IsTabStop="False"
-                                    ItemsSource="{x:Bind ViewModel.Legend, Mode=OneWay}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Orientation="Horizontal" Spacing="16" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:LegendEntry">
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <FontIcon FontSize="12" Glyph="{x:Bind Glyph}" Style="{x:Bind helpers:RecordTypeStyles.Glyph(Type)}" />
-                                                <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Name}" />
-                                            </StackPanel>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                <!--
+                    The cards in the narrow order: Most linked, recent notes, chart, unlinked notes, recently opened.
+                    Wide, the panel puts Most linked with the chart and unlinked notes below it in the first two
+                    thirds, and recent notes and recently opened in the last third.
+                -->
+                <controls:HomeColumnsPanel x:Name="Cards" Grid.Row="2">
+                    <Border x:Name="MostLinkedCard" Style="{StaticResource CardStyle}">
+                        <Grid RowSpacing="8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Most linked" />
+                                    <TextBlock Style="{StaticResource HomeCardSubtitleStyle}" Text="{x:Bind ViewModel.MostLinkedSubtitle, Mode=OneWay}" />
+                                </StackPanel>
+                                <DropDownButton
+                                    x:Name="TypePicker"
+                                    Grid.Column="1"
+                                    VerticalAlignment="Top">
+                                    <DropDownButton.Flyout>
+                                        <MenuFlyout x:Name="TypeMenu" Placement="BottomEdgeAlignedRight" />
+                                    </DropDownButton.Flyout>
+                                </DropDownButton>
                             </Grid>
-                        </Border>
 
-                        <Grid x:Name="PairGrid" ColumnSpacing="16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition x:Name="PairSecondColumn" Width="*" />
-                            </Grid.ColumnDefinitions>
-
-                            <!-- Notes, last 14 days -->
-                            <Border x:Name="ChartCard" VerticalAlignment="Top" Style="{StaticResource CardStyle}">
-                                <StackPanel Spacing="12">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Notes, last 14 days" />
-                                        <TextBlock Style="{StaticResource HomeCardSubtitleStyle}" Text="{x:Bind ViewModel.NotesPerDayText, Mode=OneWay}" />
-                                    </StackPanel>
-                                    <controls:NotesChart Days="{x:Bind ViewModel.NotesPerDay, Mode=OneWay}" />
-                                </StackPanel>
-                            </Border>
-
-                            <!-- Unlinked notes (hidden when every note is linked) -->
-                            <Border
-                                x:Name="UnlinkedCard"
-                                Grid.Column="1"
-                                VerticalAlignment="Top"
-                                Style="{StaticResource CardStyle}">
-                                <StackPanel Spacing="4">
-                                    <StackPanel>
-                                        <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Unlinked notes" />
-                                        <TextBlock Style="{StaticResource HomeCardSubtitleStyle}" Text="Notes that aren't linked to anything yet" />
-                                    </StackPanel>
-                                    <ItemsControl
-                                        IsTabStop="False"
-                                        ItemTemplate="{StaticResource HomeUnlinkedDayTemplate}"
-                                        ItemsSource="{x:Bind ViewModel.UnlinkedNotes, Mode=OneWay}" />
-                                    <TextBlock
-                                        Margin="0,8,0,0"
-                                        Style="{StaticResource HomeCardSubtitleStyle}"
-                                        Text="{x:Bind ViewModel.UnlinkedCountText, Mode=OneWay}" />
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                    </StackPanel>
-
-                    <StackPanel x:Name="SideColumn" Grid.Column="1" Spacing="16">
-                        <!-- Recent notes -->
-                        <Border x:Name="RecentNotesCard" Style="{StaticResource CardStyle}">
-                            <StackPanel Spacing="2">
-                                <Grid>
-                                    <TextBlock VerticalAlignment="Center" Style="{StaticResource HomeCardTitleStyle}" Text="Recent notes" />
-                                    <HyperlinkButton Padding="4,0" HorizontalAlignment="Right" Click="AllNotes_Click" Content="All notes" />
-                                </Grid>
-                                <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="No notes yet." Visibility="{x:Bind ViewModel.HasNoRecentNotes, Mode=OneWay}" />
-                                <ItemsControl IsTabStop="False" ItemTemplate="{StaticResource HomeNoteDayTemplate}" ItemsSource="{x:Bind ViewModel.RecentNotes, Mode=OneWay}" />
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Recently opened -->
-                        <Border x:Name="RecentlyOpenedCard" Style="{StaticResource CardStyle}">
-                            <StackPanel Spacing="4">
-                                <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Recently opened" />
+                            <Grid x:Name="BubbleArea" Grid.Row="1" Height="440">
+                                <controls:MostLinkedChart x:Name="Bubbles" RecordInvoked="Bubbles_RecordInvoked" />
                                 <TextBlock
+                                    x:Name="NoLinksText"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
                                     Style="{StaticResource SecondaryTextStyle}"
-                                    Text="Records you open appear here, so you can get back to them quickly."
-                                    Visibility="{x:Bind ViewModel.HasNoRecentlyOpened, Mode=OneWay}" />
-                                <ItemsControl Margin="-10,0" IsTabStop="False" ItemsSource="{x:Bind ViewModel.RecentlyOpened, Mode=OneWay}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:LinkedRow">
-                                            <Button
-                                                AutomationProperties.Name="{x:Bind AutomationName}"
-                                                Click="Row_Click"
-                                                Content="{x:Bind}"
-                                                ContentTemplate="{StaticResource LinkedRowTemplate}"
-                                                Style="{StaticResource RowButtonStyle}" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                    Text="Link records to see them here" />
+                                <StackPanel
+                                    x:Name="TypeEmptyPanel"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="8">
+                                    <controls:TypeTile
+                                        x:Name="TypeEmptyTile"
+                                        Width="48"
+                                        Height="48"
+                                        HorizontalAlignment="Center"
+                                        CornerRadius="24"
+                                        FontSize="20" />
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        Style="{StaticResource SecondaryTextStyle}"
+                                        Text="{x:Bind ViewModel.TypeEmptyText, Mode=OneWay}" />
+                                    <HyperlinkButton HorizontalAlignment="Center" Click="ShowAllTypes_Click" Content="Show all types" />
+                                </StackPanel>
+                            </Grid>
+
+                            <ItemsControl
+                                x:Name="LegendList"
+                                Grid.Row="2"
+                                AutomationProperties.Name="Legend"
+                                IsTabStop="False"
+                                ItemsSource="{x:Bind ViewModel.Legend, Mode=OneWay}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="16" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LegendEntry">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon FontSize="12" Glyph="{x:Bind Glyph}" Style="{x:Bind helpers:RecordTypeStyles.Glyph(Type)}" />
+                                            <TextBlock Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="{x:Bind Name}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </Border>
+
+                    <Border x:Name="RecentNotesCard" Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="2">
+                            <Grid>
+                                <TextBlock VerticalAlignment="Center" Style="{StaticResource HomeCardTitleStyle}" Text="Recent notes" />
+                                <HyperlinkButton Padding="4,0" HorizontalAlignment="Right" Click="AllNotes_Click" Content="All notes" />
+                            </Grid>
+                            <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="No notes yet." Visibility="{x:Bind ViewModel.HasNoRecentNotes, Mode=OneWay}" />
+                            <ItemsControl IsTabStop="False" ItemTemplate="{StaticResource HomeNoteDayTemplate}" ItemsSource="{x:Bind ViewModel.RecentNotes, Mode=OneWay}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="ChartCard" Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="12">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Notes, last 14 days" />
+                                <TextBlock Style="{StaticResource HomeCardSubtitleStyle}" Text="{x:Bind ViewModel.NotesPerDayText, Mode=OneWay}" />
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
-                </Grid>
+                            <controls:NotesChart Days="{x:Bind ViewModel.NotesPerDay, Mode=OneWay}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border
+                        x:Name="UnlinkedCard"
+                        Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="4">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Unlinked notes" />
+                                <TextBlock Style="{StaticResource HomeCardSubtitleStyle}" Text="Notes that aren't linked to anything yet" />
+                            </StackPanel>
+                            <ItemsControl
+                                IsTabStop="False"
+                                ItemTemplate="{StaticResource HomeUnlinkedDayTemplate}"
+                                ItemsSource="{x:Bind ViewModel.UnlinkedNotes, Mode=OneWay}" />
+                            <TextBlock
+                                Margin="0,8,0,0"
+                                Style="{StaticResource HomeCardSubtitleStyle}"
+                                Text="{x:Bind ViewModel.UnlinkedCountText, Mode=OneWay}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="RecentlyOpenedCard" Style="{StaticResource CardStyle}">
+                        <StackPanel Spacing="4">
+                            <TextBlock Style="{StaticResource HomeCardTitleStyle}" Text="Recently opened" />
+                            <TextBlock
+                                Style="{StaticResource SecondaryTextStyle}"
+                                Text="Records you open appear here, so you can get back to them quickly."
+                                Visibility="{x:Bind ViewModel.HasNoRecentlyOpened, Mode=OneWay}" />
+                            <ItemsControl Margin="-10,0" IsTabStop="False" ItemsSource="{x:Bind ViewModel.RecentlyOpened, Mode=OneWay}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LinkedRow">
+                                        <Button
+                                            AutomationProperties.Name="{x:Bind AutomationName}"
+                                            Click="Row_Click"
+                                            Content="{x:Bind}"
+                                            ContentTemplate="{StaticResource LinkedRowTemplate}"
+                                            Style="{StaticResource RowButtonStyle}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </controls:HomeColumnsPanel>
             </Grid>
         </ScrollViewer>
 
