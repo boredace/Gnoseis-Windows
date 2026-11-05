@@ -22,4 +22,6 @@ public sealed partial class NamedRecordFields : UserControl, IEditFields
     public NamedRecordEditViewModel ViewModel { get; }
 
     public void FocusFirst() => NameBox.FocusText();
+
+    public void FocusPrefilled() => NameBox.FocusText(caretAtEnd: true);
 }

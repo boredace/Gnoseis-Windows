@@ -66,8 +66,15 @@ public sealed partial class FormTextBox : UserControl
         set => SetValue(PlaceholderTextProperty, value);
     }
 
-    /// <summary>Moves keyboard focus into the text box.</summary>
-    public void FocusText() => Box.Focus(FocusState.Programmatic);
+    /// <summary>Moves keyboard focus into the text box, optionally with the caret after the text.</summary>
+    public void FocusText(bool caretAtEnd = false)
+    {
+        Box.Focus(FocusState.Programmatic);
+        if (caretAtEnd)
+        {
+            Box.Select(Box.Text.Length, 0);
+        }
+    }
 
     private void UpdateHeader()
     {

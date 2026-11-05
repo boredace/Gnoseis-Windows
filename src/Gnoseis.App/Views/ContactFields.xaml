@@ -22,7 +22,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <controls:FormTextBox x:Name="FirstNameBox" Field="{x:Bind ViewModel.NameFirst}" Kind="Name" />
-            <controls:FormTextBox Grid.Column="1" Field="{x:Bind ViewModel.NameLast}" IsRequired="True" Kind="Name" />
+            <controls:FormTextBox x:Name="LastNameBox" Grid.Column="1" Field="{x:Bind ViewModel.NameLast}" IsRequired="True" Kind="Name" />
         </Grid>
 
         <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Work" />

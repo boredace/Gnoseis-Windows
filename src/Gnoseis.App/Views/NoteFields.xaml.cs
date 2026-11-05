@@ -22,4 +22,6 @@ public sealed partial class NoteFields : UserControl, IEditFields
     public NoteEditViewModel ViewModel { get; }
 
     public void FocusFirst() => TitleBox.FocusText();
+
+    public void FocusPrefilled() => TitleBox.FocusText(caretAtEnd: true);
 }

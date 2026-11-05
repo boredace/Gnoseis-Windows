@@ -144,9 +144,19 @@ public abstract class EditViewModelBase : PageViewModel
     /// <summary>"Will be linked to contact Maria Lindqvist".</summary>
     public string LinkSourceAutomationName => LinkSource is null ? "" : $"{LinkSourceCaption} {LinkSourceName}";
 
+    /// <summary>True for a new record whose name was filled in from a search.</summary>
+    public bool IsPrefilled { get; private set; }
+
     /// <summary>Loads the record being edited. Returns false if it no longer exists.</summary>
     public async Task<bool> LoadAsync()
     {
+        if (IsNew && !string.IsNullOrWhiteSpace(Request.PrefillName))
+        {
+            // Before anything is awaited, so the page can put the caret after the name when it loads.
+            // Part of the starting state: leaving without other changes doesn't ask to save.
+            Prefill(Request.PrefillName);
+            IsPrefilled = true;
+        }
         if (IsNew && Request.LinkFrom is { } linkFrom)
         {
             // One lookup when the editor opens; if the source is gone the card stays hidden.
@@ -203,6 +213,9 @@ public abstract class EditViewModelBase : PageViewModel
         }
     }
 
+    /// <summary>Fills in a new record's name from a search query (on New only).</summary>
+    protected abstract void Prefill(string query);
+
     protected abstract Task<bool> LoadRecordAsync();
     protected abstract Task<string> InsertAsync();
     protected abstract Task UpdateAsync();
@@ -238,6 +251,9 @@ public sealed class NoteEditViewModel : EditViewModelBase
     }
 
     private DateOnly SelectedDay => DateOnly.FromDateTime((Date ?? DateTimeOffset.Now).Date);
+
+    protected override void Prefill(string query) =>
+        NoteTitle.Value = CreateFromSearch.PrefillName(query, RecordType.Note) ?? "";
 
     protected override async Task<bool> LoadRecordAsync()
     {
@@ -313,6 +329,15 @@ public sealed class ContactEditViewModel : EditViewModelBase
         EmailMain, EmailMobile, EmailHome, EmailWork, Comments,
     ];
 
+    protected override void Prefill(string query)
+    {
+        if (CreateFromSearch.PrefillContactName(query) is { } name)
+        {
+            NameFirst.Value = name.NameFirst ?? "";
+            NameLast.Value = name.NameLast;
+        }
+    }
+
     protected override async Task<bool> LoadRecordAsync()
     {
         _contact = await Data.Contacts.GetContactAsync(Request.Id!);
@@ -387,6 +412,8 @@ public sealed class NamedRecordEditViewModel : EditViewModelBase
 
     public FormField Name { get; }
     public FormField Description { get; }
+
+    protected override void Prefill(string query) => Name.Value = CreateFromSearch.PrefillName(query, Type) ?? "";
 
     protected override async Task<bool> LoadRecordAsync()
     {
