@@ -171,6 +171,26 @@ public sealed partial class HomePage : Page
     private async void Bubbles_RecordInvoked(object? sender, MostLinkedRecord record) =>
         await Navigator.OpenRecordAsync(new RecordRef(record.Type, record.Id));
 
+    // ---------- Backup reminder
+
+    /// <summary>The same backup as Settings › Back up database; the reminder updates when it succeeds.</summary>
+    private async void BackUpNow_Click(object sender, RoutedEventArgs e)
+    {
+        var file = await BackupFiles.PickBackupFileAsync();
+        if (file == null)
+        {
+            return;
+        }
+        try
+        {
+            await ViewModel.BackUpAsync(file.Path);
+        }
+        catch (Exception ex)
+        {
+            await Dialogs.ShowErrorAsync("Couldn't back up the database", ex);
+        }
+    }
+
     private async void AddNew_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is string tag && Enum.TryParse<RecordType>(tag, out var type))

@@ -76,6 +76,8 @@ public sealed class HomeViewModel : PageViewModel
     private IReadOnlyList<LinkEnds> _mostLinkedLinks = [];
     private IReadOnlyList<TypeLinkCount> _linksPerType = [];
     private RecordType? _selectedType;
+    private BackupReminder _backup = new(BackupReminderKind.Hidden);
+    private bool _isBackingUp;
     private int _loadVersion;
     private int _mostLinkedVersion;
 
@@ -163,6 +165,61 @@ public sealed class HomeViewModel : PageViewModel
         OnPropertyChanged(nameof(MostLinkedSubtitle));
         OnPropertyChanged(nameof(TypeEmptyText));
         OnPropertyChanged(nameof(Legend));
+    }
+
+    // ---------- Backup reminder
+
+    public BackupReminder Backup
+    {
+        get => _backup;
+        private set
+        {
+            if (SetProperty(ref _backup, value))
+            {
+                OnPropertyChanged(nameof(IsBackupReminderShown));
+                OnPropertyChanged(nameof(BackupMessage));
+                OnPropertyChanged(nameof(BackupSeverity));
+            }
+        }
+    }
+
+    /// <summary>Hidden when nothing changed since the last backup.</summary>
+    public bool IsBackupReminderShown => Backup.Kind != BackupReminderKind.Hidden;
+
+    public string BackupMessage => Backup.Message(TimeZoneInfo.Local, CultureInfo.CurrentCulture);
+
+    /// <summary>A warning when never backed up, otherwise information.</summary>
+    public Microsoft.UI.Xaml.Controls.InfoBarSeverity BackupSeverity => Backup.Kind == BackupReminderKind.NeverBackedUp
+        ? Microsoft.UI.Xaml.Controls.InfoBarSeverity.Warning
+        : Microsoft.UI.Xaml.Controls.InfoBarSeverity.Informational;
+
+    public bool IsBackingUp
+    {
+        get => _isBackingUp;
+        private set
+        {
+            if (SetProperty(ref _isBackingUp, value))
+            {
+                OnPropertyChanged(nameof(CanBackUp));
+            }
+        }
+    }
+
+    public bool CanBackUp => !IsBackingUp;
+
+    /// <summary>Backs up to <paramref name="path"/> (as Settings › Back up database) and updates the reminder.</summary>
+    public async Task BackUpAsync(string path)
+    {
+        IsBackingUp = true;
+        try
+        {
+            await Data.Backup.ExportAsync(path);
+            Backup = await Data.Home.GetBackupReminderAsync();
+        }
+        finally
+        {
+            IsBackingUp = false;
+        }
     }
 
     // ---------- Notes, last 14 days
@@ -257,7 +314,8 @@ public sealed class HomeViewModel : PageViewModel
             var recentTask = home.GetRecentNotesAsync(RecentNoteCount);
             var openedTask = home.GetRecordSummariesAsync(App.Settings.RecentRecords.Select(r => (r.Type, r.Id)).ToList());
             var mostLinkedTask = LoadMostLinkedAsync();
-            await Task.WhenAll(countsTask, perDayTask, unlinkedTask, recentTask, openedTask, mostLinkedTask);
+            var backupTask = home.GetBackupReminderAsync();
+            await Task.WhenAll(countsTask, perDayTask, unlinkedTask, recentTask, openedTask, mostLinkedTask, backupTask);
             if (version != _loadVersion)
             {
                 return;
@@ -270,6 +328,7 @@ public sealed class HomeViewModel : PageViewModel
             UnlinkedCount = unlinkedTask.Result.TotalCount;
             RecentNotes = LinkedCard.ByDay(recentTask.Result);
             RecentlyOpened = openedTask.Result.Select(r => new LinkedRow(r)).ToList();
+            Backup = backupTask.Result;
         }
         finally
         {

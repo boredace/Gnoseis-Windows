@@ -10,7 +10,6 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Windows.Storage.Pickers;
 
 namespace Gnoseis.App.Views;
 
@@ -47,15 +46,7 @@ public sealed partial class SettingsPage : Page
 
     private async void Backup_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileSavePicker
-        {
-            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
-            SuggestedFileName = BackupRepository.DefaultBackupFileName(DateTime.Now),
-        };
-        picker.FileTypeChoices.Add("Gnoseis backup", [BackupRepository.BackupFileExtension]);
-        InitializeWithWindow(picker);
-
-        var file = await picker.PickSaveFileAsync();
+        var file = await BackupFiles.PickBackupFileAsync();
         if (file == null)
         {
             return;
@@ -70,12 +61,7 @@ public sealed partial class SettingsPage : Page
 
     private async void Restore_Click(object sender, RoutedEventArgs e)
     {
-        var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
-        // Android database and backup files have no fixed extension.
-        picker.FileTypeFilter.Add("*");
-        InitializeWithWindow(picker);
-
-        var file = await picker.PickSingleFileAsync();
+        var file = await BackupFiles.PickRestoreFileAsync();
         if (file == null)
         {
             return;
@@ -144,11 +130,5 @@ public sealed partial class SettingsPage : Page
             ResultInfoBar.ActionButton = show;
         }
         ResultInfoBar.IsOpen = true;
-    }
-
-    private static void InitializeWithWindow(object picker)
-    {
-        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow!);
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
     }
 }
