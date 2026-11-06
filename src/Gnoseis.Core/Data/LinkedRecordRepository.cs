@@ -52,6 +52,77 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
             return new LinkedRecordSet(records);
         });
 
+    /// <summary>
+    /// The notes linked to the given record, with their text and every record linked to each of
+    /// them (the given record included), for a history. Not sorted.
+    /// </summary>
+    public Task<List<Domain.HistoryNote>> GetLinkedNotesWithLinksAsync(string recordId) =>
+        Task.Run(() =>
+        {
+            using var connection = Database.OpenConnection();
+            var notes = new List<Note>();
+            using (var command = CreateCommand(connection,
+                       $"SELECT t.* FROM ({LinkedIdsSql}) AS lr JOIN Note AS t ON t.id = lr.linkedRecordId;", [("$recordId", recordId)]))
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    notes.Add(MapNote(reader));
+                }
+            }
+
+            // The records linked to those notes, by type, each with the notes it is linked to.
+            const string NoteLinksSql =
+                "SELECT record1Id AS noteId, record2Id AS otherId FROM LinkedRecord " +
+                $"WHERE record1Id IN (SELECT linkedRecordId FROM ({LinkedIdsSql})) " +
+                "UNION " +
+                "SELECT record2Id AS noteId, record1Id AS otherId FROM LinkedRecord " +
+                $"WHERE record2Id IN (SELECT linkedRecordId FROM ({LinkedIdsSql}))";
+            var noteIds = notes.Select(n => n.Id).ToHashSet(StringComparer.Ordinal);
+            var links = new Dictionary<string, List<LinkedRecordSummary>>(StringComparer.Ordinal);
+            var records = new List<LinkedRecordSummary>();
+            var notesOf = new List<string>();
+            var withParents = new List<(RecordType Type, string Id, string ParentId)>();
+            foreach (var type in RecordTypeExtensions.UserTypes)
+            {
+                using var command = CreateCommand(connection,
+                    $"SELECT t.*, nl.noteId AS noteId FROM ({NoteLinksSql}) AS nl " +
+                    $"JOIN `{RecordSummaries.TableOf(type)}` AS t ON t.id = nl.otherId WHERE nl.otherId <> nl.noteId;",
+                    [("$recordId", recordId)]);
+                using var reader = command.ExecuteReader();
+                var noteIdOrdinal = reader.GetOrdinal("noteId");
+                while (reader.Read())
+                {
+                    var noteId = reader.GetString(noteIdOrdinal);
+                    if (noteIds.Contains(noteId))
+                    {
+                        records.Add(RecordSummaries.Map(type, reader, withParents));
+                        notesOf.Add(noteId);
+                    }
+                }
+            }
+            for (var i = 0; i < records.Count; i++)
+            {
+                if (!links.TryGetValue(notesOf[i], out var list))
+                {
+                    links[notesOf[i]] = list = [];
+                }
+                list.Add(records[i]);
+            }
+
+            return notes.Select(n => new Domain.HistoryNote
+            {
+                Id = n.Id,
+                Title = n.Title?.Trim() ?? "",
+                Text = n.TextContents ?? "",
+                CreateDate = n.CreateDate,
+                CreateDateTime = n.CreateDateTime,
+                Links = links.TryGetValue(n.Id, out var list)
+                    ? list.OrderBy(l => (int)l.Type).ThenBy(l => l.SortName.Length > 0 ? l.SortName : l.Name, StringComparer.OrdinalIgnoreCase).ToList()
+                    : [],
+            }).ToList();
+        });
+
     /// <summary>Linked ids with the newest createdAt of their links (pre-v2 duplicates count once).</summary>
     private const string LinkedIdsWithTimeSql =
         "SELECT linkedRecordId, MAX(createdAt) AS linkedAt FROM (" +
@@ -113,7 +184,7 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
             ("$now", EpochTime.UtcNowMillis()));
 
     /// <summary>Inserts a link stamped with its created time, unless the records are already linked.</summary>
-    private const string AddLinkSql =
+    internal const string AddLinkSql =
         "INSERT INTO LinkedRecord (id, ownerDbId, record1Id, record2Id, record1TypeId, record2TypeId, createdAt) " +
         "SELECT $id, $ownerDbId, $record1Id, $record2Id, $record1TypeId, $record2TypeId, $now " +
         "WHERE NOT EXISTS (SELECT 1 FROM LinkedRecord " +
