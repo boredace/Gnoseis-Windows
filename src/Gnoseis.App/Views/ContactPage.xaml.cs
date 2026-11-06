@@ -558,9 +558,9 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             CreatedText.Visibility = ViewModel.CreatedAt != null ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        var grouped = ContactHistory.IsGrouped(notes.Count);
-        FilterRow.Visibility = grouped ? Visibility.Visible : Visibility.Collapsed;
-        if (!grouped && FilterBox.Text.Length > 0)
+        var filtered = ContactHistory.ShowsFilter(notes.Count);
+        FilterRow.Visibility = filtered ? Visibility.Visible : Visibility.Collapsed;
+        if (!filtered && FilterBox.Text.Length > 0)
         {
             FilterBox.Text = "";
         }
@@ -568,16 +568,24 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         ShowHistoryRows();
     }
 
-    /// <summary>The notes that match the filter, up to the number shown, under month headers from 13 notes.</summary>
+    /// <summary>
+    /// The notes that match the filter, up to the number shown, under month headers from 13 notes.
+    /// Under 13 the list gets the rows themselves, so no group header is drawn above the first note.
+    /// </summary>
     private void ShowHistoryRows()
     {
         var notes = ViewModel.History;
         var matching = notes.Where(n => ContactHistory.Matches(n, FilterBox.Text)).ToList();
         _rows = matching.Take(_shownNotes).Select(n => new HistoryRow(n, Record.Id)).ToList();
-        HistorySource.Source = ContactHistory.IsGrouped(notes.Count)
-            ? _rows.GroupBy(r => ContactHistory.Month(r.Note)).Select(g => new HistoryMonth(ContactHistory.MonthText(g.Key), g)).ToList()
-            : new List<HistoryMonth> { new("", _rows) };
-        HistoryList.ItemsSource = HistorySource.View;
+        if (ContactHistory.IsGrouped(notes.Count))
+        {
+            HistorySource.Source = _rows.GroupBy(r => ContactHistory.Month(r.Note)).Select(g => new HistoryMonth(ContactHistory.MonthText(g.Key), g)).ToList();
+            HistoryList.ItemsSource = HistorySource.View;
+        }
+        else
+        {
+            HistoryList.ItemsSource = _rows;
+        }
         HistoryList.Visibility = _rows.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         NoMatchText.Visibility = notes.Count > 0 && matching.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -620,6 +628,8 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             YearChips.Children.Add(CreateYearChip(year, count));
             CompactYearChips.Children.Add(CreateYearChip(year, count));
         }
+        // Without chips the filter box takes the whole row.
+        FilterRow.ColumnSpacing = years.Count > 0 ? 12 : 0;
         _litYear = null;
         LightYear(years.Count > 0 ? years[0].Year : null);
     }
