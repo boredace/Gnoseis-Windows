@@ -12,7 +12,7 @@ using Gnoseis.Core.Models;
 
 namespace Gnoseis.Core.Tests;
 
-/// <summary>The category page: header line, copy text, search matching, row allotment, column placement.</summary>
+/// <summary>The category page: header line, copy text, rows, search, row allotment, column placement.</summary>
 public class CategoryPageTests
 {
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
@@ -55,211 +55,153 @@ public class CategoryPageTests
         Assert.Equal("Project tags", CategoryPage.CopyText(cat));
     }
 
-    // ---------------------------------------------------------------- Search matching
+    // ---------------------------------------------------------------- Rows
 
-    [Fact]
-    public void Note_matches_on_title_case_insensitive()
+    private static readonly DateOnly Today = new(2026, 11, 6);
+
+    private static LinkedRecordSummary Linked(string id, RecordType type, string name, string firstLine = "", string job = "", string sortName = "") =>
+        new() { Id = id, Type = type, Name = name, FirstLine = firstLine, JobAndCompany = job, SortName = sortName.Length > 0 ? sortName : name };
+
+    private static HistoryNote Note(string id, DateOnly day, string title, string text, params LinkedRecordSummary[] links) => new()
     {
-        var note = new HistoryNote { Id = "n1", Title = "Visit to client", Text = "Discussed project" };
+        Id = id,
+        Title = title,
+        Text = text,
+        CreateDate = EpochTime.UtcMidnight(day),
+        CreateDateTime = EpochTime.UtcMidnight(day),
+        Links = links,
+    };
 
-        Assert.True(CategoryPage.MatchesNote(note, "visit"));
-        Assert.True(CategoryPage.MatchesNote(note, "VISIT"));
-        Assert.False(CategoryPage.MatchesNote(note, "lens"));
-    }
-
-    [Fact]
-    public void Note_matches_on_first_line_of_text()
+    private static IReadOnlyDictionary<RecordType, IReadOnlyList<CategoryRow>> SampleRows()
     {
-        var note = new HistoryNote { Id = "n1", Title = "", Text = "New frames\nSecond line" };
-
-        Assert.True(CategoryPage.MatchesNote(note, "frames"));
-        Assert.False(CategoryPage.MatchesNote(note, "second")); // second line, not first
-    }
-
-    [Fact]
-    public void Note_matches_on_day_text()
-    {
-        var note = new HistoryNote
+        var category = Linked("cat", RecordType.Category, "Kitchen");
+        var notes = new[]
         {
-            Id = "n1",
-            Title = "Call",
-            CreateDate = EpochTime.UtcMidnight(new DateOnly(2026, 5, 26)),
+            Note("n1", new DateOnly(2026, 10, 28), "Oven repair", "Called Kok about the oven", category, Linked("o1", RecordType.Organization, "Kok Catering")),
+            Note("n2", new DateOnly(2025, 3, 2), "", "Fridge check\nAll fine", category),
         };
-
-        Assert.True(CategoryPage.MatchesNote(note, "May"));
-        Assert.True(CategoryPage.MatchesNote(note, "26"));
-        Assert.False(CategoryPage.MatchesNote(note, "June"));
+        var linked = new LinkedRecordSet(
+        [
+            Linked("c1", RecordType.Contact, "Emma van Leeuwen", job: "Owner · Kok Catering", sortName: "van Leeuwenemma"),
+            Linked("c2", RecordType.Contact, "Daan Bakker", job: "Chef", sortName: "Bakkerdaan"),
+            Linked("o1", RecordType.Organization, "Kok Catering", "Supplier"),
+            Linked("i1", RecordType.Item, "Oven", "Bought 2020"),
+            Linked("n1", RecordType.Note, "Oven repair"),
+        ]);
+        return CategoryPage.Rows("cat", notes, linked, Today, Invariant);
     }
 
     [Fact]
-    public void Note_matches_on_with_line()
+    public void Rows_show_notes_newest_first_with_day_and_with_line()
     {
-        var note = new HistoryNote
-        {
-            Id = "n1",
-            Title = "Quote",
-            Links = [new LinkedRecordSummary { Id = "i1", Type = RecordType.Item, Name = "Paint colours" }],
-        };
+        var notes = SampleRows()[RecordType.Note];
 
-        Assert.True(CategoryPage.MatchesNote(note, "Paint"));
-        Assert.True(CategoryPage.MatchesNote(note, "colours"));
-        Assert.False(CategoryPage.MatchesNote(note, "flooring"));
+        Assert.Equal(["n1", "n2"], notes.Select(r => r.Id));
+        Assert.Equal(("28 Oct", "Oven repair", "Kok Catering"), (notes[0].Day, notes[0].Name, notes[0].Second));
+        Assert.Equal(("2 Mar 2025", "Fridge check", ""), (notes[1].Day, notes[1].Name, notes[1].Second));
     }
 
     [Fact]
-    public void Note_blank_query_matches_all()
+    public void Rows_show_the_other_types_by_name_with_their_second_line()
     {
-        var note = new HistoryNote { Id = "n1", Title = "Call" };
+        var rows = SampleRows();
 
-        Assert.True(CategoryPage.MatchesNote(note, ""));
-        Assert.True(CategoryPage.MatchesNote(note, null!));
+        Assert.Equal(["c2", "c1"], rows[RecordType.Contact].Select(r => r.Id));
+        Assert.Equal("Owner · Kok Catering", rows[RecordType.Contact][1].Second);
+        Assert.Equal(("Kok Catering", "Supplier"), (rows[RecordType.Organization][0].Name, rows[RecordType.Organization][0].Second));
+        Assert.Empty(rows[RecordType.Category]);
+        Assert.Equal(CategoryPage.ListTypes.ToHashSet(), rows.Keys.ToHashSet());
     }
 
     [Fact]
-    public void Contact_matches_on_name()
+    public void List_types_are_notes_contacts_organizations_items_categories()
     {
-        var contact = new LinkedRecordSummary
-        {
-            Id = "c1", Type = RecordType.Contact, Name = "Emma van Leeuwen", JobAndCompany = "Owner · Ruby Eye Clinic",
-        };
+        Assert.Equal([RecordType.Note, RecordType.Contact, RecordType.Organization, RecordType.Item, RecordType.Category], CategoryPage.ListTypes);
+    }
 
-        Assert.True(CategoryPage.MatchesContact(contact, "Emma"));
-        Assert.True(CategoryPage.MatchesContact(contact, "van Leeuwen"));
-        Assert.False(CategoryPage.MatchesContact(contact, "Bakker"));
+    // ---------------------------------------------------------------- Search
+
+    [Fact]
+    public void Search_matches_what_each_row_shows_ignoring_case()
+    {
+        var rows = SampleRows();
+
+        Assert.True(rows[RecordType.Note][0].Matches("KOK"));           // the with line
+        Assert.True(rows[RecordType.Note][0].Matches("called"));        // a titled note's first line
+        Assert.True(rows[RecordType.Note][1].Matches("fridge"));        // an untitled note's first line is its title
+        Assert.False(rows[RecordType.Note][1].Matches("all fine"));     // not the whole note text
+        Assert.True(rows[RecordType.Contact][1].Matches("kok"));        // job title · company
+        Assert.True(rows[RecordType.Organization][0].Matches("suppl")); // first comment line
+        Assert.False(rows[RecordType.Item][0].Matches("kok"));
+        Assert.True(rows[RecordType.Item][0].Matches("  "));
     }
 
     [Fact]
-    public void Contact_matches_on_job_and_company()
+    public void Search_counts_per_list_and_in_total()
     {
-        var contact = new LinkedRecordSummary
-        {
-            Id = "c1", Type = RecordType.Contact, Name = "Emma van Leeuwen", JobAndCompany = "Owner · Ruby Eye Clinic",
-        };
+        var rows = SampleRows();
+        var matches = CategoryPage.ListTypes.Select(t => rows[t].Count(r => r.Matches("kok"))).ToList();
 
-        Assert.True(CategoryPage.MatchesContact(contact, "Owner"));
-        Assert.True(CategoryPage.MatchesContact(contact, "Ruby Eye Clinic"));
-        Assert.False(CategoryPage.MatchesContact(contact, "Manager"));
+        Assert.Equal([1, 1, 1, 0, 0], matches);
+        Assert.Equal("3 matches in 3 of 5 lists · Esc clears", CategoryPage.SearchStatus(matches, searching: true));
+        Assert.Equal("1 match in 1 of 5 lists · Esc clears", CategoryPage.SearchStatus([1, 0, 0, 0, 0], searching: true));
+        Assert.Equal("No matches · Esc clears", CategoryPage.SearchStatus([0, 0, 0, 0, 0], searching: true));
+        Assert.Equal("Searches all five lists at once", CategoryPage.SearchStatus(matches, searching: false));
     }
 
     [Fact]
-    public void Named_record_matches_on_name()
+    public void List_texts()
     {
-        var org = new LinkedRecordSummary { Id = "o1", Type = RecordType.Organization, Name = "Kok Catering" };
-
-        Assert.True(CategoryPage.MatchesNamedRecord(org, "Kok"));
-        Assert.True(CategoryPage.MatchesNamedRecord(org, "catering"));
-        Assert.False(CategoryPage.MatchesNamedRecord(org, "Bakker"));
+        Assert.Equal("Search the 73 records in this category", CategoryPage.SearchPlaceholder(73));
+        Assert.Equal("Search the 1 record in this category", CategoryPage.SearchPlaceholder(1));
+        Assert.Equal("none", CategoryPage.CountText(0, 0, searching: false));
+        Assert.Equal("41", CategoryPage.CountText(41, 41, searching: false));
+        Assert.Equal("3 of 41", CategoryPage.CountText(41, 3, searching: true));
+        Assert.Equal("Newest first", CategoryPage.SortText(RecordType.Note, 2));
+        Assert.Equal("A–Z", CategoryPage.SortText(RecordType.Contact, 5));
+        Assert.Equal("", CategoryPage.SortText(RecordType.Contact, 1));
+        Assert.Equal("No contacts in this category yet", CategoryPage.EmptyText(RecordType.Contact));
+        Assert.Equal("Add an organization", CategoryPage.AddText(RecordType.Organization));
+        Assert.Equal("Add a note (Ctrl+Shift+N)", CategoryPage.AddText(RecordType.Note));
     }
 
     [Fact]
-    public void Named_record_matches_on_first_line()
+    public void Match_ranges_mark_every_occurrence_ignoring_case()
     {
-        var item = new LinkedRecordSummary { Id = "i1", Type = RecordType.Item, Name = "SRV-0007", FirstLine = "Hyper-V host" };
+        Assert.Equal([new TextRange(0, 3), new TextRange(8, 3)], CategoryPage.MatchRanges("Kok and kok", " KOK "));
+        Assert.Empty(CategoryPage.MatchRanges("Kok", ""));
+        Assert.Empty(CategoryPage.MatchRanges("Kok", "x"));
+    }
 
-        Assert.True(CategoryPage.MatchesNamedRecord(item, "Hyper-V"));
-        Assert.True(CategoryPage.MatchesNamedRecord(item, "host"));
-        Assert.False(CategoryPage.MatchesNamedRecord(item, "Dell"));
+    // ---------------------------------------------------------------- Rows shown and columns
+
+    [Fact]
+    public void Allot_rows_starts_at_three_and_never_over_a_list_length()
+    {
+        Assert.Equal([3, 1, 0], CategoryPage.AllotRows([10, 1, 0], 4));
     }
 
     [Fact]
-    public void Any_match_returns_true_when_any_record_matches()
+    public void Allot_rows_gives_spare_rows_one_at_a_time_to_lists_with_more()
     {
-        var records = new[]
-        {
-            new LinkedRecordSummary { Id = "c1", Type = RecordType.Contact, Name = "Emma van Leeuwen" },
-            new LinkedRecordSummary { Id = "o1", Type = RecordType.Organization, Name = "Kok Catering" },
-        };
-
-        Assert.True(CategoryPage.AnyMatch(records, "Emma"));
-        Assert.True(CategoryPage.AnyMatch(records, "Kok"));
-        Assert.False(CategoryPage.AnyMatch(records, "Bakker"));
+        Assert.Equal([6, 5], CategoryPage.AllotRows([20, 5], 11));
+        Assert.Equal([5, 4], CategoryPage.AllotRows([20, 20], 9));
+        Assert.Equal([20, 5], CategoryPage.AllotRows([20, 5], 100));
     }
 
     [Fact]
-    public void Any_match_returns_false_for_empty_list()
+    public void Column_count_by_band()
     {
-        Assert.False(CategoryPage.AnyMatch([], "test"));
-    }
-
-    // ---------------------------------------------------------------- Row allotment
-
-    [Fact]
-    public void Allot_rows_starts_at_three_per_list()
-    {
-        var lengths = new[] { 10, 20, 5, 30, 8 };
-        var result = CategoryPage.AllotRows(lengths, 15);
-
-        Assert.Equal(new[] { 3, 3, 3, 3, 3 }, result);
+        Assert.Equal([1, 2, 3, 5, 5], new[] { RecordPageBand.S, RecordPageBand.M, RecordPageBand.L, RecordPageBand.XL, RecordPageBand.XXL }.Select(CategoryPage.ColumnCount));
     }
 
     [Fact]
-    public void Allot_rows_distributes_spare_to_lists_with_more()
+    public void Place_columns_puts_each_list_under_the_shortest_column_counting_up_to_20_rows()
     {
-        var lengths = new[] { 10, 20, 5, 30, 8 };
-        var result = CategoryPage.AllotRows(lengths, 20);
-
-        // 5 lists × 3 = 15, 5 spare. Distributed to lists with capacity.
-        Assert.Equal(20, result.Sum());
-        Assert.True(result.All(r => r <= lengths[result.ToList().IndexOf(r)]));
-    }
-
-    [Fact]
-    public void Allot_rows_caps_at_list_length()
-    {
-        var lengths = new[] { 3, 3, 3, 3, 3 };
-        var result = CategoryPage.AllotRows(lengths, 20);
-
-        Assert.Equal(new[] { 3, 3, 3, 3, 3 }, result);
-    }
-
-    [Fact]
-    public void Allot_rows_caps_at_max_rows()
-    {
-        var lengths = new[] { 100, 100, 100, 100, 100 };
-        var result = CategoryPage.AllotRows(lengths, 10);
-
-        // 5 × 3 = 15 > 10, so first 5 lists get 2 each (but capped at 3)
-        // Actually: starts at 3 each = 15, remaining = 10 - 15 = -5, so just 3 each but capped at 10 total
-        // Wait: maxRows=10, starts with 3 each = 15 > 10
-        // The algorithm: remaining = 10 - 15 = -5, which is <= 0, so returns [3,3,3,3,3]
-        // But that sums to 15 > 10. The cap is only on distribution, not on initial.
-        Assert.Equal(new[] { 3, 3, 3, 3, 3 }, result);
-        Assert.True(result.Sum() > 10); // Initial 3 each exceeds maxRows when lists > maxRows/3
-    }
-
-    // ---------------------------------------------------------------- Column placement
-
-    [Fact]
-    public void Place_columns_uses_shortest_column_first()
-    {
-        var allotment = new[] { 10, 10, 10, 10, 10 };
-        var result = CategoryPage.PlaceColumns(allotment, 2, 20);
-
-        // 5 lists, 2 columns, maxRows=20 per column:
-        // List 0 → col 0: min(10, 20-0)=10, col0=10
-        // List 1 → col 1: min(10, 20-0)=10, col1=10
-        // List 2 → col 0 (tie): min(10, 20-10)=10, col0=20
-        // List 3 → col 1: min(10, 20-10)=10, col1=20
-        // List 4 → col 0 (tie): min(10, 20-20)=0, col0=20
-        Assert.Equal(new[] { 10, 10, 10, 10, 0 }, result);
-    }
-
-    [Fact]
-    public void Place_columns_respects_max_rows()
-    {
-        var allotment = new[] { 10, 10, 10, 10, 10 };
-        var result = CategoryPage.PlaceColumns(allotment, 2, 6);
-
-        // 2 columns, max 6 per column: each column gets 6, total 12
-        Assert.Equal(12, result.Sum());
-    }
-
-    [Fact]
-    public void Place_columns_single_column_passes_through()
-    {
-        var allotment = new[] { 5, 10, 3 };
-        var result = CategoryPage.PlaceColumns(allotment, 1, 20);
-
-        Assert.Equal(allotment, result);
+        // Notes 41 (counts 20), contacts 7, organizations 5, items 2, categories 0 (counts 1), in three columns.
+        Assert.Equal([0, 1, 2, 2, 1], CategoryPage.PlaceColumns([41, 7, 5, 2, 0], 3));
+        Assert.Equal([0, 1, 0, 1, 0], CategoryPage.PlaceColumns([3, 3, 3, 3, 3], 2));
+        Assert.Equal([0, 1, 2, 3, 4], CategoryPage.PlaceColumns([41, 7, 5, 2, 0], 5));
+        Assert.Equal([0, 0, 0, 0, 0], CategoryPage.PlaceColumns([41, 7, 5, 2, 0], 1));
     }
 }

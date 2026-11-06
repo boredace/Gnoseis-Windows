@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Gnoseis.App.Views.CategoryPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls"
+    KeyDown="Page_KeyDown"
+    PreviewKeyDown="Page_PreviewKeyDown"
+    SizeChanged="Page_SizeChanged">
+
+    <!-- Parts built in code take their colours from these styles, so they follow the page's theme -->
+    <Page.Resources>
+        <Style x:Key="ListCardStyle" TargetType="Border">
+            <Setter Property="Padding" Value="12,6,8,8" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        </Style>
+        <Style x:Key="RowDividerStyle" TargetType="Rectangle">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Fill" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        </Style>
+        <Style x:Key="ListTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+        </Style>
+        <Style x:Key="ListCountStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
+        </Style>
+        <Style x:Key="TertiaryCaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
+        </Style>
+        <Style x:Key="RowTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+            <Setter Property="TextWrapping" Value="NoWrap" />
+        </Style>
+        <!-- Caption size, so a day with its year ("27 Dec 2022") fits the 76 px column -->
+        <Style x:Key="DayTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="NoWrap" />
+            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+        </Style>
+    </Page.Resources>
+
+    <Grid x:Name="Root">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="N" Invoked="NoteAccelerator_Invoked" Modifiers="Control,Shift" />
+            <KeyboardAccelerator Key="C" Invoked="CopyAccelerator_Invoked" Modifiers="Control,Shift" />
+        </Grid.KeyboardAccelerators>
+
+        <!-- Header, search and the five lists scroll together -->
+        <ScrollViewer
+            x:Name="MainScroller"
+            HorizontalScrollMode="Disabled"
+            ViewChanged="MainScroller_ViewChanged"
+            Visibility="Collapsed">
+            <Grid x:Name="MainGrid" HorizontalAlignment="Left" RowSpacing="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Header: TypeTile, name, header line, Edit/Link/More command bar -->
+                <StackPanel x:Name="HeaderBlock" Spacing="14">
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <controls:TypeTile
+                            x:Name="TypeTile"
+                            Width="56"
+                            Height="56"
+                            AutomationProperties.AccessibilityView="Raw"
+                            FontSize="24" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock
+                                x:Name="NameText"
+                                AutomationProperties.HeadingLevel="Level1"
+                                IsTextSelectionEnabled="True"
+                                MaxLines="2"
+                                Style="{StaticResource SubtitleTextBlockStyle}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="Wrap" />
+                            <!-- "Category · 9 linked records"; a placeholder has the part after the type in tertiary text -->
+                            <TextBlock
+                                x:Name="HeaderLineText"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                IsTextSelectionEnabled="True"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                TextTrimming="CharacterEllipsis">
+                                <Run x:Name="HeaderLineRun" /><Run x:Name="HeaderPlaceholderRun" Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            </TextBlock>
+                        </StackPanel>
+                        <CommandBar
+                            x:Name="Commands"
+                            Grid.Column="2"
+                            VerticalAlignment="Top"
+                            Background="Transparent"
+                            DefaultLabelPosition="Right"
+                            OverflowButtonVisibility="Collapsed">
+                            <AppBarButton x:Name="EditButton" Click="Edit_Click" Label="Edit" ToolTipService.ToolTip="Edit (Ctrl+E)">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE70F;" />
+                                </AppBarButton.Icon>
+                                <AppBarButton.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="E" Modifiers="Control" />
+                                </AppBarButton.KeyboardAccelerators>
+                            </AppBarButton>
+                            <AppBarButton Click="Link_Click" Label="Link" ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE71B;" />
+                                </AppBarButton.Icon>
+                                <AppBarButton.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="L" Modifiers="Control" />
+                                </AppBarButton.KeyboardAccelerators>
+                            </AppBarButton>
+                            <AppBarButton
+                                x:Name="MoreButton"
+                                AutomationProperties.Name="More"
+                                LabelPosition="Collapsed"
+                                ToolTipService.ToolTip="More">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE712;" />
+                                </AppBarButton.Icon>
+                                <AppBarButton.Flyout>
+                                    <MenuFlyout x:Name="MoreMenu" Opening="MoreMenu_Opening" Placement="BottomEdgeAlignedRight" />
+                                </AppBarButton.Flyout>
+                            </AppBarButton>
+                        </CommandBar>
+                    </Grid>
+                    <!-- The comments in 2 lines, indented to the name; with none, a dashed About chip -->
+                    <TextBlock
+                        x:Name="CommentsText"
+                        MaxWidth="760"
+                        Margin="72,0,0,0"
+                        HorizontalAlignment="Left"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        IsTextSelectionEnabled="True"
+                        MaxLines="2"
+                        Style="{StaticResource BodyTextBlockStyle}"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+                    <controls:WrapPanel
+                        x:Name="ChipsPanel"
+                        Margin="72,0,0,0"
+                        HorizontalSpacing="8"
+                        VerticalSpacing="8"
+                        Visibility="Collapsed" />
+                </StackPanel>
+
+                <!-- Search over all five lists; not shown when nothing is linked -->
+                <controls:WrapPanel
+                    x:Name="SearchRow"
+                    Grid.Row="1"
+                    HorizontalSpacing="16"
+                    VerticalSpacing="8">
+                    <TextBox
+                        x:Name="SearchBox"
+                        Width="560"
+                        KeyDown="SearchBox_KeyDown"
+                        TextChanged="SearchBox_TextChanged" />
+                    <TextBlock
+                        x:Name="SearchStatusText"
+                        VerticalAlignment="Center"
+                        AutomationProperties.LiveSetting="Polite"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}" />
+                </controls:WrapPanel>
+
+                <!-- The five lists, in columns -->
+                <Grid x:Name="ListsGrid" Grid.Row="2" ColumnSpacing="24" />
+            </Grid>
+        </ScrollViewer>
+
+        <!-- Compact header: once the full header has scrolled out of view -->
+        <Grid
+            x:Name="CompactHeader"
+            VerticalAlignment="Top"
+            Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}"
+            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+            BorderThickness="0,0,0,1"
+            ColumnSpacing="12"
+            Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button
+                x:Name="CompactNameButton"
+                Padding="4"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="CompactName_Click"
+                ToolTipService.ToolTip="Back to the top (Home)">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <controls:TypeTile
+                        x:Name="CompactTypeTile"
+                        Width="32"
+                        Height="32"
+                        AutomationProperties.AccessibilityView="Raw"
+                        FontSize="16" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock
+                            x:Name="CompactNameText"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            x:Name="CompactLineText"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </StackPanel>
+            </Button>
+            <StackPanel Grid.Column="2" VerticalAlignment="Center" Orientation="Horizontal">
+                <AppBarButton
+                    Width="40"
+                    AutomationProperties.Name="Edit"
+                    Click="Edit_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="Edit (Ctrl+E)">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE70F;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton
+                    Width="40"
+                    AutomationProperties.Name="Link"
+                    Click="Link_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE71B;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton
+                    x:Name="CompactMoreButton"
+                    Width="40"
+                    AutomationProperties.Name="More"
+                    Click="CompactMore_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="More">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE712;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </StackPanel>
+        </Grid>
+
+        <!-- After Unlink: Undo. Stays until closed, the next unlink, or leaving the page. -->
+        <InfoBar
+            x:Name="UnlinkInfoBar"
+            MaxWidth="560"
+            Margin="16"
+            VerticalAlignment="Bottom"
+            AutomationProperties.LiveSetting="Polite"
+            Closed="UnlinkInfoBar_Closed"
+            IsClosable="True"
+            IsOpen="False"
+            Severity="Informational">
+            <InfoBar.ActionButton>
+                <Button Click="Undo_Click" Content="Undo" />
+            </InfoBar.ActionButton>
+        </InfoBar>
+
+        <!-- "Copied", next to what was copied -->
+        <TeachingTip
+            x:Name="CopiedTip"
+            IsLightDismissEnabled="True"
+            PreferredPlacement="Bottom" />
+
+        <!-- The record was deleted (e.g. while this page was in the back stack) -->
+        <StackPanel
+            x:Name="MissingState"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Spacing="12"
+            Visibility="Collapsed">
+            <FontIcon FontSize="48" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Glyph="&#xE9CE;" />
+            <TextBlock HorizontalAlignment="Center" Style="{StaticResource SecondaryTextStyle}" Text="This record no longer exists." />
+        </StackPanel>
+    </Grid>
+</Page>

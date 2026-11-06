@@ -192,6 +192,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
             RecordType.Contact => typeof(ContactPage),
             RecordType.Note => typeof(NotePage),
             RecordType.Item or RecordType.Organization => typeof(RecordHistoryPage),
+            RecordType.Category => typeof(CategoryPage),
             _ => typeof(RecordDetailsPage),
         };
         DetailFrame.Navigate(page, new RecordRef(Type, id), new EntranceNavigationTransitionInfo());

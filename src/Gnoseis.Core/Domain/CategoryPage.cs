@@ -12,197 +12,173 @@ using Gnoseis.Core.Models;
 namespace Gnoseis.Core.Domain;
 
 /// <summary>
-/// What the category page shows that doesn't depend on the UI: the header line, copy text,
-/// search matching per type, row allotment, and column placement.
+/// One row of a category's lists, as it shows: a note's day, title and "with" line; a contact's name
+/// and job title · company; another record's name and first comment line.
+/// </summary>
+/// <param name="Day">A note's day ("28 Oct", with the year when it isn't this year); empty for other types.</param>
+/// <param name="Name">The title or name.</param>
+/// <param name="Second">The "with" line, job title · company, or first comment line; empty when there is none.</param>
+/// <param name="Searched">Further text a search matches that the row doesn't show (a note's first line when it has a title).</param>
+public sealed record CategoryRow(string Id, RecordType Type, string Day, string Name, string Second, string Searched = "")
+{
+    /// <summary>Whether the row's text contains <paramref name="query"/>, ignoring case. A blank query matches every row.</summary>
+    public bool Matches(string? query)
+    {
+        var text = (query ?? "").Trim();
+        return text.Length == 0
+            || Name.Contains(text, StringComparison.CurrentCultureIgnoreCase)
+            || Second.Contains(text, StringComparison.CurrentCultureIgnoreCase)
+            || Searched.Contains(text, StringComparison.CurrentCultureIgnoreCase);
+    }
+}
+
+/// <summary>
+/// What the category page shows that doesn't depend on the UI: the header line, copy text, the five
+/// lists' rows, the search over all of them, and how many rows each list shows in which column.
 /// </summary>
 public static class CategoryPage
 {
-    /// <summary>
-    /// The line under the name: "Category · 73 linked records".
-    /// Singular form for count 1. Placeholder when count is 0.
-    /// </summary>
-    public static (string Text, bool IsPlaceholder) HeaderLine(int totalLinkedCount)
-    {
-        if (totalLinkedCount == 0)
-        {
-            return ("Category · no notes or links yet", true);
-        }
+    /// <summary>Rows every list starts with.</summary>
+    public const int StartRows = 3;
 
-        return ($"Category · {totalLinkedCount} {(totalLinkedCount == 1 ? "linked record" : "linked records")}", false);
-    }
+    /// <summary>Rows a list counts as at most when placing it in a column.</summary>
+    public const int PlacementRowCap = 20;
+
+    /// <summary>The lists, always all five, in this order.</summary>
+    public static IReadOnlyList<RecordType> ListTypes { get; } =
+        [RecordType.Note, RecordType.Contact, RecordType.Organization, RecordType.Item, RecordType.Category];
 
     /// <summary>
-    /// Copy category details: the name, then an empty line and the comments when there are any.
+    /// The line under the name: "Category · 73 linked records" (notes and every other linked record
+    /// together), or "Category · no notes or links yet".
     /// </summary>
-    public static string CopyText(Category category)
-    {
-        var lines = new List<string>();
-        var name = category.CategoryName?.Trim() ?? "";
-        if (name.Length > 0)
-        {
-            lines.Add(name);
-        }
-        var comments = category.Comments?.Trim();
-        if (!string.IsNullOrWhiteSpace(comments))
-        {
-            lines.Add("");
-            lines.Add(comments);
-        }
-        return string.Join(Environment.NewLine, lines);
-    }
+    public static (string Text, bool IsPlaceholder) HeaderLine(int totalLinkedCount) =>
+        totalLinkedCount == 0
+            ? ("Category · no notes or links yet", true)
+            : ($"Category · {totalLinkedCount} {(totalLinkedCount == 1 ? "linked record" : "linked records")}", false);
 
-    // ---------------------------------------------------------------- Search matching
+    /// <summary>Copy category details: the name, then an empty line and the comments when there are any.</summary>
+    public static string CopyText(Category category) => RecordHistoryPage.CopyText(category.CategoryName, category.Comments);
+
+    // ---------------------------------------------------------------- Rows
 
     /// <summary>
-    /// Whether a note matches the query: day, title, first line of text, and the "with" line
-    /// (other linked records), case-insensitive. A blank query matches all.
+    /// The rows of each list: notes newest first by note day, with the note's other linked records
+    /// (the category left out) as the second line; the other types by name.
     /// </summary>
-    public static bool MatchesNote(HistoryNote note, string query, CultureInfo? culture = null)
+    public static IReadOnlyDictionary<RecordType, IReadOnlyList<CategoryRow>> Rows(
+        string categoryId, IEnumerable<HistoryNote> notes, LinkedRecordSet linked, DateOnly today, CultureInfo? culture = null)
     {
-        if (string.IsNullOrEmpty(query))
+        culture ??= CultureInfo.CurrentCulture;
+        var rows = new Dictionary<RecordType, IReadOnlyList<CategoryRow>>
         {
-            return true;
-        }
-
-        var cmp = StringComparison.CurrentCultureIgnoreCase;
-
-        // Day text: "26 May" or "26 May 2025"
-        var dayText = ContactHistory.DayText(note, culture);
-        if (dayText.Contains(query, cmp))
-        {
-            return true;
-        }
-
-        // Title
-        if (note.Title.Contains(query, cmp))
-        {
-            return true;
-        }
-
-        // First line of text body
-        var firstLine = NoteFirstLine(note);
-        if (firstLine.Contains(query, cmp))
-        {
-            return true;
-        }
-
-        // "With" line (other linked records)
-        var withLine = ContactHistory.RowLinks(note, "");
-        if (withLine.Contains(query, cmp))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>The first line of a note's text body.</summary>
-    private static string NoteFirstLine(HistoryNote note)
-    {
-        var lines = note.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        return lines.Length > 0 ? lines[0] : "";
-    }
-
-    /// <summary>
-    /// Whether a contact matches the query: name, job title, and company, case-insensitive.
-    /// </summary>
-    public static bool MatchesContact(LinkedRecordSummary contact, string query)
-    {
-        if (query.Length == 0)
-        {
-            return true;
-        }
-
-        var cmp = StringComparison.CurrentCultureIgnoreCase;
-        return contact.Name.Contains(query, cmp)
-            || contact.JobAndCompany.Contains(query, cmp);
-    }
-
-    /// <summary>
-    /// Whether an organization, category, or item matches the query: name and first comment line,
-    /// case-insensitive.
-    /// </summary>
-    public static bool MatchesNamedRecord(LinkedRecordSummary record, string query)
-    {
-        if (query.Length == 0)
-        {
-            return true;
-        }
-
-        var cmp = StringComparison.CurrentCultureIgnoreCase;
-        return record.Name.Contains(query, cmp)
-            || record.FirstLine.Contains(query, cmp);
-    }
-
-    /// <summary>
-    /// Whether any record type matches the query. Delegates to the appropriate method.
-    /// </summary>
-    public static bool MatchesAnyType(LinkedRecordSummary record, string query) =>
-        record.Type switch
-        {
-            RecordType.Note => MatchesNote(new HistoryNote
-            {
-                Id = record.Id,
-                Title = record.Name,
-                Text = record.Text,
-                CreateDate = record.NoteDate,
-                CreateDateTime = record.NoteDateTime,
-                Links = [record],
-            }, query),
-            RecordType.Contact => MatchesContact(record, query),
-            _ => MatchesNamedRecord(record, query),
+            [RecordType.Note] = ContactHistory.Order(notes).Select(n => NoteRow(n, categoryId, today, culture)).ToList(),
         };
-
-    /// <summary>
-    /// Whether any of the records match the query, regardless of type.
-    /// </summary>
-    public static bool AnyMatch(IEnumerable<LinkedRecordSummary> records, string query) =>
-        records.Any(r => MatchesAnyType(r, query));
-
-    // ---------------------------------------------------------------- Row allotment
-
-    /// <summary>
-    /// Distribute rows across lists: start at 3 per list, then give spare rows to lists that
-    /// have more available, up to each list's length. Total rows capped at <paramref name="maxRows"/>.
-    /// </summary>
-    public static IReadOnlyList<int> AllotRows(IReadOnlyList<int> listLengths, int maxRows)
-    {
-        var rows = listLengths.Select(_ => 3).ToList();
-        var remaining = maxRows - rows.Sum();
-        if (remaining <= 0)
+        foreach (var type in ListTypes.Where(t => t != RecordType.Note))
         {
-            return rows;
+            rows[type] = (linked.Find(type)?.Records ?? [])
+                .Where(r => r.Id != categoryId)
+                .OrderBy(r => r.SortName.Length > 0 ? r.SortName : r.Name, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(r => r.Id, StringComparer.Ordinal)
+                .Select(RecordRow)
+                .ToList();
         }
-
-        // Keep distributing until no more rows can be given or we've used all remaining.
-        while (remaining > 0)
-        {
-            var distributed = false;
-            for (var i = 0; i < listLengths.Count; i++)
-            {
-                var canAdd = listLengths[i] - rows[i];
-                if (canAdd > 0 && remaining > 0)
-                {
-                    rows[i]++;
-                    remaining--;
-                    distributed = true;
-                }
-            }
-            if (!distributed)
-            {
-                break;
-            }
-        }
-
         return rows;
     }
 
-    // ---------------------------------------------------------------- Column placement
+    private static CategoryRow NoteRow(HistoryNote note, string categoryId, DateOnly today, CultureInfo culture)
+    {
+        var day = ContactHistory.Day(note);
+        var with = note.Links.Where(l => l.Id != categoryId).Select(l => l.Name.Length > 0 ? l.Name : l.Type.DisplayName()).ToList();
+        var firstLine = note.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? "";
+        return new CategoryRow(
+            note.Id,
+            RecordType.Note,
+            day.ToString(day.Year == today.Year ? "d MMM" : "d MMM yyyy", culture),
+            ContactHistory.FullTitle(note),
+            ContactHistory.RowLinks(note, categoryId),
+            // A search also finds the first line of a titled note, and every name of the "with" line (not only the first 3).
+            string.Join("\n", new[] { note.Title.Length > 0 ? firstLine : "" }.Concat(with)));
+    }
+
+    private static CategoryRow RecordRow(LinkedRecordSummary record) => record.Type switch
+    {
+        RecordType.Contact => new CategoryRow(record.Id, record.Type, "", record.Name.Length > 0 ? record.Name : record.Type.DisplayName(), record.JobAndCompany),
+        _ => new CategoryRow(record.Id, record.Type, "", record.Name.Length > 0 ? record.Name : record.Type.DisplayName(), record.FirstLine),
+    };
+
+    // ---------------------------------------------------------------- Search
+
+    /// <summary>"Search the 73 records in this category".</summary>
+    public static string SearchPlaceholder(int totalCount) =>
+        $"Search the {totalCount} {(totalCount == 1 ? "record" : "records")} in this category";
 
     /// <summary>
-    /// Number of columns for the category lists, by band: 1 under 860, 2 at 860–1099,
-    /// 3 at 1100–1699, 5 from 1700 (capped at 5 lists).
+    /// The text beside the search box: "Searches all five lists at once"; while searching,
+    /// "6 matches in 4 of 5 lists · Esc clears", or "No matches · Esc clears".
     /// </summary>
+    public static string SearchStatus(IReadOnlyCollection<int> matchesPerList, bool searching)
+    {
+        if (!searching)
+        {
+            return "Searches all five lists at once";
+        }
+        var total = matchesPerList.Sum();
+        if (total == 0)
+        {
+            return "No matches · Esc clears";
+        }
+        var lists = matchesPerList.Count(m => m > 0);
+        return $"{total} {(total == 1 ? "match" : "matches")} in {lists} of {matchesPerList.Count} lists · Esc clears";
+    }
+
+    /// <summary>A list's count: "41", "none" when empty; while searching "3 of 41".</summary>
+    public static string CountText(int count, int matches, bool searching) =>
+        searching ? $"{matches} of {count}" : count == 0 ? "none" : count.ToString(CultureInfo.CurrentCulture);
+
+    /// <summary>A list's sort: "Newest first" for notes, "A–Z" for the others; empty under 2 rows.</summary>
+    public static string SortText(RecordType type, int rowCount) =>
+        rowCount < 2 ? "" : type == RecordType.Note ? "Newest first" : "A–Z";
+
+    /// <summary>"No contacts in this category yet".</summary>
+    public static string EmptyText(RecordType type) =>
+        $"No {type.PluralDisplayName().ToLower(CultureInfo.CurrentCulture)} in this category yet";
+
+    /// <summary>"Add a contact", "Add an organization", "Add a note (Ctrl+Shift+N)".</summary>
+    public static string AddText(RecordType type)
+    {
+        var name = type.DisplayName().ToLower(CultureInfo.CurrentCulture);
+        var text = $"Add {("aeiou".Contains(name[0]) ? "an" : "a")} {name}";
+        return type == RecordType.Note ? $"{text} (Ctrl+Shift+N)" : text;
+    }
+
+    /// <summary>Where <paramref name="query"/> occurs in <paramref name="text"/>, ignoring case, to mark the matches.</summary>
+    public static IReadOnlyList<TextRange> MatchRanges(string text, string? query)
+    {
+        var needle = (query ?? "").Trim();
+        var ranges = new List<TextRange>();
+        if (needle.Length == 0)
+        {
+            return ranges;
+        }
+        var compare = CultureInfo.CurrentCulture.CompareInfo;
+        var start = 0;
+        while (start < text.Length)
+        {
+            var found = compare.IndexOf(text.AsSpan(start), needle.AsSpan(), CompareOptions.IgnoreCase, out var length);
+            if (found < 0 || length == 0)
+            {
+                break;
+            }
+            ranges.Add(new TextRange(start + found, length));
+            start += found + length;
+        }
+        return ranges;
+    }
+
+    // ---------------------------------------------------------------- Columns and rows shown
+
+    /// <summary>Columns of lists: 1 in S, 2 in M, 3 in L, all five from XL.</summary>
     public static int ColumnCount(RecordPageBand band) => band switch
     {
         RecordPageBand.S => 1,
@@ -212,30 +188,52 @@ public static class CategoryPage
     };
 
     /// <summary>
-    /// Place lists into columns using shortest-column-first: each list goes under the column
-    /// that currently has the fewest rows. Returns the row count per list in column order.
+    /// The column of each list: in type order, each goes under the column that is shortest so far,
+    /// counting each list's rows up to 20 (an empty list as 1). Ties go to the leftmost column.
     /// </summary>
-    public static IReadOnlyList<int> PlaceColumns(IReadOnlyList<int> allotment, int columnCount, int maxRows)
+    public static IReadOnlyList<int> PlaceColumns(IReadOnlyList<int> listLengths, int columnCount)
     {
-        var columns = new int[columnCount]; // total rows per column
-        var result = new int[allotment.Count]; // rows per list
-
-        for (var i = 0; i < allotment.Count; i++)
+        var heights = new int[Math.Max(1, columnCount)];
+        var placed = new int[listLengths.Count];
+        for (var i = 0; i < listLengths.Count; i++)
         {
-            // Find the shortest column
-            var minCol = 0;
-            for (var c = 1; c < columnCount; c++)
+            var column = 0;
+            for (var c = 1; c < heights.Length; c++)
             {
-                if (columns[c] < columns[minCol])
+                if (heights[c] < heights[column])
                 {
-                    minCol = c;
+                    column = c;
                 }
             }
-
-            result[i] = Math.Min(allotment[i], maxRows - columns[minCol]);
-            columns[minCol] += result[i];
+            placed[i] = column;
+            heights[column] += Math.Clamp(listLengths[i], 1, PlacementRowCap);
         }
+        return placed;
+    }
 
-        return result;
+    /// <summary>
+    /// The rows each list of one column shows: every list starts with 3 (fewer when it is shorter),
+    /// then the rows the column has left go one at a time, in list order, to the lists that have more,
+    /// until <paramref name="columnRows"/> rows are used or no list has more.
+    /// </summary>
+    public static IReadOnlyList<int> AllotRows(IReadOnlyList<int> listLengths, int columnRows)
+    {
+        var rows = listLengths.Select(length => Math.Min(StartRows, length)).ToArray();
+        var left = columnRows - rows.Sum();
+        var given = true;
+        while (left > 0 && given)
+        {
+            given = false;
+            for (var i = 0; i < rows.Length && left > 0; i++)
+            {
+                if (rows[i] < listLengths[i])
+                {
+                    rows[i]++;
+                    left--;
+                    given = true;
+                }
+            }
+        }
+        return rows;
     }
 }
