@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Gnoseis app icon, 24 px, hand-tuned for the pixel grid by make_icons.py -->
+  <rect x="1" y="1" width="22" height="22" rx="4" fill="#0B0D14"/>
+  <path d="M7,8.5L16,7M7,8.5L10.5,17M16,7L10.5,17M16,7L17.5,15M10.5,17L17.5,15" fill="none" stroke="#E8B86B" stroke-opacity="0.7" stroke-width="1.02" stroke-linecap="round"/>
+  <circle cx="7" cy="8.5" r="2.072" fill="#E8B86B"/>
+  <circle cx="16" cy="7" r="1.594" fill="#E8B86B"/>
+  <circle cx="10.5" cy="17" r="2.551" fill="#E8B86B"/>
+  <circle cx="17.5" cy="15" r="1.275" fill="#E8B86B"/>
+</svg>
