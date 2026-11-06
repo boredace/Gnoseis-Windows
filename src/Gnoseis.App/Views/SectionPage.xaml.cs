@@ -428,6 +428,8 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     // ---------------------------------------------------------------- Trail column
 
+    public string? TrailTitleOf(RecordRef record) => TrailView?.TitleOf(record);
+
     private void RefreshTrailColumn()
     {
         if (TrailView == null)

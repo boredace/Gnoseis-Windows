@@ -95,6 +95,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
     {
         base.OnNavigatedTo(e);
         ViewModel = new RecordHistoryPageViewModel((RecordRef)e.Parameter);
+        RecordPageParts.InsertOpenedFrom(HeaderBlock, ViewModel.Record);
         TypeTile.Type = ViewModel.Type;
         CompactTypeTile.Type = ViewModel.Type;
         ViewModel.Loaded += ViewModel_Loaded;
@@ -993,8 +994,17 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
             VerticalAlignment = VerticalAlignment.Top,
             Style = (Style)Application.Current.Resources["AccentCaptionTextStyle"],
         };
-        Grid.SetColumn(badge, 2);
-        who.Children.Add(badge);
+        var corner = new StackPanel { HorizontalAlignment = HorizontalAlignment.Right };
+        corner.Children.Add(badge);
+        if (RecordPageParts.IsInTrail(contact))
+        {
+            var inTrail = RecordPageParts.InTrailTag();
+            inTrail.HorizontalAlignment = HorizontalAlignment.Right;
+            corner.Children.Add(inTrail);
+            AutomationProperties.SetName(surface, $"{person.Name}. In trail");
+        }
+        Grid.SetColumn(corner, 2);
+        who.Children.Add(corner);
         grid.Children.Add(who);
 
         // How to reach them: the phone chip and the E-mail chip, or a dashed "Phone or e-mail".
@@ -1165,6 +1175,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         var target = new RecordRef(RecordType.Contact, person.Id);
         button.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(target);
         button.ContextRequested += (sender, args) => ShowRowMenu(sender, args, target, person.Name);
+        RecordPageParts.MarkInTrail(button, grid, target);
         return button;
     }
 
@@ -1685,6 +1696,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         };
         copy.Click += (_, _) => CopyDetails();
         MoreMenu.Items.Add(copy);
+        RecordPageParts.AddShowInList(MoreMenu, Record);
         MoreMenu.Items.Add(new MenuFlyoutSeparator());
 
         var delete = new MenuFlyoutItem { Text = "Delete", Icon = new FontIcon { Glyph = "" } };

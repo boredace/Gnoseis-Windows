@@ -86,6 +86,9 @@ public interface ISectionHost
     /// </summary>
     Gnoseis.Core.Domain.RecordTrail<RecordRef> Trail { get; }
 
+    /// <summary>The title the trail shows for one of its records, if it's loaded.</summary>
+    string? TrailTitleOf(RecordRef record);
+
     /// <summary>Opens a record from a link on the record shown, adding it to the trail.</summary>
     Task OpenLinkedRecordAsync(RecordRef record);
 

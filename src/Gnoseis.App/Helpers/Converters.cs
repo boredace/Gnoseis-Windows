@@ -21,6 +21,10 @@ public static class Converters
     public static Style RowBodyStyle(bool primary) =>
         (Style)Application.Current.Resources[primary ? "RowBodyPrimaryTextStyle" : "RowBodyTextStyle"];
 
+    /// <summary>"In trail" on a history row whose note is already in the section's trail, other than the record shown.</summary>
+    public static Visibility InTrailNote(string noteId) =>
+        Views.RecordPageParts.IsInTrail(new RecordRef(RecordType.Note, noteId)) ? Visibility.Visible : Visibility.Collapsed;
+
     /// <summary>A dashed line's dash pattern (in stroke widths), or a solid line's.</summary>
     public static Microsoft.UI.Xaml.Media.DoubleCollection Dashes(bool dashed) => dashed ? [2, 2] : [];
 
