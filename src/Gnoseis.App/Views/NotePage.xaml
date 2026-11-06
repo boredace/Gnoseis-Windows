@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Gnoseis.App.Controls"
     KeyDown="Page_KeyDown"
+    PreviewKeyDown="Page_PreviewKeyDown"
     SizeChanged="Page_SizeChanged">
 
     <Grid x:Name="Root">
@@ -130,6 +131,84 @@
             Visibility="Collapsed">
             <Grid x:Name="SidePanel" Padding="0,0,0,24" ColumnSpacing="32" />
         </ScrollViewer>
+
+        <!-- Compact header: once the full header has scrolled out of view -->
+        <Grid
+            x:Name="CompactHeader"
+            VerticalAlignment="Top"
+            Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}"
+            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+            BorderThickness="0,0,0,1"
+            ColumnSpacing="12"
+            Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button
+                x:Name="CompactTitleButton"
+                Padding="4"
+                HorizontalAlignment="Left"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="CompactTitle_Click"
+                ToolTipService.ToolTip="Back to the top (Home)">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <controls:TypeTile
+                        Width="32"
+                        Height="32"
+                        AutomationProperties.AccessibilityView="Raw"
+                        CornerRadius="7"
+                        FontSize="15" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock
+                            x:Name="CompactTitleText"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            x:Name="CompactDayText"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </StackPanel>
+            </Button>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Orientation="Horizontal">
+                <AppBarToggleButton
+                    x:Name="CompactEditButton"
+                    Width="40"
+                    AutomationProperties.Name="Edit"
+                    Click="Edit_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="Edit (Ctrl+E)">
+                    <AppBarToggleButton.Icon>
+                        <FontIcon Glyph="&#xE70F;" />
+                    </AppBarToggleButton.Icon>
+                </AppBarToggleButton>
+                <AppBarButton
+                    Width="40"
+                    AutomationProperties.Name="Link"
+                    Click="Link_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE71B;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton
+                    x:Name="CompactMoreButton"
+                    Width="40"
+                    AutomationProperties.Name="More"
+                    Click="CompactMore_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="More">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE712;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </StackPanel>
+        </Grid>
 
         <!-- After Unlink: Undo. Stays until closed, the next unlink, or leaving the page. -->
         <InfoBar

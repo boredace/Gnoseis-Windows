@@ -79,6 +79,7 @@ public sealed partial class NotePage : Page, IRecordPage
         }
 
         ShowHeader();
+        ShowCompactHeader();
         ShowText();
         _band = null;
         UpdatePageLayout();
@@ -127,6 +128,7 @@ public sealed partial class NotePage : Page, IRecordPage
             ShowTabs();
             ShowSideColumn();
         }
+        UpdateCompactHeader();
         PositionSideColumn();
     }
 
@@ -147,9 +149,51 @@ public sealed partial class NotePage : Page, IRecordPage
     }
 
     /// <summary>The highest the side column goes when the header has scrolled away.</summary>
-    private double MinimumColumnTop => 12;
+    private double MinimumColumnTop => CompactHeader.Visibility == Visibility.Visible ? CompactHeaderHeight + 12 : 12;
 
-    private void MainScroller_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs e) => PositionSideColumn();
+    private void MainScroller_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
+    {
+        UpdateCompactHeader();
+        PositionSideColumn();
+    }
+
+    // ---------------------------------------------------------------- Compact header and scrolling to the top
+
+    private double CompactHeaderHeight => CompactHeader.ActualHeight > 0 ? CompactHeader.ActualHeight : 56;
+
+    /// <summary>Shows the compact header once the full header has scrolled out of view.</summary>
+    private void UpdateCompactHeader()
+    {
+        var show = ViewModel != null && ViewModel.IsAvailable && MainScroller.VerticalOffset > TopPadding + HeaderBlock.ActualHeight;
+        CompactHeader.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        CompactHeader.Padding = new Thickness(_padding - 4, 8, _padding - 8, 8);
+    }
+
+    private void ShowCompactHeader()
+    {
+        var (title, isPlaceholder) = ViewModel.Title;
+        CompactTitleText.Text = title;
+        CompactTitleText.FontWeight = isPlaceholder ? Microsoft.UI.Text.FontWeights.Normal : Microsoft.UI.Text.FontWeights.SemiBold;
+        CompactTitleText.Foreground = (Brush)Application.Current.Resources[isPlaceholder ? "TextFillColorTertiaryBrush" : "TextFillColorPrimaryBrush"];
+        CompactDayText.Text = ViewModel.DayAndTime;
+        AutomationProperties.SetName(CompactTitleButton, $"{title}, back to the top");
+    }
+
+    private void CompactTitle_Click(object sender, RoutedEventArgs e) => ScrollToTop();
+
+    private void CompactMore_Click(object sender, RoutedEventArgs e) => MoreMenu.ShowAt(CompactMoreButton);
+
+    private void ScrollToTop() => MainScroller.ChangeView(null, 0, null, disableAnimation: false);
+
+    /// <summary>Home and Ctrl+Home, outside a text box, scroll smoothly to the top.</summary>
+    private void Page_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Home && !RecordPageParts.IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            ScrollToTop();
+        }
+    }
 
     // ---------------------------------------------------------------- Header
 
