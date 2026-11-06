@@ -38,7 +38,11 @@ public sealed partial class RecordEditPage : Page, IConfirmLeave
         InitializeComponent();
         Loaded += (_, _) =>
         {
-            if (ViewModel.IsPrefilled)
+            if (ViewModel.Request.FocusField is { } field && _fields is ContactFields contactFields)
+            {
+                contactFields.FocusField(field);
+            }
+            else if (ViewModel.IsPrefilled)
             {
                 _fields?.FocusPrefilled();
             }

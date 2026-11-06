@@ -27,6 +27,20 @@ public sealed partial class ContactFields : UserControl, IEditFields
     // The last name is the field a search always fills (the first name only with more than one word).
     public void FocusPrefilled() => LastNameBox.FocusText(caretAtEnd: true);
 
+    /// <summary>Moves keyboard focus to a field by its name (JobTitle, Company, PhoneMain, EmailMain); the first field otherwise.</summary>
+    public void FocusField(string field)
+    {
+        var box = field switch
+        {
+            nameof(Contact.JobTitle) => JobTitleBox,
+            nameof(Contact.Company) => CompanyBox,
+            nameof(Contact.PhoneMain) => PhoneMainBox,
+            nameof(Contact.EmailMain) => EmailMainBox,
+            _ => FirstNameBox,
+        };
+        box.FocusText(caretAtEnd: true);
+    }
+
     // ---------------------------------------------------------------- Pairs side by side, or one column when narrow
 
     private const double OneColumnWidth = 480;

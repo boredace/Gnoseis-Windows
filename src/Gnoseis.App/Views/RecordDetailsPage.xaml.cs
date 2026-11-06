@@ -19,11 +19,12 @@ using Windows.System;
 namespace Gnoseis.App.Views;
 
 /// <summary>
-/// A record: a header with its commands, the Details section (per type) and the linked records.
+/// A note, organization, category or item (contacts have <see cref="ContactPage"/>): a header with
+/// its commands, the Details section (per type) and the linked records.
 /// From an 860 px pane the details and the linked records sit side by side; below it, one
 /// selector bar (Details, All, then the linked types) shows one of them at a time.
 /// </summary>
-public sealed partial class RecordDetailsPage : Page
+public sealed partial class RecordDetailsPage : Page, IRecordPage
 {
     private const double SideBySideWidth = 860;
     private const double LabelsWidth = 520;
@@ -51,6 +52,8 @@ public sealed partial class RecordDetailsPage : Page
     }
 
     public RecordDetailsViewModel ViewModel { get; private set; } = null!;
+
+    public RecordRef Record => ViewModel.Record;
 
     /// <summary>After New linked saves, the record page of <paramref name="recordId"/> opens on the new record's type.</summary>
     public static void SelectTypeOnReturn(string recordId, RecordType type) => SelectedItems[recordId] = type.ToString();

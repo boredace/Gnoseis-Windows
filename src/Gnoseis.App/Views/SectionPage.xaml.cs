@@ -118,7 +118,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     private async void RecordList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_updatingSelection || RecordList.SelectedItem is not RecordRow row || (row.Id == _selectedId && IsDetailShown && DetailFrame.Content is RecordDetailsPage))
+        if (_updatingSelection || RecordList.SelectedItem is not RecordRow row || (row.Id == _selectedId && IsDetailShown && DetailFrame.Content is IRecordPage))
         {
             return;
         }
@@ -147,12 +147,12 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     private async void RecordList_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.Delete && DetailFrame.Content is RecordDetailsPage details)
+        if (e.Key == VirtualKey.Delete && DetailFrame.Content is IRecordPage details)
         {
             e.Handled = true;
             await details.DeleteWithConfirmationAsync();
         }
-        else if (e.Key == VirtualKey.Enter && DetailFrame.Content is RecordDetailsPage)
+        else if (e.Key == VirtualKey.Enter && DetailFrame.Content is IRecordPage)
         {
             e.Handled = true;
             DetailFrame.Focus(FocusState.Keyboard);
@@ -186,7 +186,9 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
     {
         _selectedId = id;
         LastSelected[Type] = id;
-        DetailFrame.Navigate(typeof(RecordDetailsPage), new RecordRef(Type, id), new EntranceNavigationTransitionInfo());
+        // Contacts have their own page; the other types share the record page.
+        var page = Type == RecordType.Contact ? typeof(ContactPage) : typeof(RecordDetailsPage);
+        DetailFrame.Navigate(page, new RecordRef(Type, id), new EntranceNavigationTransitionInfo());
         DetailFrame.BackStack.Clear();
         UpdatePanes();
     }
@@ -202,7 +204,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     public async Task ShowRecordAsync(string id)
     {
-        if (id == _selectedId && DetailFrame.Content is RecordDetailsPage)
+        if (id == _selectedId && DetailFrame.Content is IRecordPage)
         {
             return;
         }
@@ -288,7 +290,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         }
 
         // Narrow window: back from an editor returns to the record, back from a record returns to the list.
-        if (DetailFrame.Content is not RecordDetailsPage && DetailFrame.CanGoBack)
+        if (DetailFrame.Content is not IRecordPage && DetailFrame.CanGoBack)
         {
             DetailFrame.GoBack();
             UpdatePanes();
