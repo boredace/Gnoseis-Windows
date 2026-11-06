@@ -34,6 +34,10 @@ public sealed class LinkedRecordRepository(GnoseisDatabase database) : Repositor
         return new LinkedRecords(notes.Result, contacts.Result, organizations.Result, categories.Result, items.Result);
     }
 
+    /// <summary>The contacts linked to the given record, with every field, by last and first name.</summary>
+    public Task<List<Contact>> GetLinkedContactsAsync(string recordId) =>
+        QueryAsync(LinkedSql("Contact", "t.nameLast COLLATE NOCASE, t.nameFirst COLLATE NOCASE"), MapContact, ("$recordId", recordId));
+
     /// <summary>
     /// The records linked to the given record with the fields their rows show (first lines,
     /// contact details, parent path, link count, when they were linked), by type.

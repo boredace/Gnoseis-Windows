@@ -119,6 +119,15 @@ public abstract class RepositoryBase(GnoseisDatabase database)
                 return ParentPath(LoadParentTree(connection, type, nameColumn), id, parentId);
             });
 
+    /// <summary>When the record was created (UTC epoch ms); null when unknown (made before schema v3) or not found.</summary>
+    protected Task<long?> GetCreatedAtAsync(string table, string id) =>
+        Task.Run(() =>
+        {
+            using var connection = Database.OpenConnection();
+            using var command = CreateCommand(connection, $"SELECT createdAt FROM `{table}` WHERE id = $id;", [("$id", id)]);
+            return command.ExecuteScalar() is long value ? value : (long?)null;
+        });
+
     // ---------- Mappers (column names are case-insensitive in SQLite and in GetOrdinal) ----------
 
     internal static Note MapNote(SqliteDataReader r) => new()

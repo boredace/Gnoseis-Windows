@@ -42,6 +42,10 @@ public sealed partial class RecordEditPage : Page, IConfirmLeave
             {
                 contactFields.FocusField(field);
             }
+            else if (ViewModel.Request.FocusField == NamedRecordFields.CommentsField && _fields is NamedRecordFields namedFields)
+            {
+                namedFields.FocusComments();
+            }
             else if (ViewModel.Request.NoteDraft != null && _fields is NoteFields noteFields)
             {
                 noteFields.FocusTextAtEnd();

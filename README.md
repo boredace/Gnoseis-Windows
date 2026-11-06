@@ -195,8 +195,20 @@ switching and seeing related information at a glance.
 - **List and record side by side** in every section, like Mail and Outlook. You can move through the
   list with the arrow keys. A filter box narrows the list. Notes are grouped by *Today*,
   *Yesterday*, weekday and date, and the other lists by first letter.
-- **Record page** for organizations, categories and items: a header with the type, the title and
-  the commands, the record's details, and its linked records.
+- **Item page**, in the contact page's style: a header with the name and counts, the item's
+  history (its notes, newest first) with a note box above it (Ctrl+Shift+N), and the other linked
+  records in a side column with the comments under **About**. From 1700 px a reading pane shows the
+  selected note in full.
+- **Organization page**: the item page plus a **People** column of cards for the linked contacts,
+  with phone and e-mail chips and how many notes each shares with the organization. Clicking a card
+  narrows the history to the notes linked to both (Esc, the chip's × or a second click clears it).
+  Contacts whose Company field says the organization's name but who aren't linked yet are offered
+  with a **Link** button. On a narrower pane People are compact rows in the side column, or a tab.
+- **Category page**: the comments under the header, a search box that narrows all five lists at
+  once (notes, contacts, organizations, items, categories) and marks the matches, and the five lists
+  as equal cards placed in 1 to 5 columns by width, each showing as many rows as fit the pane, with
+  **Show all**. **+** on a list links a record of that type; on Notes it opens a note box in the
+  list (Ctrl+Shift+N).
 - **Note page**, built around the text: a header with the title, the day and time, and the
   commands; the text in a readable column, with clickable web and e-mail links, and when it was
   created and changed under it. The records it's linked to sit in a side column, contacts first,
@@ -216,13 +228,6 @@ switching and seeing related information at a glance.
   notes). Once the header scrolls away, a compact header keeps the name, the year chips and the
   commands in view; Home returns to the top. **More** has **New linked**, **Copy contact details**
   (Ctrl+Shift+C) and **Delete**.
-- **Linked records by type**: a selector shows **All**, then each linked type with its count, the
-  type with the most links first. **All** shows the 3 latest records of each type, with *Show all*.
-  Notes are grouped by day. Each row shows what the record holds (a note's first line, a contact's
-  job, company and phone or e-mail, a category's or item's parent path) and how many records are
-  linked to it. On a wide record pane the details and the linked records sit side by side, and the
-  linked records flow into columns; on a narrower one they are tabs: **Details**, **All**, then the
-  types.
 - **Unlink** from a linked record's context menu (right-click, Shift+F10 or the menu key). There's
   no confirmation: a message offers **Undo** until you close it or leave the page.
 - **Editing happens in place** in the record pane, on one edit page for every type, with Save
@@ -241,9 +246,10 @@ switching and seeing related information at a glance.
   pane and the last section, plus the selected record in each section while the app is open.
 - **Narrow windows** show one pane at a time; Back returns from a record to the list.
 - **Keyboard**: Ctrl+1 to Ctrl+6 switch sections, Ctrl+N creates a record, Ctrl+E edits, Ctrl+L
-  links, Del deletes, Alt+Left or the mouse back button goes back. On a contact, Ctrl+Shift+N writes
-  a note and Ctrl+Shift+C copies the contact details; on a note, Ctrl+Shift+C copies the note text.
-  Settings lists every shortcut.
+  links, Del deletes, Alt+Left or the mouse back button goes back. On a contact, organization or
+  item, Ctrl+Shift+N writes a note (on a category, in its Notes list) and Ctrl+Shift+C copies the
+  record's details; on a note, Ctrl+Shift+C copies the note text. Home scrolls a record page back to
+  the top. Settings lists every shortcut.
 - Fluent design with Mica, a light, dark or system theme, and screen-reader names and headings.
 
 | Android | Windows |
@@ -255,7 +261,10 @@ switching and seeing related information at a glance.
 | Contact details screen (fields, then linked records) | Contact page: phone and e-mail chips in the header, the notes as a history with a note box above it, the other linked records in a side column |
 | New linked note from a contact | Note box on the contact page (or **Open full editor**) |
 | Note details screen (text, then linked records) | Note page: the text in a readable column, edited in place, the linked records in a side column |
-| Linked-record tab row | Selector with **All** and each linked type, beside the details on a wide pane, tabs with **Details** on a narrow one |
+| Organization details screen | Organization page: People cards that filter the history, the history with a note box, the other linked records in a side column, contacts with its name offered for linking |
+| Item details screen | Item page: the history with a note box, the other linked records in a side column |
+| Category details screen | Category page: a search over all linked records and five equal lists (notes, contacts, organizations, items, categories) |
+| Linked-record tab row | Side column sections per type with **Show all** and **+**; tabs on a narrow pane |
 | Snackbar with Undo after unlinking | Info bar with **Undo** at the bottom of the record page |
 | Link Records page | Link picker dialog |
 | Search page | Search box in the title bar, with suggestions and a results page |

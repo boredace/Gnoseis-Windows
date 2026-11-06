@@ -39,6 +39,9 @@ public sealed partial class HighlightedText : Grid
     public static readonly DependencyProperty TextStyleProperty = DependencyProperty.Register(
         nameof(TextStyle), typeof(Style), typeof(HighlightedText), new PropertyMetadata(null, (d, e) => ((HighlightedText)d)._text.Style = (Style)e.NewValue));
 
+    public static readonly DependencyProperty UsesAccentProperty = DependencyProperty.Register(
+        nameof(UsesAccent), typeof(bool), typeof(HighlightedText), new PropertyMetadata(false, (d, _) => ((HighlightedText)d).Redraw()));
+
     private const double LineThickness = 2;
 
     private readonly TextBlock _text = new()
@@ -78,6 +81,20 @@ public sealed partial class HighlightedText : Grid
     {
         get => (RecordType)GetValue(TypeProperty);
         set => SetValue(TypeProperty, value);
+    }
+
+    /// <summary>Underlines in the accent colour instead of the record type's colour.</summary>
+    public bool UsesAccent
+    {
+        get => (bool)GetValue(UsesAccentProperty);
+        set => SetValue(UsesAccentProperty, value);
+    }
+
+    /// <summary>The text's colour; the theme's primary text colour when not set.</summary>
+    public Brush? TextForeground
+    {
+        get => _text.Foreground;
+        set => _text.Foreground = value;
     }
 
     public Style? TextStyle
@@ -153,10 +170,20 @@ public sealed partial class HighlightedText : Grid
         }
         _drawn = rects;
         _lines.Children.Clear();
-        var brush = RecordTypeStyles.Brush(this, Type, ColorRole.Outline) ?? (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
+        // The accent and text colours come from styles, so they follow this element's theme.
+        var brush = UsesAccent ? null : RecordTypeStyles.Brush(this, Type, ColorRole.Outline);
+        var style = (Style)Application.Current.Resources[UsesAccent ? "AccentLineStyle" : "TextLineStyle"];
         foreach (var rect in rects)
         {
-            var line = new Rectangle { Width = rect.Width, Height = rect.Height, Fill = brush };
+            var line = new Rectangle { Width = rect.Width, Height = rect.Height };
+            if (brush != null)
+            {
+                line.Fill = brush;
+            }
+            else
+            {
+                line.Style = style;
+            }
             Canvas.SetLeft(line, rect.X);
             Canvas.SetTop(line, rect.Y);
             _lines.Children.Add(line);

@@ -34,18 +34,22 @@ internal static partial class RecordPageParts
     /// <summary>A dashed button: a missing fact, "Link as organization", "Title".</summary>
     public static Button DashedButton(string glyph, string text, string automationName, Func<Task> click, bool accentText = false)
     {
-        var foreground = (Brush)Application.Current.Resources[accentText ? "AccentTextFillColorPrimaryBrush" : "TextFillColorSecondaryBrush"];
-        var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-        content.Children.Add(new FontIcon { Glyph = glyph, FontSize = 12, Foreground = foreground });
-        content.Children.Add(new TextBlock { Text = text, Foreground = foreground, VerticalAlignment = VerticalAlignment.Center });
+        // The icon and text take their colour from the ContentControl's style.
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        row.Children.Add(new FontIcon { Glyph = glyph, FontSize = 12 });
+        row.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+        var content = new ContentControl
+        {
+            Content = row,
+            Style = (Style)Application.Current.Resources[accentText ? "AccentContentStyle" : "SecondaryContentStyle"],
+        };
         var grid = new Grid();
         grid.Children.Add(new Rectangle
         {
             RadiusX = 15,
             RadiusY = 15,
-            Stroke = (Brush)Application.Current.Resources["ControlStrongStrokeColorDefaultBrush"],
+            Style = (Style)Application.Current.Resources["DashedOutlineStyle"],
             StrokeDashArray = [3, 2],
-            StrokeThickness = 1,
         });
         content.Margin = new Thickness(12, 5, 12, 6);
         grid.Children.Add(content);
@@ -171,12 +175,15 @@ internal sealed class SideColumn(FrameworkElement owner, Func<IReadOnlyList<Reco
     // Sections shown in full ("Show all"), kept while the page is open.
     private readonly HashSet<RecordType> _expanded = [];
 
-    /// <summary>Lays the sections out in one column, or in two (balancing their heights) in XXL.</summary>
-    public static void Flow(Grid panel, IReadOnlyList<FrameworkElement> sections, RecordPageBand band)
+    /// <summary>
+    /// Lays the sections out in one column, or in two (balancing their heights) in XXL, or in
+    /// <paramref name="columnCount"/> columns when it is given.
+    /// </summary>
+    public static void Flow(Grid panel, IReadOnlyList<FrameworkElement> sections, RecordPageBand band, int? columnCount = null)
     {
         panel.Children.Clear();
         panel.ColumnDefinitions.Clear();
-        var columns = band == RecordPageBand.XXL ? 2 : 1;
+        var columns = columnCount ?? (band == RecordPageBand.XXL ? 2 : 1);
         for (var i = 0; i < columns; i++)
         {
             panel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -298,26 +305,27 @@ internal sealed class SideColumn(FrameworkElement owner, Func<IReadOnlyList<Reco
         var grid = new Grid { MinHeight = 32 };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        var text = new TextBlock { VerticalAlignment = VerticalAlignment.Center, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"] };
-        text.Inlines.Add(new Run { Text = title });
+        var texts = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        var text = new TextBlock { Text = title, VerticalAlignment = VerticalAlignment.Center, Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"] };
+        AutomationProperties.SetHeadingLevel(text, Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level2);
+        texts.Children.Add(text);
         if (count is { } n)
         {
-            text.Inlines.Add(new Run
-            {
-                Text = $"  {n.ToString(CultureInfo.CurrentCulture)}",
-                FontWeight = Microsoft.UI.Text.FontWeights.Normal,
-                Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
-            });
+            var countText = n.ToString(CultureInfo.CurrentCulture);
+            AutomationProperties.SetName(text, $"{title} {countText}");
+            var countBlock = new TextBlock { Text = countText, VerticalAlignment = VerticalAlignment.Center, Style = (Style)Application.Current.Resources["TertiaryLineTextStyle"] };
+            AutomationProperties.SetAccessibilityView(countBlock, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+            texts.Children.Add(countBlock);
         }
-        AutomationProperties.SetHeadingLevel(text, Microsoft.UI.Xaml.Automation.Peers.AutomationHeadingLevel.Level2);
-        grid.Children.Add(text);
+        grid.Children.Add(texts);
         var commands = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
         Grid.SetColumn(commands, 1);
         grid.Children.Add(commands);
         return grid;
     }
 
-    private static void AddToHeading(Grid heading, UIElement element) => ((StackPanel)heading.Children[1]).Children.Add(element);
+    /// <summary>Adds a command (Show all, +) to the right of a heading made by <see cref="Heading"/>.</summary>
+    public static void AddToHeading(Grid heading, UIElement element) => ((StackPanel)heading.Children[1]).Children.Add(element);
 
     /// <summary>
     /// A linked record: a contact's picture, "First Last" and job · company; a note's tile, title (or
@@ -380,8 +388,7 @@ internal sealed class SideColumn(FrameworkElement owner, Func<IReadOnlyList<Reco
                 Text = second,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 TextWrapping = TextWrapping.NoWrap,
-                Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                Style = (Style)Application.Current.Resources["SecondaryCaptionTextStyle"],
             });
         }
         grid.Children.Add(lines);
