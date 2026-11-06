@@ -33,11 +33,6 @@ internal static class EditPageFlow
         var saved = await TrySaveAsync(viewModel);
         if (saved != null)
         {
-            if (viewModel.Request is { IsNew: true, LinkFrom: { } source })
-            {
-                // Back on the source record, show the new record's type.
-                RecordDetailsPage.SelectTypeOnReturn(source.Id, saved.Type);
-            }
             await Navigator.CloseEditorAsync(viewModel.Request, saved);
         }
     }

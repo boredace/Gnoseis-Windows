@@ -130,27 +130,4 @@ public sealed class LinkedCard(IReadOnlyList<LinkedRow> rows, string dayHeader =
                 NoteDay.Format(g.First().NoteDate),
                 NoteDay.Weekday(g.First().NoteDate)))
             .ToList();
-
-    /// <summary>An estimate of the card's height, used to balance columns.</summary>
-    public double EstimatedHeight =>
-        (HasDayHeader ? 36 : 0) + 16 + Rows.Sum(r => 24 + 20 * ((r.HasTitle ? 1 : 0) + (r.HasPath ? 1 : 0) + (r.HasBody ? r.BodyMaxLines : 0) + (r.HasAccent ? 1 : 0)));
-}
-
-/// <summary>One linked type in All: a header with its count, its latest records, and "Show all n".</summary>
-public sealed class LinkedAllGroup(LinkedTypeGroup group)
-{
-    public RecordType Type { get; } = group.Type;
-    public string Header { get; } = group.Type.PluralDisplayName();
-    public string CountText { get; } = $"({group.Count.ToString(CultureInfo.CurrentCulture)})";
-    public string HeaderAutomationName => $"{Header} ({group.Count})";
-
-    public IReadOnlyList<LinkedCard> Cards { get; } =
-        group.Type == RecordType.Note ? LinkedCard.ByDay(group.Latest) : [new LinkedCard(group.Latest.Select(r => new LinkedRow(r)).ToList())];
-
-    public bool HasShowAll { get; } = group.HasMore;
-
-    /// <summary>"Show all 8 notes".</summary>
-    public string ShowAllText { get; } = $"Show all {group.Count.ToString(CultureInfo.CurrentCulture)} {group.Type.PluralDisplayName().ToLower(CultureInfo.CurrentCulture)}";
-
-    public double EstimatedHeight => 36 + Cards.Sum(c => c.EstimatedHeight + 8) + (HasShowAll ? 36 : 0);
 }
