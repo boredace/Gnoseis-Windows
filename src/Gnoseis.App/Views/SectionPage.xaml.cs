@@ -6,6 +6,7 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
+using Gnoseis.Core.Domain;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
@@ -17,7 +18,8 @@ namespace Gnoseis.App.Views;
 
 /// <summary>
 /// A section: the list of one record type with the selected record (or an editor) next to it.
-/// In a narrow window only one of the two panes is shown at a time.
+/// In a narrow window only one of the two panes is shown at a time. Records opened from links on a
+/// record page are shown in the detail pane too, in a trail that starts at the record selected in the list.
 /// </summary>
 public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 {
@@ -30,6 +32,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
     private string? _selectedId;
     private int? _selectIndexAfterReload;
     private bool _isNarrow;
+    private readonly RecordTrail<RecordRef> _trail = new();
 
     public SectionPage()
     {
@@ -40,7 +43,12 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     public RecordType Type => ViewModel.Type;
 
-    public bool CanHandleBack => _isNarrow && IsDetailShown;
+    public bool CanHandleBack => _trail.IsOpen || (_isNarrow && IsDetailShown);
+
+    public RecordTrail<RecordRef> Trail => _trail;
+
+    /// <summary>Raised when records are added to the trail, it's stepped along, or it closes.</summary>
+    public event EventHandler? TrailChanged;
 
     private bool IsDetailShown => DetailFrame.Content is not EmptyDetailPage and not null;
 
@@ -132,6 +140,15 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         ShowDetails(row.Id);
     }
 
+    /// <summary>A click on the row already selected while only the list is shown (narrow window) opens it.</summary>
+    private async void RecordList_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is RecordRow row && row.Id == _selectedId && !IsDetailShown && await CanLeaveAsync())
+        {
+            ShowDetails(row.Id);
+        }
+    }
+
     /// <summary>
     /// Enter (or the box's icon) with at least 3 characters opens the search page for this section's
     /// type with the filter text; the filter stays as it is in the section.
@@ -182,26 +199,40 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     // ---------------------------------------------------------------- Detail pane
 
+    // Contacts, notes, items, organizations and categories each have their own page.
+    private static Type PageFor(RecordType type) => type switch
+    {
+        RecordType.Contact => typeof(ContactPage),
+        RecordType.Note => typeof(NotePage),
+        RecordType.Item or RecordType.Organization => typeof(RecordHistoryPage),
+        _ => typeof(CategoryPage),
+    };
+
+    /// <summary>Shows the record selected in the list; any trail starts again from it.</summary>
     private void ShowDetails(string id)
     {
         _selectedId = id;
         LastSelected[Type] = id;
-        // Contacts, notes, items, organizations and categories each have their own page.
-        var page = Type switch
-        {
-            RecordType.Contact => typeof(ContactPage),
-            RecordType.Note => typeof(NotePage),
-            RecordType.Item or RecordType.Organization => typeof(RecordHistoryPage),
-            _ => typeof(CategoryPage),
-        };
-        DetailFrame.Navigate(page, new RecordRef(Type, id), new EntranceNavigationTransitionInfo());
+        var record = new RecordRef(Type, id);
+        _trail.Start(record);
+        NavigateDetail(record, new EntranceNavigationTransitionInfo());
+    }
+
+    private void NavigateDetail(RecordRef record, NavigationTransitionInfo transition)
+    {
+        DetailFrame.Navigate(PageFor(record.Type), record, transition);
         DetailFrame.BackStack.Clear();
         UpdatePanes();
+        TrailChanged?.Invoke(this, EventArgs.Empty);
     }
+
+    private bool IsShowing(RecordRef record) => DetailFrame.Content is IRecordPage page && page.Record == record;
 
     private void ShowEmptyDetail()
     {
         _selectedId = null;
+        _trail.Clear();
+        TrailChanged?.Invoke(this, EventArgs.Empty);
         DetailFrame.Navigate(typeof(EmptyDetailPage), ViewModel, new SuppressNavigationTransitionInfo());
         DetailFrame.BackStack.Clear();
         SetListSelection(null);
@@ -210,7 +241,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     public async Task ShowRecordAsync(string id)
     {
-        if (id == _selectedId && DetailFrame.Content is IRecordPage)
+        if (id == _selectedId && !_trail.IsOpen && DetailFrame.Content is IRecordPage)
         {
             return;
         }
@@ -240,6 +271,8 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
             // A new record replaces whatever was shown.
             SetListSelection(null);
             _selectedId = null;
+            _trail.Clear();
+            TrailChanged?.Invoke(this, EventArgs.Empty);
             DetailFrame.Navigate(page, request, new DrillInNavigationTransitionInfo());
             DetailFrame.BackStack.Clear();
         }
@@ -284,8 +317,126 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         _selectIndexAfterReload = index >= 0 ? index : null;
     }
 
+    // ---------------------------------------------------------------- Trail
+
+    public async Task OpenLinkedRecordAsync(RecordRef record)
+    {
+        if (_trail.Current == null)
+        {
+            // Nothing selected in the list (should not happen from a record page): open it as from search.
+            if (record.Type == Type)
+            {
+                await ShowRecordAsync(record.Id);
+            }
+            else
+            {
+                await Navigator.OpenRecordAsync(record);
+            }
+            return;
+        }
+        if (_trail.Current == record && IsShowing(record))
+        {
+            return;
+        }
+        if (!await CanLeaveAsync())
+        {
+            return;
+        }
+        var index = _trail.IndexOf(record);
+        var forward = index < 0 || index > _trail.CurrentIndex;
+        _trail.Open(record);
+        NavigateDetail(record, Slide(forward));
+    }
+
+    public async Task<bool> TryGoForwardAsync()
+    {
+        if (!_trail.CanGoForward || !await CanLeaveAsync())
+        {
+            return false;
+        }
+        _trail.Forward();
+        NavigateDetail(_trail.Current!, Slide(forward: true));
+        return true;
+    }
+
+    /// <summary>Makes a row of the trail current (a click on it); the rows after it stay.</summary>
+    public async Task GoToTrailRowAsync(int index)
+    {
+        if (index == _trail.CurrentIndex && IsShowing(_trail.Current!))
+        {
+            return;
+        }
+        if (!await CanLeaveAsync())
+        {
+            return;
+        }
+        var forward = index > _trail.CurrentIndex;
+        if (_trail.GoTo(index))
+        {
+            NavigateDetail(_trail.Current!, Slide(forward));
+        }
+    }
+
+    public async Task CloseTrailAsync()
+    {
+        if (!_trail.IsOpen || !await CanLeaveAsync())
+        {
+            return;
+        }
+        _trail.Close();
+        ShowTrailFirst();
+    }
+
+    /// <summary>
+    /// After the trail closed: its first record selected in the list, with its page next to it, or in a
+    /// narrow window the list alone.
+    /// </summary>
+    private void ShowTrailFirst()
+    {
+        var first = _trail.First!;
+        SetListSelection(first.Id);
+        if (_isNarrow)
+        {
+            DetailFrame.Navigate(typeof(EmptyDetailPage), ViewModel, new SuppressNavigationTransitionInfo());
+            DetailFrame.BackStack.Clear();
+            UpdatePanes();
+            TrailChanged?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+        NavigateDetail(first, Slide(forward: false));
+    }
+
+    private static NavigationTransitionInfo Slide(bool forward) => new SlideNavigationTransitionInfo
+    {
+        Effect = forward ? SlideNavigationTransitionEffect.FromRight : SlideNavigationTransitionEffect.FromLeft,
+    };
+
     public async Task<bool> TryHandleBackAsync()
     {
+        if (_trail.IsOpen)
+        {
+            if (!await CanLeaveAsync())
+            {
+                return true;
+            }
+            if (DetailFrame.Content is not IRecordPage && DetailFrame.CanGoBack)
+            {
+                // An editor opened from a record in the trail: back to that record.
+                DetailFrame.GoBack();
+                UpdatePanes();
+                return true;
+            }
+            if (_trail.Back() == TrailBackResult.Close)
+            {
+                ShowTrailFirst();
+            }
+            else
+            {
+                NavigateDetail(_trail.Current!, Slide(forward: false));
+            }
+            return true;
+        }
+
         if (!_isNarrow || !IsDetailShown)
         {
             return false;

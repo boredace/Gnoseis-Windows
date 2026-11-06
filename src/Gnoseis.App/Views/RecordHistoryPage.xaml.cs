@@ -648,7 +648,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
     {
         if (e.ClickedItem is HistoryRow row)
         {
-            await Navigator.OpenRecordAsync(row.ToRef());
+            await Navigator.OpenLinkedRecordAsync(row.ToRef());
         }
     }
 
@@ -770,7 +770,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         AutomationProperties.SetName(chip, $"{link.Type.DisplayName()}: {name}");
         ToolTipService.SetToolTip(chip, $"Open {name}");
         var target = new RecordRef(link.Type, link.Id);
-        chip.Click += async (_, _) => await Navigator.OpenRecordAsync(target);
+        chip.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(target);
         return chip;
     }
 
@@ -778,7 +778,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
     {
         if (_selectedNoteId is { } id)
         {
-            await Navigator.OpenRecordAsync(new RecordRef(RecordType.Note, id));
+            await Navigator.OpenLinkedRecordAsync(new RecordRef(RecordType.Note, id));
         }
     }
 
@@ -796,7 +796,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         if (HasReadingPane && (e.OriginalSource as FrameworkElement)?.DataContext is HistoryRow row)
         {
             e.Handled = true;
-            await Navigator.OpenRecordAsync(row.ToRef());
+            await Navigator.OpenLinkedRecordAsync(row.ToRef());
         }
     }
 
@@ -806,7 +806,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         if (HasReadingPane && e.Key == VirtualKey.Enter && HistoryList.SelectedItem is HistoryRow row)
         {
             e.Handled = true;
-            await Navigator.OpenRecordAsync(row.ToRef());
+            await Navigator.OpenLinkedRecordAsync(row.ToRef());
         }
     }
 
@@ -945,14 +945,14 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         surface.DoubleTapped += async (_, e) =>
         {
             e.Handled = true;
-            await Navigator.OpenRecordAsync(new RecordRef(RecordType.Contact, person.Id));
+            await Navigator.OpenLinkedRecordAsync(new RecordRef(RecordType.Contact, person.Id));
         };
         surface.PreviewKeyDown += async (_, e) =>
         {
             if (e.Key == VirtualKey.Enter)
             {
                 e.Handled = true;
-                await Navigator.OpenRecordAsync(new RecordRef(RecordType.Contact, person.Id));
+                await Navigator.OpenLinkedRecordAsync(new RecordRef(RecordType.Contact, person.Id));
             }
         };
         var contact = new RecordRef(RecordType.Contact, person.Id);
@@ -1163,7 +1163,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         };
         AutomationProperties.SetName(button, string.Join(". ", new[] { $"Contact: {person.Name}", second }.Where(s => s.Length > 0)));
         var target = new RecordRef(RecordType.Contact, person.Id);
-        button.Click += async (_, _) => await Navigator.OpenRecordAsync(target);
+        button.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(target);
         button.ContextRequested += (sender, args) => ShowRowMenu(sender, args, target, person.Name);
         return button;
     }

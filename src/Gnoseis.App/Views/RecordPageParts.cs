@@ -70,7 +70,7 @@ internal static partial class RecordPageParts
     public static void ShowRowMenu(UIElement sender, ContextRequestedEventArgs args, RecordRef record, string name, Func<string, string, Task> unlink)
     {
         var open = new MenuFlyoutItem { Text = "Open", Icon = new FontIcon { Glyph = "" } };
-        open.Click += async (_, _) => await Navigator.OpenRecordAsync(record);
+        open.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(record);
         var unlinkItem = new MenuFlyoutItem { Text = "Unlink", Icon = new FontIcon { Glyph = "" } };
         unlinkItem.Click += async (_, _) => await unlink(record.Id, name);
         var menu = new MenuFlyout();
@@ -402,7 +402,7 @@ internal sealed class SideColumn(FrameworkElement owner, Func<IReadOnlyList<Reco
         };
         AutomationProperties.SetName(button, string.Join(". ", new[] { $"{record.Type.DisplayName()}: {name}", second }.Where(s => s.Length > 0)));
         var target = new RecordRef(record.Type, record.Id);
-        button.Click += async (_, _) => await Navigator.OpenRecordAsync(target);
+        button.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(target);
         button.ContextRequested += (sender, args) => RecordPageParts.ShowRowMenu(sender, args, target, name, unlink);
         return button;
     }

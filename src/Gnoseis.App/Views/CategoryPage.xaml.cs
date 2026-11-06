@@ -525,7 +525,7 @@ public sealed partial class CategoryPage : Page, IRecordPage, IConfirmLeave
             : new[] { $"{row.Type.DisplayName()}: {row.Name}", row.Second };
         AutomationProperties.SetName(button, string.Join(". ", parts.Where(s => s.Length > 0)));
         var target = new RecordRef(row.Type, row.Id);
-        button.Click += async (_, _) => await Navigator.OpenRecordAsync(target);
+        button.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(target);
         button.ContextRequested += (sender, args) => RecordPageParts.ShowRowMenu(sender, args, target, row.Name, UnlinkAsync);
         return button;
     }

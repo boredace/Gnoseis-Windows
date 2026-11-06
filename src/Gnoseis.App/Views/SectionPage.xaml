@@ -77,7 +77,9 @@
                 Padding="8,0,8,16"
                 AutomationProperties.Name="{x:Bind ViewModel.Title}"
                 ItemTemplate="{StaticResource RecordRowTemplate}"
+                IsItemClickEnabled="True"
                 IsSynchronizedWithCurrentItem="False"
+                ItemClick="RecordList_ItemClick"
                 KeyDown="RecordList_KeyDown"
                 SelectionChanged="RecordList_SelectionChanged"
                 SelectionMode="Single">

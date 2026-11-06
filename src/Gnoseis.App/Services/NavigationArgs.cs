@@ -74,9 +74,24 @@ public interface ISectionHost
     /// <summary>The record shown in the detail pane was deleted.</summary>
     void OnRecordDeleted(string id);
 
-    /// <summary>True when "back" would be handled inside the section (narrow window showing a record).</summary>
+    /// <summary>True when "back" would be handled inside the section (a trail open, or a narrow window showing a record).</summary>
     bool CanHandleBack { get; }
 
-    /// <summary>Handles "back" inside the section (e.g. narrow window showing a record). Returns true if handled.</summary>
+    /// <summary>Handles "back" inside the section (a step along the trail, or from the record to the list in a narrow window). Returns true if handled.</summary>
     Task<bool> TryHandleBackAsync();
+
+    /// <summary>
+    /// The records opened from one another in this section: the record selected in the list first,
+    /// then each record opened from a link on the record above it.
+    /// </summary>
+    Gnoseis.Core.Domain.RecordTrail<RecordRef> Trail { get; }
+
+    /// <summary>Opens a record from a link on the record shown, adding it to the trail.</summary>
+    Task OpenLinkedRecordAsync(RecordRef record);
+
+    /// <summary>One step forward along the trail. Returns true if there was one.</summary>
+    Task<bool> TryGoForwardAsync();
+
+    /// <summary>Closes the trail: the list again, with the trail's first record selected.</summary>
+    Task CloseTrailAsync();
 }
