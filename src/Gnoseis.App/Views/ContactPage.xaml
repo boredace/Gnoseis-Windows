@@ -74,6 +74,9 @@
     </Page.Resources>
 
     <Grid x:Name="Root">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="N" Invoked="NoteAccelerator_Invoked" Modifiers="Control,Shift" />
+        </Grid.KeyboardAccelerators>
         <!-- Header, chips, note box and history scroll together -->
         <ScrollViewer
             x:Name="MainScroller"
@@ -155,6 +158,123 @@
                 <StackPanel x:Name="BodyPanel" Grid.Row="1" HorizontalAlignment="Left" Spacing="16">
                     <!-- Under 860 px: History, Linked records, About -->
                     <SelectorBar x:Name="TabBar" Margin="-8,-8,0,0" SelectionChanged="TabBar_SelectionChanged" Visibility="Collapsed" />
+
+                    <!-- Note box: a note about the contact without leaving the page -->
+                    <Border
+                        x:Name="NoteBox"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource OverlayCornerRadius}">
+                        <StackPanel Spacing="8">
+                            <TextBox
+                                x:Name="NoteTitleBox"
+                                AutomationProperties.Name="Note title"
+                                MaxLength="60"
+                                PlaceholderText="Title (optional)"
+                                PreviewKeyDown="NoteBox_PreviewKeyDown"
+                                TextChanged="NoteBox_TextChanged"
+                                Visibility="Collapsed" />
+                            <Grid>
+                                <TextBox
+                                    x:Name="NoteTextBox"
+                                    AcceptsReturn="True"
+                                    GotFocus="NoteTextBox_GotFocus"
+                                    PreviewKeyDown="NoteBox_PreviewKeyDown"
+                                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                    TextChanged="NoteBox_TextChanged"
+                                    TextWrapping="Wrap" />
+                                <Border
+                                    x:Name="ShortcutHint"
+                                    Margin="0,0,10,0"
+                                    Padding="6,1,6,2"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    IsHitTestVisible="False">
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="Ctrl+Shift+N" />
+                                </Border>
+                            </Grid>
+                            <StackPanel x:Name="NoteBoxCommands" Spacing="6" Visibility="Collapsed">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <controls:WrapPanel VerticalAlignment="Center">
+                                        <Button x:Name="NoteDayButton" ToolTipService.ToolTip="Day and time of the note">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <FontIcon FontSize="14" Glyph="&#xE787;" />
+                                                <TextBlock x:Name="NoteDayText" />
+                                            </StackPanel>
+                                            <Button.Flyout>
+                                                <Flyout x:Name="NoteDayFlyout" Opening="NoteDayFlyout_Opening" Placement="BottomEdgeAlignedLeft">
+                                                    <StackPanel Spacing="12">
+                                                        <CalendarDatePicker
+                                                            x:Name="NoteDatePicker"
+                                                            DateChanged="NoteDatePicker_DateChanged"
+                                                            Header="Day"
+                                                            IsTodayHighlighted="True" />
+                                                        <TimePicker
+                                                            x:Name="NoteTimePicker"
+                                                            ClockIdentifier="24HourClock"
+                                                            Header="Time"
+                                                            TimeChanged="NoteTimePicker_TimeChanged" />
+                                                    </StackPanel>
+                                                </Flyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                        <Button x:Name="NoteTitleButton" Click="NoteTitleButton_Click" ToolTipService.ToolTip="Add a title">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <FontIcon FontSize="14" Glyph="&#xE8D2;" />
+                                                <TextBlock Text="Title" />
+                                            </StackPanel>
+                                        </Button>
+                                        <HyperlinkButton Click="OpenFullEditor_Click" Content="Open full editor" />
+                                    </controls:WrapPanel>
+                                    <StackPanel
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal"
+                                        Spacing="8">
+                                        <Button Click="NoteCancel_Click" Content="Cancel" />
+                                        <Button
+                                            x:Name="NoteSaveButton"
+                                            AutomationProperties.Name="Save note"
+                                            Click="NoteSave_Click"
+                                            IsEnabled="False"
+                                            Style="{StaticResource AccentButtonStyle}"
+                                            ToolTipService.ToolTip="Save (Ctrl+Enter)">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="Save" />
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    Opacity="0.8"
+                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                    Text="Ctrl+Enter" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Glyph="{x:Bind helpers:Glyphs.Link}" />
+                                    <TextBlock
+                                        x:Name="WillLinkText"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
                     <StackPanel x:Name="HistoryPanel" Spacing="8">
                         <Grid>

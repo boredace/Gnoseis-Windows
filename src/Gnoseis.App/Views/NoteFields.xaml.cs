@@ -24,4 +24,7 @@ public sealed partial class NoteFields : UserControl, IEditFields
     public void FocusFirst() => TitleBox.FocusText();
 
     public void FocusPrefilled() => TitleBox.FocusText(caretAtEnd: true);
+
+    /// <summary>Moves keyboard focus to the end of the note text (a draft carried over).</summary>
+    public void FocusTextAtEnd() => TextBox.FocusText(caretAtEnd: true);
 }

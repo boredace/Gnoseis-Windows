@@ -27,7 +27,7 @@ namespace Gnoseis.App.Views;
 /// main column, and the other linked records in a side column. The layout follows the width of
 /// the record pane (see <see cref="ContactPageBand"/>).
 /// </summary>
-public sealed partial class ContactPage : Page, IRecordPage
+public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 {
     private const double Gap = 32;
     private const double TopPadding = 20;
@@ -53,7 +53,34 @@ public sealed partial class ContactPage : Page, IRecordPage
     {
         InitializeComponent();
         HeaderBlock.SizeChanged += (_, _) => PositionSideColumn();
+
+        // A click in the box grows it again after Esc or Save.
+        NoteTextBox.AddHandler(PointerPressedEvent, new PointerEventHandler((_, _) =>
+        {
+            _keepCollapsed = false;
+            ExpandNoteBox();
+        }), handledEventsToo: true);
+        NoteBox.LostFocus += NoteBox_LostFocus;
     }
+
+    /// <summary>An empty box goes back to one line when the focus leaves it.</summary>
+    private void NoteBox_LostFocus(object sender, RoutedEventArgs e) =>
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (HasDraft || NoteDayFlyout.IsOpen || XamlRoot == null)
+            {
+                return;
+            }
+            var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+            for (var element = focused; element != null; element = VisualTreeHelper.GetParent(element))
+            {
+                if (ReferenceEquals(element, NoteBox))
+                {
+                    return;
+                }
+            }
+            CollapseNoteBox(clear: true);
+        });
 
     public ContactPageViewModel ViewModel { get; private set; } = null!;
 
@@ -88,6 +115,7 @@ public sealed partial class ContactPage : Page, IRecordPage
         }
 
         ShowHeader();
+        ShowNoteBoxTexts();
         ShowHistory();
         _band = null;
         UpdatePageLayout();
@@ -395,6 +423,7 @@ public sealed partial class ContactPage : Page, IRecordPage
     private void ShowSelectedTab()
     {
         HistoryPanel.Visibility = _selectedTab == HistoryKey ? Visibility.Visible : Visibility.Collapsed;
+        NoteBox.Visibility = HistoryPanel.Visibility;
         TabLinkedPanel.Visibility = _selectedTab == LinkedKey ? Visibility.Visible : Visibility.Collapsed;
         TabAboutText.Visibility = _selectedTab == AboutKey ? Visibility.Visible : Visibility.Collapsed;
         TabAboutText.Text = ViewModel.Comments;
@@ -706,6 +735,256 @@ public sealed partial class ContactPage : Page, IRecordPage
         if (_band == ContactPageBand.S)
         {
             ShowSelectedTab();
+        }
+    }
+
+    // ---------------------------------------------------------------- Note box
+
+    private DateOnly _noteDay;
+    private TimeSpan _noteTime;
+    private bool _noteDatePicked;
+    private bool _noteBoxCollapsed = true;
+    private bool _keepCollapsed;
+    private bool _updatingNotePickers;
+    private bool _savingNote;
+
+    private bool HasDraft => !string.IsNullOrWhiteSpace(NoteTextBox.Text) || !string.IsNullOrWhiteSpace(NoteTitleBox.Text);
+
+    private void ShowNoteBoxTexts()
+    {
+        NoteTextBox.PlaceholderText = $"Write a note about {ViewModel.ShortName}…";
+        AutomationProperties.SetName(NoteTextBox, $"Write a note about {ViewModel.ShortName}");
+        WillLinkText.Text = $"Will be linked to {ViewModel.Name}";
+    }
+
+    /// <summary>Ctrl+Shift+N: scrolls the note box into view and puts the cursor in it.</summary>
+    private void NoteAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        FocusNoteBox();
+    }
+
+    private void FocusNoteBox()
+    {
+        if (!ViewModel.IsAvailable)
+        {
+            return;
+        }
+        if (_band == ContactPageBand.S && _selectedTab != HistoryKey)
+        {
+            _selectedTab = HistoryKey;
+            ShowTabs();
+        }
+        MainScroller.ChangeView(null, 0, null);
+        _keepCollapsed = false;
+        NoteTextBox.Focus(FocusState.Keyboard);
+        ExpandNoteBox();
+    }
+
+    private void NoteTextBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (!_keepCollapsed)
+        {
+            ExpandNoteBox();
+        }
+    }
+
+    private void NoteBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        NoteSaveButton.IsEnabled = HasDraft && !_savingNote;
+        if (HasDraft && _noteBoxCollapsed && NoteTextBox.FocusState != FocusState.Unfocused)
+        {
+            _keepCollapsed = false;
+            ExpandNoteBox();
+        }
+    }
+
+    /// <summary>Grows the box in place: several lines, then day and time, title, Open full editor, Cancel and Save.</summary>
+    private void ExpandNoteBox()
+    {
+        if (!_noteBoxCollapsed)
+        {
+            return;
+        }
+        _noteBoxCollapsed = false;
+        if (!_noteDatePicked)
+        {
+            var now = DateTime.Now;
+            _noteDay = DateOnly.FromDateTime(now);
+            _noteTime = new TimeSpan(now.Hour, now.Minute, 0);
+        }
+        ShowNoteDay();
+        NoteTextBox.MinHeight = 88;
+        NoteTextBox.MaxHeight = 320;
+        ShortcutHint.Visibility = Visibility.Collapsed;
+        NoteBoxCommands.Visibility = Visibility.Visible;
+        NoteTitleBox.Visibility = NoteTitleBox.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+        NoteBox.Padding = new Thickness(12);
+        NoteBox.Background = (Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"];
+        NoteBox.BorderBrush = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+    }
+
+    /// <summary>Back to one line. The draft stays unless <paramref name="clear"/>.</summary>
+    private void CollapseNoteBox(bool clear)
+    {
+        if (clear)
+        {
+            NoteTextBox.Text = "";
+            NoteTitleBox.Text = "";
+            _noteDatePicked = false;
+        }
+        _noteBoxCollapsed = true;
+        NoteTextBox.MinHeight = 0;
+        NoteTextBox.MaxHeight = clear || !HasDraft ? double.PositiveInfinity : 34;
+        ShortcutHint.Visibility = HasDraft ? Visibility.Collapsed : Visibility.Visible;
+        NoteBoxCommands.Visibility = Visibility.Collapsed;
+        NoteTitleBox.Visibility = Visibility.Collapsed;
+        NoteBox.Padding = new Thickness(0);
+        NoteBox.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        NoteBox.BorderBrush = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+    }
+
+    private void ShowNoteDay()
+    {
+        NoteDayText.Text = ContactLogic.DayAndTimeText(_noteDay, _noteTime, DateOnly.FromDateTime(DateTime.Now));
+        AutomationProperties.SetName(NoteDayButton, $"Day and time: {NoteDayText.Text}");
+    }
+
+    private void NoteDayFlyout_Opening(object? sender, object e)
+    {
+        _updatingNotePickers = true;
+        NoteDatePicker.Date = new DateTimeOffset(_noteDay.ToDateTime(TimeOnly.MinValue));
+        NoteTimePicker.Time = _noteTime;
+        _updatingNotePickers = false;
+    }
+
+    private void NoteDatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
+    {
+        if (_updatingNotePickers || args.NewDate is not { } date)
+        {
+            return;
+        }
+        _noteDay = DateOnly.FromDateTime(date.Date);
+        _noteDatePicked = true;
+        ShowNoteDay();
+    }
+
+    private void NoteTimePicker_TimeChanged(object? sender, TimePickerValueChangedEventArgs e)
+    {
+        if (_updatingNotePickers)
+        {
+            return;
+        }
+        _noteTime = e.NewTime;
+        _noteDatePicked = true;
+        ShowNoteDay();
+    }
+
+    private void NoteTitleButton_Click(object sender, RoutedEventArgs e)
+    {
+        NoteTitleBox.Visibility = Visibility.Visible;
+        NoteTitleBox.Focus(FocusState.Keyboard);
+    }
+
+    /// <summary>Ctrl+Enter saves; Esc collapses the box and keeps the draft.</summary>
+    private async void NoteBox_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        var ctrl = Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
+            .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+        if (e.Key == VirtualKey.Enter && ctrl)
+        {
+            e.Handled = true;
+            await SaveNoteAsync();
+        }
+        else if (e.Key == VirtualKey.Escape && !_noteBoxCollapsed)
+        {
+            e.Handled = true;
+            _keepCollapsed = true;
+            CollapseNoteBox(clear: false);
+        }
+    }
+
+    private void NoteCancel_Click(object sender, RoutedEventArgs e)
+    {
+        _keepCollapsed = true;
+        CollapseNoteBox(clear: true);
+        NoteTextBox.Focus(FocusState.Programmatic);
+    }
+
+    private async void NoteSave_Click(object sender, RoutedEventArgs e) => await SaveNoteAsync();
+
+    /// <summary>
+    /// Saves the note and its link to the contact in one transaction; the box then empties and
+    /// collapses, and keeps the focus.
+    /// </summary>
+    private async Task<bool> SaveNoteAsync()
+    {
+        if (!HasDraft || _savingNote)
+        {
+            return !HasDraft;
+        }
+        _savingNote = true;
+        NoteSaveButton.IsEnabled = false;
+        try
+        {
+            if (!_noteDatePicked && _noteBoxCollapsed)
+            {
+                var now = DateTime.Now;
+                _noteDay = DateOnly.FromDateTime(now);
+                _noteTime = new TimeSpan(now.Hour, now.Minute, 0);
+            }
+            var note = await App.Container.CreateLinkedNote.InvokeAsync(
+                Record.Id, RecordType.Contact, NoteTitleBox.Text, NoteTextBox.Text, _noteDay, _noteTime);
+            _selectAfterLoad = note.Id;
+            _keepCollapsed = true;
+            CollapseNoteBox(clear: true);
+            NoteTextBox.Focus(FocusState.Programmatic);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await Dialogs.ShowErrorAsync("Couldn't save the note", ex);
+            return false;
+        }
+        finally
+        {
+            _savingNote = false;
+            NoteSaveButton.IsEnabled = HasDraft;
+        }
+    }
+
+    // The note saved from the box, selected in the reading pane once the history has reloaded.
+    private string? _selectAfterLoad;
+
+    /// <summary>Opens the note editor with the draft, for a new note linked to the contact.</summary>
+    private async void OpenFullEditor_Click(object sender, RoutedEventArgs e)
+    {
+        var draft = new NoteDraft(NoteTitleBox.Text, NoteTextBox.Text, _noteDay, _noteTime);
+        CollapseNoteBox(clear: true);
+        await Navigator.ShowEditorAsync(new EditRequest(RecordType.Note, LinkFrom: Record, NoteDraft: draft));
+    }
+
+    /// <summary>Leaving with a draft asks, as the editor does: save it, drop it, or stay.</summary>
+    public async Task<bool> CanLeaveAsync()
+    {
+        if (_savingNote)
+        {
+            return false;
+        }
+        if (!HasDraft)
+        {
+            return true;
+        }
+        var choice = await Dialogs.AskAsync("Save changes?", "Do you want to save your changes to this note?", "Save", "Don't save", "Cancel");
+        switch (choice)
+        {
+            case ContentDialogResult.Primary:
+                return await SaveNoteAsync();
+            case ContentDialogResult.Secondary:
+                CollapseNoteBox(clear: true);
+                return true;
+            default:
+                return false;
         }
     }
 
