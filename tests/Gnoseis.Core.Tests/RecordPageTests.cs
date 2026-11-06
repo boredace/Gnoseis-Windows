@@ -7,6 +7,7 @@
  */
 
 using Gnoseis.Core.Data;
+using Gnoseis.Core.Domain;
 using Gnoseis.Core.Models;
 
 namespace Gnoseis.Core.Tests;
@@ -232,5 +233,18 @@ public class RecordPageTests : IDisposable
 
         Assert.Equal(new[] { "Erik Berg", "Sara Berg", "Anna Holm" }, contacts.Records.Select(c => c.Name));
         Assert.False(contacts.HasMore);
+    }
+
+    // ---------------------------------------------------------------- Category column count
+
+    [Theory]
+    [InlineData(RecordPageBand.S, 1)]
+    [InlineData(RecordPageBand.M, 2)]
+    [InlineData(RecordPageBand.L, 3)]
+    [InlineData(RecordPageBand.XL, 5)]
+    [InlineData(RecordPageBand.XXL, 5)]
+    public void Category_column_count_per_band(RecordPageBand band, int expected)
+    {
+        Assert.Equal(expected, CategoryPage.ColumnCount(band));
     }
 }
