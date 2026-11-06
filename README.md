@@ -195,9 +195,15 @@ switching and seeing related information at a glance.
 - **List and record side by side** in every section, like Mail and Outlook. You can move through the
   list with the arrow keys. A filter box narrows the list. Notes are grouped by *Today*,
   *Yesterday*, weekday and date, and the other lists by first letter.
-- **Record page** for notes, organizations, categories and items: a header with the type, the
-  title and the commands, the record's details, and its linked records. The note text is readable,
-  with clickable web and e-mail links.
+- **Record page** for organizations, categories and items: a header with the type, the title and
+  the commands, the record's details, and its linked records.
+- **Note page**, built around the text: a header with the title, the day and time, and the
+  commands; the text in a readable column, with clickable web and e-mail links, and when it was
+  created and changed under it. The records it's linked to sit in a side column, contacts first,
+  each type with a **+** to link one more. **Edit** (Ctrl+E) or a double-click on the text edits
+  the title, the text and the day in place (Ctrl+Enter saves, Esc cancels). The layout follows the
+  width of the record pane as on the contact page, with a compact header once the header scrolls
+  away. **More** has **New linked**, **Copy note text** (Ctrl+Shift+C) and **Delete**.
 - **Contact page**, built around the person: a header with the name, the job and company (the
   company opens its organization when it's linked, or offers **Link as organization**), and a chip
   per phone number and e-mail address that calls or writes (right-click to copy; the value is copied
@@ -220,7 +226,7 @@ switching and seeing related information at a glance.
 - **Unlink** from a linked record's context menu (right-click, Shift+F10 or the menu key). There's
   no confirmation: a message offers **Undo** until you close it or leave the page.
 - **Editing happens in place** in the record pane, on one edit page for every type, with Save
-  (Ctrl+S) and Cancel (Esc). A record created with **New linked** shows which record it will be
+  (Ctrl+S) and Cancel (Esc); an existing note is edited on its own page. A record created with **New linked** shows which record it will be
   linked to. You're asked before unsaved changes are lost, including when you click another record.
 - **Linking** existing records uses a picker dialog with the same search, chips and best match as
   the search page, and multi-select. Records stay ticked through later searches and chips until
@@ -236,7 +242,8 @@ switching and seeing related information at a glance.
 - **Narrow windows** show one pane at a time; Back returns from a record to the list.
 - **Keyboard**: Ctrl+1 to Ctrl+6 switch sections, Ctrl+N creates a record, Ctrl+E edits, Ctrl+L
   links, Del deletes, Alt+Left or the mouse back button goes back. On a contact, Ctrl+Shift+N writes
-  a note and Ctrl+Shift+C copies the contact details. Settings lists every shortcut.
+  a note and Ctrl+Shift+C copies the contact details; on a note, Ctrl+Shift+C copies the note text.
+  Settings lists every shortcut.
 - Fluent design with Mica, a light, dark or system theme, and screen-reader names and headings.
 
 | Android | Windows |
@@ -244,9 +251,10 @@ switching and seeing related information at a glance.
 | Navigation drawer | Navigation pane (expanded, compact or hidden, depending on window width) |
 | Separate list and details screens | List and record side by side |
 | Floating "Add" button | **New** button in the list header (Ctrl+N) |
-| Expandable FAB (link existing / new linked record) | **Link** (Ctrl+L) and **New linked** menu in the record's command bar (on a contact, under **More**) |
+| Expandable FAB (link existing / new linked record) | **Link** (Ctrl+L) and **New linked** menu in the record's command bar (on a contact or a note, under **More**) |
 | Contact details screen (fields, then linked records) | Contact page: phone and e-mail chips in the header, the notes as a history with a note box above it, the other linked records in a side column |
 | New linked note from a contact | Note box on the contact page (or **Open full editor**) |
+| Note details screen (text, then linked records) | Note page: the text in a readable column, edited in place, the linked records in a side column |
 | Linked-record tab row | Selector with **All** and each linked type, beside the details on a wide pane, tabs with **Details** on a narrow one |
 | Snackbar with Undo after unlinking | Info bar with **Undo** at the bottom of the record page |
 | Link Records page | Link picker dialog |

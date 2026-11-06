@@ -6,12 +6,9 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
-using System.ComponentModel;
-using System.Text.RegularExpressions;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.System;
@@ -19,7 +16,7 @@ using Windows.System;
 namespace Gnoseis.App.Views;
 
 /// <summary>
-/// A note, organization, category or item (contacts have <see cref="ContactPage"/>): a header with
+/// An organization, category or item (contacts and notes have their own pages): a header with
 /// its commands, the Details section (per type) and the linked records.
 /// From an 860 px pane the details and the linked records sit side by side; below it, one
 /// selector bar (Details, All, then the linked types) shows one of them at a time.
@@ -62,7 +59,6 @@ public sealed partial class RecordDetailsPage : Page, IRecordPage
     {
         base.OnNavigatedTo(e);
         ViewModel = new RecordDetailsViewModel((RecordRef)e.Parameter);
-        ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.Loaded += ViewModel_Loaded;
         _selected = SelectedItems.GetValueOrDefault(ViewModel.Record.Id, "");
         ViewModel.Activate();
@@ -73,16 +69,7 @@ public sealed partial class RecordDetailsPage : Page, IRecordPage
     {
         base.OnNavigatedFrom(e);
         ViewModel.Deactivate();
-        ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
         ViewModel.Loaded -= ViewModel_Loaded;
-    }
-
-    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(RecordDetailsViewModel.Body) && ViewModel.IsNote)
-        {
-            ShowNoteText(ViewModel.Body);
-        }
     }
 
     private void ViewModel_Loaded(object? sender, EventArgs e)
@@ -372,48 +359,6 @@ public sealed partial class RecordDetailsPage : Page, IRecordPage
         if (sender is FrameworkElement { Tag: RecordType type })
         {
             Select(type.ToString());
-        }
-    }
-
-    // ---------------------------------------------------------------- Note text with clickable links
-
-    [GeneratedRegex(@"(https?://[^\s<>""]+|www\.[^\s<>""]+|[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})")]
-    private static partial Regex LinkPattern();
-
-    private void ShowNoteText(string text)
-    {
-        NoteText.Blocks.Clear();
-        foreach (var line in text.Replace("\r\n", "\n").Split('\n'))
-        {
-            var paragraph = new Paragraph { Margin = new Thickness(0, 0, 0, line.Length == 0 ? 0 : 4) };
-            var position = 0;
-            foreach (Match match in LinkPattern().Matches(line))
-            {
-                if (match.Index > position)
-                {
-                    paragraph.Inlines.Add(new Run { Text = line[position..match.Index] });
-                }
-                var target = match.Value.TrimEnd('.', ',', ';', ':', ')', '!', '?');
-                var address = target.Contains('@') && !target.Contains("://") ? "mailto:" + target
-                    : target.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? "https://" + target
-                    : target;
-                if (Uri.TryCreate(address, UriKind.Absolute, out var uri))
-                {
-                    var link = new Hyperlink { NavigateUri = uri };
-                    link.Inlines.Add(new Run { Text = target });
-                    paragraph.Inlines.Add(link);
-                }
-                else
-                {
-                    paragraph.Inlines.Add(new Run { Text = target });
-                }
-                position = match.Index + target.Length;
-            }
-            if (position < line.Length)
-            {
-                paragraph.Inlines.Add(new Run { Text = line[position..] });
-            }
-            NoteText.Blocks.Add(paragraph);
         }
     }
 

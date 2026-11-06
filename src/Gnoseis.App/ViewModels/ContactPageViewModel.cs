@@ -89,7 +89,7 @@ public sealed class ContactPageViewModel(RecordRef record) : PageViewModel
     public bool HasComments => Comments.Length > 0;
 
     /// <summary>A side column section's records: latest linked first.</summary>
-    public IReadOnlyList<LinkedRecordSummary> SideRecords(RecordType type) => ContactPage.SideOrder(Linked.Find(type)?.Records ?? []);
+    public IReadOnlyList<LinkedRecordSummary> SideRecords(RecordType type) => RecordPageLayout.SideOrder(Linked.Find(type)?.Records ?? []);
 
     /// <summary>Records in the side column (organizations, categories and items).</summary>
     public int SideCount => ContactPage.SideTypes.Sum(t => Linked.Find(t)?.Count ?? 0);

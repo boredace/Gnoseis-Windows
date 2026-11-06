@@ -63,8 +63,17 @@ internal static class EditPageFlow
             return true;
         }
 
-        var name = viewModel.Type.DisplayName().ToLowerInvariant();
-        if (!viewModel.IsValid)
+        return await AskToLeaveAsync(viewModel.Type, viewModel.IsValid, async () => await TrySaveAsync(viewModel) != null);
+    }
+
+    /// <summary>
+    /// The unsaved-changes prompt: save (when the record is valid), don't save, or stay. Returns
+    /// false if the user wants to stay or the save failed.
+    /// </summary>
+    public static async Task<bool> AskToLeaveAsync(RecordType type, bool isValid, Func<Task<bool>> save)
+    {
+        var name = type.DisplayName().ToLowerInvariant();
+        if (!isValid)
         {
             return await Dialogs.ConfirmAsync("Discard changes?",
                 $"This {name} can't be saved yet because required information is missing.",
@@ -76,7 +85,7 @@ internal static class EditPageFlow
             "Save", "Don't save", "Cancel");
         return choice switch
         {
-            ContentDialogResult.Primary => await TrySaveAsync(viewModel) != null,
+            ContentDialogResult.Primary => await save(),
             ContentDialogResult.Secondary => true,
             _ => false,
         };

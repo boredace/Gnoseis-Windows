@@ -126,12 +126,12 @@ public class ContactPageTests : IDisposable
     }
 
     [Theory]
-    [InlineData(ContactPageBand.S, 2)]
-    [InlineData(ContactPageBand.M, 3)]
-    [InlineData(ContactPageBand.L, 4)]
-    [InlineData(ContactPageBand.XL, 8)]
-    [InlineData(ContactPageBand.XXL, 8)]
-    public void Chips_fold_per_band(ContactPageBand band, int shown)
+    [InlineData(RecordPageBand.S, 2)]
+    [InlineData(RecordPageBand.M, 3)]
+    [InlineData(RecordPageBand.L, 4)]
+    [InlineData(RecordPageBand.XL, 8)]
+    [InlineData(RecordPageBand.XXL, 8)]
+    public void Chips_fold_per_band(RecordPageBand band, int shown)
     {
         var folding = ContactPage.Fold(ContactPage.Chips(AllFields()), band);
 
@@ -147,7 +147,7 @@ public class ContactPageTests : IDisposable
     [Fact]
     public void Chips_that_fit_do_not_fold()
     {
-        var folding = ContactPage.Fold(ContactPage.Chips(Emma() with { PhoneMain = "1", EmailMain = "a@x.nl" }), ContactPageBand.S);
+        var folding = ContactPage.Fold(ContactPage.Chips(Emma() with { PhoneMain = "1", EmailMain = "a@x.nl" }), RecordPageBand.S);
 
         Assert.Equal(2, folding.Shown.Count);
         Assert.False(folding.HasMore);
@@ -195,17 +195,17 @@ public class ContactPageTests : IDisposable
     // ---------------------------------------------------------------- Bands
 
     [Theory]
-    [InlineData(859, ContactPageBand.S)]
-    [InlineData(860, ContactPageBand.M)]
-    [InlineData(1099, ContactPageBand.M)]
-    [InlineData(1100, ContactPageBand.L)]
-    [InlineData(1699, ContactPageBand.L)]
-    [InlineData(1700, ContactPageBand.XL)]
-    [InlineData(2599, ContactPageBand.XL)]
-    [InlineData(2600, ContactPageBand.XXL)]
-    public void Band_follows_the_pane_width(double width, ContactPageBand band)
+    [InlineData(859, RecordPageBand.S)]
+    [InlineData(860, RecordPageBand.M)]
+    [InlineData(1099, RecordPageBand.M)]
+    [InlineData(1100, RecordPageBand.L)]
+    [InlineData(1699, RecordPageBand.L)]
+    [InlineData(1700, RecordPageBand.XL)]
+    [InlineData(2599, RecordPageBand.XL)]
+    [InlineData(2600, RecordPageBand.XXL)]
+    public void Band_follows_the_pane_width(double width, RecordPageBand band)
     {
-        Assert.Equal(band, ContactPage.BandFor(width));
+        Assert.Equal(band, RecordPageLayout.BandFor(width));
     }
 
     [Fact]
@@ -219,10 +219,10 @@ public class ContactPageTests : IDisposable
             Organization("D", "4") with { LinkedAt = 20 },
         };
 
-        Assert.Equal(["4", "3", "2", "1"], ContactPage.SideOrder(records).Select(r => r.Id));
-        Assert.Equal(5, ContactPage.SideRowCount(ContactPageBand.L));
-        Assert.Equal(6, ContactPage.SideRowCount(ContactPageBand.XL));
-        Assert.Equal(8, ContactPage.SideRowCount(ContactPageBand.XXL));
+        Assert.Equal(["4", "3", "2", "1"], RecordPageLayout.SideOrder(records).Select(r => r.Id));
+        Assert.Equal(5, RecordPageLayout.SideRowCount(RecordPageBand.L));
+        Assert.Equal(6, RecordPageLayout.SideRowCount(RecordPageBand.XL));
+        Assert.Equal(8, RecordPageLayout.SideRowCount(RecordPageBand.XXL));
     }
 
     [Fact]
