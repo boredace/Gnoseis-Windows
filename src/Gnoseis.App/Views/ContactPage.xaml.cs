@@ -115,6 +115,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         }
 
         ShowHeader();
+        ShowCompactHeader();
         ShowNoteBoxTexts();
         ShowHistory();
         _band = null;
@@ -168,6 +169,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             ShowTabs();
             ShowSideColumn();
         }
+        UpdateCompactHeader();
         PositionSideColumn();
     }
 
@@ -192,9 +194,17 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     }
 
     /// <summary>The highest the side column goes when the header has scrolled away.</summary>
-    private double MinimumColumnTop => 12;
+    private double MinimumColumnTop => CompactHeader.Visibility == Visibility.Visible ? CompactHeaderHeight + 12 : 12;
 
-    private void MainScroller_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs e) => PositionSideColumn();
+    private void MainScroller_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
+    {
+        UpdateCompactHeader();
+        PositionSideColumn();
+        if (!e.IsIntermediate || _jumpedYear == null)
+        {
+            UpdateLitYear();
+        }
+    }
 
     // ---------------------------------------------------------------- Header
 
@@ -439,12 +449,14 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 
     // ---------------------------------------------------------------- History
 
+    // The rows shown, in order (filtered, up to the number shown).
+    private List<HistoryRow> _rows = [];
+
     private void ShowHistory()
     {
         var notes = ViewModel.History;
         HistoryCountText.Text = notes.Count switch { 0 => "nothing yet", 1 => "1 note", var n => $"{n} notes" };
         EmptyHistory.Visibility = notes.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        HistoryList.Visibility = notes.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         if (notes.Count == 0)
         {
             var name = ViewModel.ShortName;
@@ -456,11 +468,211 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             CreatedText.Visibility = ViewModel.CreatedAt != null ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        var rows = notes.Take(_shownNotes).Select(n => new HistoryRow(n, Record.Id)).ToList();
+        var grouped = ContactHistory.IsGrouped(notes.Count);
+        FilterRow.Visibility = grouped ? Visibility.Visible : Visibility.Collapsed;
+        if (!grouped && FilterBox.Text.Length > 0)
+        {
+            FilterBox.Text = "";
+        }
+        ShowYearChips();
+        ShowHistoryRows();
+    }
+
+    /// <summary>The notes that match the filter, up to the number shown, under month headers from 13 notes.</summary>
+    private void ShowHistoryRows()
+    {
+        var notes = ViewModel.History;
+        var matching = notes.Where(n => ContactHistory.Matches(n, FilterBox.Text)).ToList();
+        _rows = matching.Take(_shownNotes).Select(n => new HistoryRow(n, Record.Id)).ToList();
         HistorySource.Source = ContactHistory.IsGrouped(notes.Count)
-            ? rows.GroupBy(r => ContactHistory.Month(r.Note)).Select(g => new HistoryMonth(ContactHistory.MonthText(g.Key), g)).ToList()
-            : new List<HistoryMonth> { new("", rows) };
+            ? _rows.GroupBy(r => ContactHistory.Month(r.Note)).Select(g => new HistoryMonth(ContactHistory.MonthText(g.Key), g)).ToList()
+            : new List<HistoryMonth> { new("", _rows) };
         HistoryList.ItemsSource = HistorySource.View;
+        HistoryList.Visibility = _rows.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+        NoMatchText.Visibility = notes.Count > 0 && matching.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        var older = matching.Count - _rows.Count;
+        ShowOlderButton.Visibility = older > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ShowOlderButton.Content = $"Show older ({older.ToString(CultureInfo.CurrentCulture)})";
+    }
+
+    private void ShowOlder_Click(object sender, RoutedEventArgs e)
+    {
+        _shownNotes += ContactHistory.PageSize;
+        ShowHistoryRows();
+    }
+
+    private void FilterBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput || sender.Text.Length == 0)
+        {
+            ShowHistoryRows();
+        }
+    }
+
+    // ---------------------------------------------------------------- Year chips
+
+    private int? _litYear;
+
+    // The year last jumped to: it stays lit while its first note is in view, also when the list can't scroll that far.
+    private int? _jumpedYear;
+
+    /// <summary>Over more than one year: a chip per year with its count, in the filter row and the compact header.</summary>
+    private void ShowYearChips()
+    {
+        YearChips.Children.Clear();
+        CompactYearChips.Children.Clear();
+        var years = ContactHistory.IsGrouped(ViewModel.History.Count) ? ContactHistory.YearCounts(ViewModel.History) : [];
+        foreach (var (year, count) in years)
+        {
+            YearChips.Children.Add(CreateYearChip(year, count));
+            CompactYearChips.Children.Add(CreateYearChip(year, count));
+        }
+        _litYear = null;
+        LightYear(years.Count > 0 ? years[0].Year : null);
+    }
+
+    private Button CreateYearChip(int year, int count)
+    {
+        var chip = new Button
+        {
+            Content = $"{year} · {count}",
+            Tag = year,
+            Style = ChipStyle,
+            Padding = new Thickness(10, 3, 10, 4),
+            MinHeight = 0,
+        };
+        AutomationProperties.SetName(chip, $"Go to {year}, {count} notes");
+        chip.Click += (_, _) => JumpToYear(year);
+        return chip;
+    }
+
+    /// <summary>Lights the chips of the year of the topmost note shown.</summary>
+    private void LightYear(int? year)
+    {
+        if (year == _litYear)
+        {
+            return;
+        }
+        _litYear = year;
+        foreach (var chip in YearChips.Children.Concat(CompactYearChips.Children).OfType<Button>())
+        {
+            var lit = chip.Tag is int y && y == year;
+            chip.Background = lit ? (Brush)Application.Current.Resources["AccentFillColorTertiaryBrush"] : null;
+            chip.Foreground = lit ? (Brush)Application.Current.Resources["TextOnAccentFillColorPrimaryBrush"] : null;
+            if (!lit)
+            {
+                chip.ClearValue(BackgroundProperty);
+                chip.ClearValue(ForegroundProperty);
+            }
+        }
+    }
+
+    /// <summary>Scrolls to the year's first note (newest first), showing older notes when it isn't shown yet. A chip doesn't filter.</summary>
+    private void JumpToYear(int year)
+    {
+        var index = _rows.FindIndex(r => r.Year == year);
+        if (index < 0)
+        {
+            var all = ViewModel.History.Where(n => ContactHistory.Matches(n, FilterBox.Text)).ToList();
+            var position = all.FindIndex(n => ContactHistory.Day(n).Year == year);
+            if (position < 0)
+            {
+                return;
+            }
+            _shownNotes = Math.Max(_shownNotes, (position / ContactHistory.PageSize + 1) * ContactHistory.PageSize);
+            ShowHistoryRows();
+            index = _rows.FindIndex(r => r.Year == year);
+        }
+        var row = _rows[index];
+        HistoryList.UpdateLayout();
+        if (HistoryList.ContainerFromItem(row) is UIElement container)
+        {
+            var transform = container.TransformToVisual(MainScroller.Content as UIElement);
+            var y = transform.TransformPoint(new Windows.Foundation.Point(0, 0)).Y;
+            var monthHeader = index == 0 || _rows[index - 1].Note is var previous && ContactHistory.Month(previous) != ContactHistory.Month(row.Note) ? 48 : 0;
+            MainScroller.ChangeView(null, Math.Max(0, y - CompactHeaderHeight - monthHeader - 8), null);
+        }
+        _jumpedYear = year;
+        LightYear(year);
+    }
+
+    /// <summary>The year of the topmost note in view, for the chips.</summary>
+    private void UpdateLitYear()
+    {
+        if (YearChips.Children.Count == 0 || _rows.Count == 0)
+        {
+            return;
+        }
+        var content = MainScroller.Content as UIElement;
+        var top = MainScroller.VerticalOffset + (CompactHeader.Visibility == Visibility.Visible ? CompactHeaderHeight : 0);
+        var bottom = MainScroller.VerticalOffset + MainScroller.ViewportHeight;
+        if (_jumpedYear is { } jumped)
+        {
+            var first = _rows.Find(r => r.Year == jumped);
+            if (first != null && HistoryList.ContainerFromItem(first) is FrameworkElement jumpedContainer)
+            {
+                var jy = jumpedContainer.TransformToVisual(content).TransformPoint(new Windows.Foundation.Point(0, 0)).Y;
+                if (jy + jumpedContainer.ActualHeight > top && jy < bottom)
+                {
+                    LightYear(jumped);
+                    return;
+                }
+            }
+            _jumpedYear = null;
+        }
+        foreach (var row in _rows)
+        {
+            if (HistoryList.ContainerFromItem(row) is FrameworkElement container)
+            {
+                var y = container.TransformToVisual(content).TransformPoint(new Windows.Foundation.Point(0, 0)).Y;
+                if (y + container.ActualHeight > top)
+                {
+                    LightYear(row.Year);
+                    return;
+                }
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------- Compact header and scrolling to the top
+
+    private double CompactHeaderHeight => CompactHeader.ActualHeight > 0 ? CompactHeader.ActualHeight : 56;
+
+    /// <summary>Shows the compact header once the full header has scrolled out of view.</summary>
+    private void UpdateCompactHeader()
+    {
+        var show = ViewModel.IsAvailable && MainScroller.VerticalOffset > TopPadding + HeaderBlock.ActualHeight;
+        CompactHeader.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        CompactHeader.Padding = new Thickness(_padding - 4, 8, _padding - 8, 8);
+        CompactYearChips.Visibility = _band >= ContactPageBand.M ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void ShowCompactHeader()
+    {
+        CompactNameText.Text = ViewModel.Name;
+        CompactPicture.DisplayName = ViewModel.Name;
+        var (line, _) = ViewModel.HeaderLine;
+        CompactLineText.Text = line;
+        AutomationProperties.SetName(CompactNameButton, $"{ViewModel.Name}, back to the top");
+    }
+
+    private void CompactName_Click(object sender, RoutedEventArgs e) => ScrollToTop();
+
+    private void CompactNote_Click(object sender, RoutedEventArgs e) => FocusNoteBox();
+
+    private void CompactMore_Click(object sender, RoutedEventArgs e) => MoreMenu.ShowAt(CompactMoreButton);
+
+    private void ScrollToTop() => MainScroller.ChangeView(null, 0, null, disableAnimation: false);
+
+    /// <summary>Home and Ctrl+Home, outside a text box, scroll smoothly to the top (the history list doesn't take them).</summary>
+    private void Page_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Home && !IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            ScrollToTop();
+        }
     }
 
     private async void HistoryList_ItemClick(object sender, ItemClickEventArgs e)
