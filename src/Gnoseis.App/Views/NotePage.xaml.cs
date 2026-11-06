@@ -22,7 +22,7 @@ namespace Gnoseis.App.Views;
 /// and the records linked to it in a side column. The layout follows the width of the record pane
 /// (see <see cref="RecordPageBand"/>).
 /// </summary>
-public sealed partial class NotePage : Page, IRecordPage
+public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
 {
     private const double Gap = 32;
     private const double TopPadding = 20;
@@ -44,6 +44,9 @@ public sealed partial class NotePage : Page, IRecordPage
         InitializeComponent();
         _side = new SideColumn(this, LinkAsync, UnlinkAsync, RebuildSections);
         HeaderBlock.SizeChanged += (_, _) => PositionSideColumn();
+
+        // A double-click on the text edits it in place (the text block handles the event itself).
+        NoteText.AddHandler(DoubleTappedEvent, new DoubleTappedEventHandler(NoteText_DoubleTapped), handledEventsToo: true);
     }
 
     public NotePageViewModel ViewModel { get; private set; } = null!;
@@ -185,15 +188,32 @@ public sealed partial class NotePage : Page, IRecordPage
 
     private void ScrollToTop() => MainScroller.ChangeView(null, 0, null, disableAnimation: false);
 
-    /// <summary>Home and Ctrl+Home, outside a text box, scroll smoothly to the top.</summary>
-    private void Page_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    /// <summary>
+    /// Home and Ctrl+Home, outside a text box, scroll smoothly to the top. While editing, Ctrl+Enter
+    /// saves and Esc cancels.
+    /// </summary>
+    private async void Page_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.Home && !RecordPageParts.IsTextInput(e.OriginalSource))
+        if (_editing && e.Key == VirtualKey.Enter && IsControlDown())
+        {
+            e.Handled = true;
+            await SaveEditAsync();
+        }
+        else if (_editing && e.Key == VirtualKey.Escape)
+        {
+            e.Handled = true;
+            StopEditing();
+        }
+        else if (e.Key == VirtualKey.Home && !RecordPageParts.IsTextInput(e.OriginalSource))
         {
             e.Handled = true;
             ScrollToTop();
         }
     }
+
+    private static bool IsControlDown() =>
+        Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
+            .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
 
     // ---------------------------------------------------------------- Header
 
@@ -203,6 +223,7 @@ public sealed partial class NotePage : Page, IRecordPage
         TitleText.Text = title;
         TitleText.FontWeight = isPlaceholder ? Microsoft.UI.Text.FontWeights.Normal : Microsoft.UI.Text.FontWeights.SemiBold;
         TitleText.Foreground = (Brush)Application.Current.Resources[isPlaceholder ? "TextFillColorTertiaryBrush" : "TextFillColorPrimaryBrush"];
+        TitleText.Visibility = _editing ? Visibility.Collapsed : Visibility.Visible;
         DayText.Text = ViewModel.DayAndTime;
     }
 
@@ -213,12 +234,217 @@ public sealed partial class NotePage : Page, IRecordPage
     {
         var hasText = ViewModel.HasText;
         RecordPageParts.ShowLinkedText(NoteText, hasText ? ViewModel.Text : "");
-        NoteText.Visibility = hasText ? Visibility.Visible : Visibility.Collapsed;
+        NoteText.Visibility = hasText && !_editing ? Visibility.Visible : Visibility.Collapsed;
 
         var caption = ViewModel.TimesCaption;
         TimesText.Text = caption;
         CaptionPanel.Visibility = caption.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-        CaptionRule.Visibility = hasText ? Visibility.Visible : Visibility.Collapsed;
+        CaptionRule.Visibility = hasText || _editing ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    // ---------------------------------------------------------------- Editing in place
+
+    private bool _editing;
+    private bool _saving;
+    private DateOnly _editDay;
+    private bool _updatingDatePicker;
+
+    // The values the editor started with, to tell whether anything changed.
+    private string _originalTitle = "";
+    private string _originalText = "";
+    private DateOnly _originalDay;
+
+    private bool IsDirty =>
+        _editing && (TitleBox.Text != _originalTitle || EditTextBox.Text != _originalText || _editDay != _originalDay);
+
+    private bool IsEditValid => Gnoseis.Core.Domain.NotePage.IsValid(TitleBox.Text, EditTextBox.Text);
+
+    /// <summary>
+    /// Turns the page into the note's editor where it stands: the title becomes a text box in the
+    /// header, the text a multi-line box with the day, Cancel and Save under it. Focus goes to the
+    /// text (caret at the end), or to the title box.
+    /// </summary>
+    private void StartEditing(bool focusTitle = false)
+    {
+        if (ViewModel?.Note is not { } note)
+        {
+            return;
+        }
+        if (!_editing)
+        {
+            if (_band == RecordPageBand.S && _selectedTab != NoteKey)
+            {
+                _selectedTab = NoteKey;
+                ShowTabs();
+            }
+            _editing = true;
+            _originalTitle = note.Title ?? "";
+            _originalText = note.TextContents ?? "";
+            _originalDay = NoteDates.DisplayedDay(note);
+            TitleBox.Text = _originalTitle;
+            EditTextBox.Text = _originalText;
+            _editDay = _originalDay;
+            ShowEditDay();
+            TitleText.Visibility = Visibility.Collapsed;
+            TitleBox.Visibility = Visibility.Visible;
+            NoteText.Visibility = Visibility.Collapsed;
+            EditPanel.Visibility = Visibility.Visible;
+            UpdateEditState();
+            ShowText();
+        }
+        SyncEditButtons();
+
+        // After the boxes are in the tree.
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (focusTitle)
+            {
+                TitleBox.Focus(FocusState.Keyboard);
+                TitleBox.SelectionStart = TitleBox.Text.Length;
+            }
+            else
+            {
+                EditTextBox.Focus(FocusState.Keyboard);
+                EditTextBox.SelectionStart = EditTextBox.Text.Length;
+            }
+        });
+    }
+
+    /// <summary>Back to reading; the scroll position stays.</summary>
+    private void StopEditing()
+    {
+        if (!_editing)
+        {
+            return;
+        }
+        _editing = false;
+        TitleBox.Visibility = Visibility.Collapsed;
+        EditPanel.Visibility = Visibility.Collapsed;
+        ShowHeader();
+        ShowText();
+        SyncEditButtons();
+    }
+
+    /// <summary>Edit shows as pressed while editing.</summary>
+    private void SyncEditButtons()
+    {
+        EditButton.IsChecked = _editing;
+        CompactEditButton.IsChecked = _editing;
+    }
+
+    private void UpdateEditState()
+    {
+        var valid = IsEditValid;
+        EditSaveButton.IsEnabled = valid && !_saving;
+        InvalidText.Text = Gnoseis.Core.Domain.NotePage.InvalidText;
+        InvalidText.Visibility = valid ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void EditBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_editing)
+        {
+            UpdateEditState();
+        }
+    }
+
+    private void ShowEditDay()
+    {
+        var time = ViewModel.Note is { } note ? Gnoseis.Core.Domain.NotePage.TimeOfDay(note) : TimeSpan.Zero;
+        EditDayText.Text = Gnoseis.Core.Domain.ContactPage.DayAndTimeText(_editDay, new TimeSpan(time.Hours, time.Minutes, 0), DateOnly.FromDateTime(DateTime.Now));
+        AutomationProperties.SetName(EditDayButton, $"Day: {EditDayText.Text}");
+    }
+
+    private void EditDayFlyout_Opening(object? sender, object e)
+    {
+        _updatingDatePicker = true;
+        EditDatePicker.Date = new DateTimeOffset(_editDay.ToDateTime(TimeOnly.MinValue));
+        _updatingDatePicker = false;
+    }
+
+    /// <summary>Only the day can be changed; the note keeps its time of day.</summary>
+    private void EditDatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
+    {
+        if (_updatingDatePicker || args.NewDate is not { } date)
+        {
+            return;
+        }
+        _editDay = DateOnly.FromDateTime(date.Date);
+        ShowEditDay();
+        EditDayFlyout.Hide();
+    }
+
+    private void NoteText_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (!_editing)
+        {
+            e.Handled = true;
+            StartEditing();
+        }
+    }
+
+    private void EditCancel_Click(object sender, RoutedEventArgs e) => StopEditing();
+
+    private async void EditSave_Click(object sender, RoutedEventArgs e) => await SaveEditAsync();
+
+    /// <summary>
+    /// Saves the title, text and day (only what changed, with updatedAt) and returns to reading
+    /// with the new text. A save with nothing changed just closes the editor. Returns false if the
+    /// note couldn't be saved.
+    /// </summary>
+    private async Task<bool> SaveEditAsync()
+    {
+        if (!_editing || _saving)
+        {
+            return !_editing;
+        }
+        if (!IsEditValid)
+        {
+            UpdateEditState();
+            return false;
+        }
+        if (!IsDirty)
+        {
+            StopEditing();
+            return true;
+        }
+
+        _saving = true;
+        UpdateEditState();
+        try
+        {
+            await ViewModel.SaveAsync(TitleBox.Text, EditTextBox.Text, _editDay);
+            await ViewModel.LoadAsync();
+            StopEditing();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await Dialogs.ShowErrorAsync("Couldn't save the note", ex);
+            return false;
+        }
+        finally
+        {
+            _saving = false;
+            if (_editing)
+            {
+                UpdateEditState();
+            }
+        }
+    }
+
+    /// <summary>Leaving the page with changes asks to save them, as the edit page does.</summary>
+    public async Task<bool> CanLeaveAsync()
+    {
+        if (_saving)
+        {
+            return false;
+        }
+        if (!IsDirty)
+        {
+            return true;
+        }
+        return await EditPageFlow.AskToLeaveAsync(RecordType.Note, IsEditValid, SaveEditAsync);
     }
 
     // ---------------------------------------------------------------- Tabs (under 860 px)
@@ -317,8 +543,17 @@ public sealed partial class NotePage : Page, IRecordPage
 
     // ---------------------------------------------------------------- Commands
 
-    private async void Edit_Click(object sender, RoutedEventArgs e) =>
-        await Navigator.ShowEditorAsync(new EditRequest(RecordType.Note, Record.Id));
+    /// <summary>Edit, and Edit while editing: the editor with the focus in the text.</summary>
+    private void Edit_Click(object sender, RoutedEventArgs e) => StartEditing();
+
+    private void EditAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (ViewModel?.IsAvailable == true)
+        {
+            args.Handled = true;
+            StartEditing();
+        }
+    }
 
     private async void Link_Click(object sender, RoutedEventArgs e) => await LinkAsync(null, null);
 

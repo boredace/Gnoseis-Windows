@@ -45,6 +45,16 @@
                                 Style="{StaticResource SubtitleTextBlockStyle}"
                                 TextTrimming="CharacterEllipsis"
                                 TextWrapping="Wrap" />
+                            <TextBox
+                                x:Name="TitleBox"
+                                Margin="0,0,0,2"
+                                AutomationProperties.Name="Note title"
+                                FontSize="20"
+                                FontWeight="SemiBold"
+                                MaxLength="60"
+                                PlaceholderText="Title (optional)"
+                                TextChanged="EditBox_TextChanged"
+                                Visibility="Collapsed" />
                             <TextBlock
                                 x:Name="DayText"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -59,14 +69,14 @@
                             Background="Transparent"
                             DefaultLabelPosition="Right"
                             OverflowButtonVisibility="Collapsed">
-                            <AppBarButton x:Name="EditButton" Click="Edit_Click" Label="Edit" ToolTipService.ToolTip="Edit (Ctrl+E)">
-                                <AppBarButton.Icon>
+                            <AppBarToggleButton x:Name="EditButton" Click="Edit_Click" Label="Edit" ToolTipService.ToolTip="Edit (Ctrl+E)">
+                                <AppBarToggleButton.Icon>
                                     <FontIcon Glyph="&#xE70F;" />
-                                </AppBarButton.Icon>
-                                <AppBarButton.KeyboardAccelerators>
-                                    <KeyboardAccelerator Key="E" Modifiers="Control" />
-                                </AppBarButton.KeyboardAccelerators>
-                            </AppBarButton>
+                                </AppBarToggleButton.Icon>
+                                <AppBarToggleButton.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="E" Invoked="EditAccelerator_Invoked" Modifiers="Control" />
+                                </AppBarToggleButton.KeyboardAccelerators>
+                            </AppBarToggleButton>
                             <AppBarButton x:Name="LinkButton" Click="Link_Click" Label="Link" ToolTipService.ToolTip="Link existing records (Ctrl+L)">
                                 <AppBarButton.Icon>
                                     <FontIcon Glyph="&#xE71B;" />
@@ -105,6 +115,70 @@
                             AutomationProperties.Name="Note text"
                             IsTextSelectionEnabled="True"
                             LineHeight="22" />
+
+                        <!-- Editing in place: the text, then the day, Cancel and Save -->
+                        <StackPanel x:Name="EditPanel" MaxWidth="720" HorizontalAlignment="Stretch" Spacing="8" Visibility="Collapsed">
+                            <TextBox
+                                x:Name="EditTextBox"
+                                MinHeight="160"
+                                AcceptsReturn="True"
+                                AutomationProperties.Name="Note text"
+                                IsSpellCheckEnabled="True"
+                                TextChanged="EditBox_TextChanged"
+                                TextWrapping="Wrap" />
+                            <TextBlock
+                                x:Name="InvalidText"
+                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Visibility="Collapsed" />
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Button
+                                    x:Name="EditDayButton"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="Day of the note">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon FontSize="14" Glyph="&#xE787;" />
+                                        <TextBlock x:Name="EditDayText" />
+                                    </StackPanel>
+                                    <Button.Flyout>
+                                        <Flyout x:Name="EditDayFlyout" Opening="EditDayFlyout_Opening" Placement="BottomEdgeAlignedLeft">
+                                            <CalendarDatePicker
+                                                x:Name="EditDatePicker"
+                                                DateChanged="EditDatePicker_DateChanged"
+                                                Header="Day"
+                                                IsTodayHighlighted="True" />
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
+                                <StackPanel
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Orientation="Horizontal"
+                                    Spacing="8">
+                                    <Button Click="EditCancel_Click" Content="Cancel" ToolTipService.ToolTip="Cancel (Esc)" />
+                                    <Button
+                                        x:Name="EditSaveButton"
+                                        AutomationProperties.Name="Save note"
+                                        Click="EditSave_Click"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        ToolTipService.ToolTip="Save (Ctrl+Enter)">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="Save" />
+                                            <TextBlock
+                                                VerticalAlignment="Center"
+                                                Opacity="0.8"
+                                                Style="{StaticResource CaptionTextBlockStyle}"
+                                                Text="Ctrl+Enter" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+
                         <StackPanel x:Name="CaptionPanel" MaxWidth="720" HorizontalAlignment="Stretch" Spacing="10">
                             <Rectangle x:Name="CaptionRule" Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
                             <TextBlock
