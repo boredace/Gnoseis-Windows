@@ -9,7 +9,9 @@
 using Gnoseis.Core.Domain;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Shapes;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.System;
@@ -34,12 +36,20 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
     private bool _isNarrow;
     private readonly RecordTrail<RecordRef> _trail = new();
 
+    private bool _updatingTrailSelection;
+
     public SectionPage()
     {
         InitializeComponent();
+        TrailChanged += (_, _) => RefreshTrailColumn();
+        SetSlideIn(ListPane);
+        SetSlideIn(TrailPane);
     }
 
     public RecordListViewModel ViewModel { get; private set; } = null!;
+
+    /// <summary>The trail column's rows, header and hint.</summary>
+    public TrailViewModel TrailView { get; private set; } = null!;
 
     public RecordType Type => ViewModel.Type;
 
@@ -59,6 +69,9 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         ViewModel = new RecordListViewModel(args.Type);
         ViewModel.GroupsChanged += ViewModel_GroupsChanged;
         ViewModel.Activate();
+        TrailView = new TrailViewModel(args.Type, _trail);
+        TrailView.PropertyChanged += TrailView_PropertyChanged;
+        TrailView.Activate();
         Navigator.ActiveSection = this;
         App.Settings.LastSection = args.Type.ToString();
 
@@ -80,6 +93,8 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         base.OnNavigatedFrom(e);
         ViewModel.Deactivate();
         ViewModel.GroupsChanged -= ViewModel_GroupsChanged;
+        TrailView.Deactivate();
+        TrailView.PropertyChanged -= TrailView_PropertyChanged;
         if (ReferenceEquals(Navigator.ActiveSection, this))
         {
             Navigator.ActiveSection = null;
@@ -411,6 +426,104 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         Effect = forward ? SlideNavigationTransitionEffect.FromRight : SlideNavigationTransitionEffect.FromLeft,
     };
 
+    // ---------------------------------------------------------------- Trail column
+
+    private void RefreshTrailColumn()
+    {
+        if (TrailView == null)
+        {
+            return;
+        }
+        TrailView.Refresh();
+        UpdateTrailRows();
+    }
+
+    private void UpdateTrailRows()
+    {
+        _updatingTrailSelection = true;
+        try
+        {
+            var rows = TrailView.Rows;
+            TrailList.ItemsSource = rows;
+            if (_trail.CurrentIndex >= 0 && _trail.CurrentIndex < rows.Count)
+            {
+                var current = rows[_trail.CurrentIndex];
+                TrailList.SelectedItem = current;
+                TrailList.ScrollIntoView(current);
+            }
+        }
+        finally
+        {
+            _updatingTrailSelection = false;
+        }
+    }
+
+    private void TrailView_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // Titles loaded after the rows were first shown.
+        if (e.PropertyName == nameof(TrailViewModel.Rows) && !ReferenceEquals(TrailList.ItemsSource, TrailView.Rows))
+        {
+            UpdateTrailRows();
+        }
+    }
+
+    private async void TrailList_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is TrailRow row)
+        {
+            await GoToTrailRowAsync(row.Index);
+        }
+    }
+
+    private async void TrailList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingTrailSelection)
+        {
+            return;
+        }
+        if (TrailList.SelectedItem is TrailRow row)
+        {
+            await GoToTrailRowAsync(row.Index);
+        }
+        if (TrailList.SelectedIndex != _trail.CurrentIndex)
+        {
+            // Stayed (an editor with changes): put the selection back.
+            UpdateTrailRows();
+        }
+    }
+
+    private async void BackToListButton_Click(object sender, RoutedEventArgs e) => await CloseTrailAsync();
+
+    /// <summary>Draws a trail row's connecting line over the height of its part of the row.</summary>
+    private void TrailLine_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (sender is Canvas canvas && canvas.Children.Count == 1 && canvas.Children[0] is Line line)
+        {
+            line.Y2 = e.NewSize.Height;
+        }
+    }
+
+    /// <summary>The list column's content slides in when the list or the trail is shown in it.</summary>
+    private static void SetSlideIn(UIElement element)
+    {
+        var compositor = ElementCompositionPreview.GetElementVisual(element).Compositor;
+        var offset = compositor.CreateVector3KeyFrameAnimation();
+        offset.Target = "Translation";
+        offset.InsertKeyFrame(0, new System.Numerics.Vector3(0, 24, 0));
+        offset.InsertKeyFrame(1, System.Numerics.Vector3.Zero);
+        offset.Duration = TimeSpan.FromMilliseconds(200);
+        var fade = compositor.CreateScalarKeyFrameAnimation();
+        fade.Target = "Opacity";
+        fade.InsertKeyFrame(0, 0);
+        fade.InsertKeyFrame(1, 1);
+        fade.Duration = TimeSpan.FromMilliseconds(200);
+        var group = compositor.CreateAnimationGroup();
+        group.Add(offset);
+        group.Add(fade);
+        ElementCompositionPreview.SetIsTranslationEnabled(element, true);
+        ElementCompositionPreview.SetImplicitShowAnimation(element, group);
+    }
+
     public async Task<bool> TryHandleBackAsync()
     {
         if (_trail.IsOpen)
@@ -477,8 +590,10 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
     {
         if (!_isNarrow)
         {
+            // While a trail is open, the trail column takes the list's place, at the same width.
             ListColumn.Width = new GridLength(ActualWidth >= 1100 ? 380 : 320);
-            ListPane.Visibility = Visibility.Visible;
+            ListPane.Visibility = _trail.IsOpen ? Visibility.Collapsed : Visibility.Visible;
+            TrailPane.Visibility = _trail.IsOpen ? Visibility.Visible : Visibility.Collapsed;
             Divider.Visibility = Visibility.Visible;
             DetailFrame.Visibility = Visibility.Visible;
             DetailColumn.Width = new GridLength(1, GridUnitType.Star);
@@ -486,6 +601,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         }
 
         // One pane at a time.
+        TrailPane.Visibility = Visibility.Collapsed;
         var showDetail = IsDetailShown;
         var star = new GridLength(1, GridUnitType.Star);
         ListPane.Visibility = showDetail ? Visibility.Collapsed : Visibility.Visible;

@@ -21,6 +21,17 @@ public static class Converters
     public static Style RowBodyStyle(bool primary) =>
         (Style)Application.Current.Resources[primary ? "RowBodyPrimaryTextStyle" : "RowBodyTextStyle"];
 
+    /// <summary>A dashed line's dash pattern (in stroke widths), or a solid line's.</summary>
+    public static Microsoft.UI.Xaml.Media.DoubleCollection Dashes(bool dashed) => dashed ? [2, 2] : [];
+
+    /// <summary>The title of a row in a section's trail (disabled-text colour for a dimmed row in high contrast).</summary>
+    public static Style TrailTitleStyle(bool disabled) =>
+        (Style)Application.Current.Resources[disabled ? "TrailTitleDisabledTextStyle" : "TrailTitleTextStyle"];
+
+    /// <summary>The second line of a row in a section's trail.</summary>
+    public static Style TrailSubtitleStyle(bool disabled) =>
+        (Style)Application.Current.Resources[disabled ? "TrailSubtitleDisabledTextStyle" : "TrailSubtitleTextStyle"];
+
     /// <summary>A search group header: a type's in its outline colour, Recently changed in the body strong style.</summary>
     public static Style SearchGroupHeaderStyle(RecordType? type) =>
         type is { } t ? RecordTypeStyles.GroupHeader(t) : (Style)Application.Current.Resources["BodyStrongTextBlockStyle"];
