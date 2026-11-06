@@ -28,6 +28,7 @@ public sealed class AppContainer
         Settings = new(database);
         DeleteRecord = new(database);
         UnlinkRecords = new(database, LinkedRecords);
+        CreateLinkedNote = new(database);
         GetLinkSource = new(Notes, Contacts, Organizations, Categories, Items);
     }
 
@@ -44,5 +45,6 @@ public sealed class AppContainer
     public SettingsRepository Settings { get; }
     public DeleteRecordUseCase DeleteRecord { get; }
     public UnlinkRecordsUseCase UnlinkRecords { get; }
+    public CreateLinkedNoteUseCase CreateLinkedNote { get; }
     public GetLinkSourceUseCase GetLinkSource { get; }
 }
