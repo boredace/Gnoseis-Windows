@@ -36,7 +36,7 @@
             IsPaneToggleButtonVisible="True"
             PaneToggleRequested="AppTitleBar_PaneToggleRequested">
             <TitleBar.IconSource>
-                <FontIconSource Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" Glyph="&#xE8F1;" />
+                <ImageIconSource ImageSource="ms-appx:///Assets/TitleBarIcon.png" />
             </TitleBar.IconSource>
             <TitleBar.Content>
             <AutoSuggestBox
