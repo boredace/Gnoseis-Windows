@@ -306,17 +306,13 @@ public sealed class NoteEditViewModel : EditViewModelBase
 
     protected override async Task UpdateAsync()
     {
-        var (createDate, createDateTime) = NoteDates.ForEditedNote(_note!, SelectedDay);
-        await Data.Notes.UpdateNoteAsync(_note! with
+        if (NotePage.Edited(_note!, NoteTitle.Value, Text.Value, SelectedDay) is { } edited)
         {
-            Title = NoteTitle.Value,
-            TextContents = Text.Value,
-            CreateDate = createDate,
-            CreateDateTime = createDateTime,
-        });
+            await Data.Notes.UpdateNoteAsync(edited);
+        }
     }
 
-    protected override bool Validate() => NoteTitle.Value.Length > 0 || Text.Value.Length > 0;
+    protected override bool Validate() => NotePage.IsValid(NoteTitle.Value, Text.Value);
 
     protected override string Snapshot() => $"{NoteTitle.Value}\u0001{Text.Value}\u0001{SelectedDay}";
 }

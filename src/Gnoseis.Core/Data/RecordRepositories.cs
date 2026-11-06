@@ -18,6 +18,20 @@ public sealed class NoteRepository(GnoseisDatabase database) : RepositoryBase(da
     public Task<Note?> GetNoteAsync(string id) =>
         QuerySingleAsync("SELECT * FROM Note WHERE id = $id;", MapNote, ("$id", id));
 
+    /// <summary>When the note was created and last changed (UTC epoch ms); each null when unknown (made before schema v3) or not found.</summary>
+    public Task<(long? CreatedAt, long? UpdatedAt)> GetTimesAsync(string id) =>
+        Task.Run(() =>
+        {
+            using var connection = Database.OpenConnection();
+            using var command = CreateCommand(connection, "SELECT createdAt, updatedAt FROM Note WHERE id = $id;", [("$id", id)]);
+            using var reader = command.ExecuteReader();
+            if (!reader.Read())
+            {
+                return ((long?)null, (long?)null);
+            }
+            return (reader.IsDBNull(0) ? null : reader.GetInt64(0), reader.IsDBNull(1) ? (long?)null : reader.GetInt64(1));
+        });
+
     public async Task<Note> AddNoteAsync(Note note)
     {
         await ExecuteAsync(RecordType.Note,

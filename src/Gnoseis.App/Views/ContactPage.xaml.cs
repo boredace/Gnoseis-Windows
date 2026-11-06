@@ -25,7 +25,7 @@ namespace Gnoseis.App.Views;
 /// <summary>
 /// A contact: who it is and how to reach them in the header, its history (the linked notes) as the
 /// main column, and the other linked records in a side column. The layout follows the width of
-/// the record pane (see <see cref="ContactPageBand"/>).
+/// the record pane (see <see cref="RecordPageBand"/>).
 /// </summary>
 public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 {
@@ -36,7 +36,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     private const string LinkedKey = "linked";
     private const string AboutKey = "about";
 
-    private ContactPageBand? _band;
+    private RecordPageBand? _band;
     private double _historyWidth;
     private double _readingWidth;
     private double _sideWidth;
@@ -135,10 +135,10 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         }
 
         var pane = ActualWidth;
-        var band = ContactLogic.BandFor(pane);
+        var band = RecordPageLayout.BandFor(pane);
         _padding = pane >= 1400 ? 40 : 24;
         var content = Math.Max(0, pane - 2 * _padding);
-        if (band == ContactPageBand.XXL)
+        if (band == RecordPageBand.XXL)
         {
             content = Math.Min(content, 2700);
         }
@@ -146,11 +146,11 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         var hasNotes = ViewModel.History.Count > 0;
         (_historyWidth, _readingWidth, _sideWidth) = band switch
         {
-            ContactPageBand.S => (content, 0.0, 0.0),
-            ContactPageBand.M => (content - 240 - Gap, 0.0, 240.0),
-            ContactPageBand.L => (Math.Min(760, content - 320 - Gap), 0.0, 320.0),
-            ContactPageBand.XL when hasNotes => (560, Math.Min(960, content - 560 - 320 - 2 * Gap), 320.0),
-            ContactPageBand.XL => (Math.Min(760, content - 320 - Gap), 0.0, 320.0),
+            RecordPageBand.S => (content, 0.0, 0.0),
+            RecordPageBand.M => (content - 240 - Gap, 0.0, 240.0),
+            RecordPageBand.L => (Math.Min(760, content - 320 - Gap), 0.0, 320.0),
+            RecordPageBand.XL when hasNotes => (560, Math.Min(960, content - 560 - 320 - 2 * Gap), 320.0),
+            RecordPageBand.XL => (Math.Min(760, content - 320 - Gap), 0.0, 320.0),
             _ when hasNotes => (640, Math.Min(1100, content - 640 - 680 - 2 * Gap), 680.0),
             _ => (Math.Min(760, content - 680 - Gap), 0.0, 680.0),
         };
@@ -163,7 +163,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         if (band != _band)
         {
             _band = band;
-            var wide = band >= ContactPageBand.L;
+            var wide = band >= RecordPageBand.L;
             Commands.DefaultLabelPosition = wide ? CommandBarDefaultLabelPosition.Right : CommandBarDefaultLabelPosition.Collapsed;
             ShowChips();
             ShowTabs();
@@ -181,7 +181,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     /// </summary>
     private void PositionSideColumn()
     {
-        if (_band is not { } band || band == ContactPageBand.S || !ViewModel.IsAvailable)
+        if (_band is not { } band || band == RecordPageBand.S || !ViewModel.IsAvailable)
         {
             SideScroller.Visibility = Visibility.Collapsed;
             ReadingScroller.Visibility = Visibility.Collapsed;
@@ -281,7 +281,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     private void ShowChips()
     {
         ChipsPanel.Children.Clear();
-        var folding = ContactLogic.Fold(ViewModel.Chips, _band ?? ContactPageBand.S);
+        var folding = ContactLogic.Fold(ViewModel.Chips, _band ?? RecordPageBand.S);
         foreach (var chip in folding.Shown)
         {
             ChipsPanel.Children.Add(CreateChip(chip));
@@ -305,7 +305,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
                 async () => await Navigator.ShowEditorAsync(new EditRequest(RecordType.Contact, Record.Id, FocusField: field))));
         }
         ChipsPanel.Visibility = ChipsPanel.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        ChipsPanel.Margin = new Thickness(_band == ContactPageBand.S ? 0 : 72, 0, 0, 0);
+        ChipsPanel.Margin = new Thickness(_band == RecordPageBand.S ? 0 : 72, 0, 0, 0);
     }
 
     private Style ChipStyle => (Style)Resources["ContactChipButtonStyle"];
@@ -478,7 +478,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 
     private void ShowTabs()
     {
-        var tabs = _band == ContactPageBand.S;
+        var tabs = _band == RecordPageBand.S;
         TabBar.Visibility = tabs ? Visibility.Visible : Visibility.Collapsed;
         if (!tabs)
         {
@@ -747,7 +747,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         var show = ViewModel.IsAvailable && MainScroller.VerticalOffset > TopPadding + HeaderBlock.ActualHeight;
         CompactHeader.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         CompactHeader.Padding = new Thickness(_padding - 4, 8, _padding - 8, 8);
-        CompactYearChips.Visibility = _band >= ContactPageBand.M ? Visibility.Visible : Visibility.Collapsed;
+        CompactYearChips.Visibility = _band >= RecordPageBand.M ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ShowCompactHeader()
@@ -978,13 +978,13 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     {
         SidePanel.Children.Clear();
         SidePanel.ColumnDefinitions.Clear();
-        if (_band is not { } band || band == ContactPageBand.S)
+        if (_band is not { } band || band == RecordPageBand.S)
         {
             return;
         }
 
         var sections = CreateSections(includeAbout: true);
-        var columns = band == ContactPageBand.XXL ? 2 : 1;
+        var columns = band == RecordPageBand.XXL ? 2 : 1;
         for (var i = 0; i < columns; i++)
         {
             SidePanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -1076,7 +1076,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 
     private FrameworkElement CreateSection(RecordType type, IReadOnlyList<LinkedRecordSummary> records)
     {
-        var limit = ContactLogic.SideRowCount(_band ?? ContactPageBand.L);
+        var limit = RecordPageLayout.SideRowCount(_band ?? RecordPageBand.L);
         var expanded = _expandedSections.Contains(type);
         var shown = expanded ? records : records.Take(limit).ToList();
         var panel = new StackPanel { Spacing = 2, Tag = shown.Count };
@@ -1250,7 +1250,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     private void RebuildSections()
     {
         ShowSideColumn();
-        if (_band == ContactPageBand.S)
+        if (_band == RecordPageBand.S)
         {
             ShowSelectedTab();
         }
@@ -1288,7 +1288,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         {
             return;
         }
-        if (_band == ContactPageBand.S && _selectedTab != HistoryKey)
+        if (_band == RecordPageBand.S && _selectedTab != HistoryKey)
         {
             _selectedTab = HistoryKey;
             ShowTabs();

@@ -11,25 +11,6 @@ using Gnoseis.Core.Models;
 
 namespace Gnoseis.Core.Domain;
 
-/// <summary>The contact page's layouts, by the width of the record pane.</summary>
-public enum ContactPageBand
-{
-    /// <summary>Under 860: one column with History, Linked records and About tabs.</summary>
-    S,
-
-    /// <summary>860–1099: the history and a side column of 240.</summary>
-    M,
-
-    /// <summary>1100–1699: the history up to 760 wide and a side column of 320.</summary>
-    L,
-
-    /// <summary>1700–2599: the history, a reading pane and a side column of 320.</summary>
-    XL,
-
-    /// <summary>From 2600: content capped at 2700, the side column in two columns.</summary>
-    XXL,
-}
-
 /// <summary>The kind of a phone or e-mail field, which picks the chip's glyph and action.</summary>
 public enum ContactChipKind
 {
@@ -100,25 +81,10 @@ public sealed record CompanyLink(string Company, LinkedRecordSummary? Organizati
 
 /// <summary>
 /// What the contact page shows that doesn't depend on the UI: the header line, the company link,
-/// the contact chips and their folding, the text Copy contact details writes, and the layout band.
+/// the contact chips and their folding, and the text Copy contact details writes.
 /// </summary>
 public static class ContactPage
 {
-    public const double MediumWidth = 860;
-    public const double LargeWidth = 1100;
-    public const double ExtraLargeWidth = 1700;
-    public const double WidestWidth = 2600;
-
-    /// <summary>The layout for a record pane of <paramref name="paneWidth"/> effective pixels.</summary>
-    public static ContactPageBand BandFor(double paneWidth) => paneWidth switch
-    {
-        < MediumWidth => ContactPageBand.S,
-        < LargeWidth => ContactPageBand.M,
-        < ExtraLargeWidth => ContactPageBand.L,
-        < WidestWidth => ContactPageBand.XL,
-        _ => ContactPageBand.XXL,
-    };
-
     /// <summary>
     /// The line under the name: "Owner at Ruby Eye Clinic", "Owner", "At Ruby Eye Clinic", or
     /// "Contact" (shown as a placeholder) when neither is set.
@@ -177,15 +143,15 @@ public static class ContactPage
     }
 
     /// <summary>Chips shown before "+n more": 2 in S, 3 in M, 4 in L, all in XL and XXL.</summary>
-    public static int ShownChipCount(ContactPageBand band) => band switch
+    public static int ShownChipCount(RecordPageBand band) => band switch
     {
-        ContactPageBand.S => 2,
-        ContactPageBand.M => 3,
-        ContactPageBand.L => 4,
+        RecordPageBand.S => 2,
+        RecordPageBand.M => 3,
+        RecordPageBand.L => 4,
         _ => int.MaxValue,
     };
 
-    public static ContactChipFolding Fold(IReadOnlyList<ContactChip> chips, ContactPageBand band)
+    public static ContactChipFolding Fold(IReadOnlyList<ContactChip> chips, RecordPageBand band)
     {
         var shown = ShownChipCount(band);
         return chips.Count <= shown
@@ -259,25 +225,8 @@ public static class ContactPage
         return string.Join(Environment.NewLine, lines);
     }
 
-    /// <summary>Rows a side column section shows before "Show all": 5 in S, M and L, 6 in XL, 8 in XXL.</summary>
-    public static int SideRowCount(ContactPageBand band) => band switch
-    {
-        ContactPageBand.XL => 6,
-        ContactPageBand.XXL => 8,
-        _ => 5,
-    };
-
     /// <summary>The side column's types, in their fixed order.</summary>
     public static IReadOnlyList<RecordType> SideTypes { get; } = [RecordType.Organization, RecordType.Category, RecordType.Item];
-
-    /// <summary>A side column section's rows: latest linked first, links without a time last, then by name.</summary>
-    public static IReadOnlyList<LinkedRecordSummary> SideOrder(IEnumerable<LinkedRecordSummary> records) =>
-        records
-            .OrderBy(r => r.LinkedAt == null)
-            .ThenByDescending(r => r.LinkedAt ?? 0)
-            .ThenBy(r => r.SortName, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(r => r.Id, StringComparer.Ordinal)
-            .ToList();
 
     /// <summary>
     /// The note box's day and time button: "Today, 15:40", "Yesterday, 09:05", "Tue 26 May, 15:40",
