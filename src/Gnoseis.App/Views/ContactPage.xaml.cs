@@ -238,6 +238,13 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         if (!company.IsLinked)
         {
             HeaderLinePanel.Children.Add(LineText(text, "TextFillColorSecondaryBrush"));
+            if (company.CanLinkAsOrganization)
+            {
+                var linkButton = CreateDashedButton(Glyphs.Link, "Link as organization", $"Link {company.Company} as organization",
+                    () => LinkAsync([RecordType.Organization], company.Company), accentText: true);
+                ToolTipService.SetToolTip(linkButton, $"Find or create the organization {company.Company} and link it");
+                HeaderLinePanel.Children.Add(linkButton);
+            }
             return;
         }
 
@@ -303,7 +310,64 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 
     private Style ChipStyle => (Style)Resources["ContactChipButtonStyle"];
 
-    private Button CreateChip(ContactChip chip)
+    /// <summary>
+    /// A chip, with Call or Send e-mail and Copy on right-click, Shift+F10 and the menu key, and a
+    /// small copy button over its end on hover and keyboard focus.
+    /// </summary>
+    private FrameworkElement CreateChip(ContactChip chip)
+    {
+        var button = CreateChipButton(chip);
+        var menu = new MenuFlyout();
+        var action = new MenuFlyoutItem
+        {
+            Text = chip.ActionName,
+            Icon = new FontIcon { Glyph = chip.IsPhone ? Glyphs.Phone : Glyphs.Mail },
+        };
+        action.Click += async (_, _) => await LaunchAsync(chip, button);
+        var copyItem = new MenuFlyoutItem { Text = "Copy", Icon = new FontIcon { Glyph = "\uE8C8" } };
+        copyItem.Click += (_, _) => Copy(chip.Value, button);
+        menu.Items.Add(action);
+        menu.Items.Add(copyItem);
+        button.ContextFlyout = menu;
+
+        var copy = new Button
+        {
+            Content = new FontIcon { Glyph = "\uE8C8", FontSize = 12 },
+            Width = 26,
+            Height = 26,
+            Padding = new Thickness(0),
+            Margin = new Thickness(0, 0, 3, 0),
+            HorizontalAlignment = HorizontalAlignment.Right,
+            VerticalAlignment = VerticalAlignment.Center,
+            CornerRadius = new CornerRadius(13),
+            BorderThickness = new Thickness(0),
+            Background = (Brush)Application.Current.Resources["SolidBackgroundFillColorTertiaryBrush"],
+            Opacity = 0,
+            IsHitTestVisible = false,
+        };
+        AutomationProperties.SetName(copy, $"Copy {chip.Value}");
+        ToolTipService.SetToolTip(copy, "Copy");
+        copy.Click += (_, _) => Copy(chip.Value, button);
+
+        var grid = new Grid();
+        grid.Children.Add(button);
+        grid.Children.Add(copy);
+        var hovered = false;
+        void Update()
+        {
+            var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+            var show = hovered || ReferenceEquals(focused, button) || ReferenceEquals(focused, copy);
+            copy.Opacity = show ? 1 : 0;
+            copy.IsHitTestVisible = show;
+        }
+        grid.PointerEntered += (_, _) => { hovered = true; Update(); };
+        grid.PointerExited += (_, _) => { hovered = false; Update(); };
+        grid.GotFocus += (_, _) => Update();
+        grid.LostFocus += (_, _) => DispatcherQueue.TryEnqueue(Update);
+        return grid;
+    }
+
+    private Button CreateChipButton(ContactChip chip)
     {
         var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         content.Children.Add(new FontIcon { Glyph = chip.Kind switch { ContactChipKind.Mobile => "", ContactChipKind.Email => Glyphs.Mail, _ => Glyphs.Phone }, FontSize = 14 });
@@ -345,11 +409,29 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     }
 
     /// <summary>Puts text on the clipboard and says "Copied" next to <paramref name="source"/>.</summary>
-    private void Copy(string text, FrameworkElement source, string message = "Copied")
+    private async void Copy(string text, FrameworkElement source, string message = "Copied")
     {
         var package = new DataPackage();
         package.SetText(text);
-        Clipboard.SetContent(package);
+
+        // Another app may hold the clipboard for a moment.
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                Clipboard.SetContent(package);
+                break;
+            }
+            catch (Exception) when (attempt < 3)
+            {
+                await Task.Delay(100);
+            }
+            catch (Exception)
+            {
+                message = "Couldn't copy";
+                break;
+            }
+        }
         CopiedTip.Target = source;
         CopiedTip.Title = message;
         CopiedTip.IsOpen = false;
@@ -990,6 +1072,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         var panel = new StackPanel { Spacing = 2, Tag = shown.Count };
 
         var heading = SectionHeading(type.PluralDisplayName(), records.Count);
+        var plus = CreateSectionPlus(type, panel);
         if (records.Count > limit)
         {
             var showAll = new HyperlinkButton { Content = expanded ? "Show fewer" : "Show all", Padding = new Thickness(4, 2, 4, 2) };
@@ -1003,6 +1086,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             };
             AddToHeading(heading, showAll);
         }
+        AddToHeading(heading, plus);
         panel.Children.Add(heading);
 
         foreach (var record in shown)
@@ -1010,6 +1094,50 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             panel.Children.Add(CreateSideRow(record));
         }
         return panel;
+    }
+
+    /// <summary>
+    /// "+" on a section's heading: the link picker with only that type. Shown on hover and keyboard
+    /// focus of the section; always there for Narrator and the Tab key.
+    /// </summary>
+    private Button CreateSectionPlus(RecordType type, Panel section)
+    {
+        var name = type.DisplayName().ToLower(CultureInfo.CurrentCulture);
+        var plus = new Button
+        {
+            Content = new FontIcon { Glyph = "\uE710", FontSize = 12 },
+            Width = 28,
+            Height = 28,
+            Padding = new Thickness(0),
+            BorderThickness = new Thickness(0),
+            Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+            Opacity = 0,
+        };
+        AutomationProperties.SetName(plus, $"Link {(name.Length > 0 && "aeiou".Contains(name[0]) ? "an" : "a")} {name}");
+        ToolTipService.SetToolTip(plus, $"Find or create {(name.Length > 0 && "aeiou".Contains(name[0]) ? "an" : "a")} {name} to link");
+        plus.Click += async (_, _) => await LinkAsync([type], null);
+
+        var hovered = false;
+        void Update()
+        {
+            var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+            var inside = false;
+            for (var element = focused; element != null; element = VisualTreeHelper.GetParent(element))
+            {
+                if (ReferenceEquals(element, section))
+                {
+                    inside = true;
+                    break;
+                }
+            }
+            plus.Opacity = hovered || inside ? 1 : 0;
+        }
+        section.Background ??= new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        section.PointerEntered += (_, _) => { hovered = true; Update(); };
+        section.PointerExited += (_, _) => { hovered = false; Update(); };
+        section.GotFocus += (_, _) => Update();
+        section.LostFocus += (_, _) => DispatcherQueue.TryEnqueue(Update);
+        return plus;
     }
 
     private static Grid SectionHeading(string title, int? count)
@@ -1391,10 +1519,54 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     private void MoreMenu_Opening(object? sender, object e)
     {
         MoreMenu.Items.Clear();
+
+        // New linked: a new record of that type, linked to the contact (never a contact).
+        var newLinked = new MenuFlyoutSubItem { Text = "New linked", Icon = new FontIcon { Glyph = "\uE710" } };
+        foreach (var type in new[] { RecordType.Note, RecordType.Organization, RecordType.Category, RecordType.Item })
+        {
+            var item = new MenuFlyoutItem
+            {
+                Text = type.DisplayName(),
+                Icon = new FontIcon { Glyph = Glyphs.For(type), Foreground = RecordTypeStyles.Brush(this, type, ColorRole.Outline) },
+            };
+            AutomationProperties.SetName(item, $"New linked {type.DisplayName().ToLower(CultureInfo.CurrentCulture)}");
+            item.Click += async (_, _) => await Navigator.ShowEditorAsync(new EditRequest(type, LinkFrom: Record));
+            newLinked.Items.Add(item);
+        }
+        MoreMenu.Items.Add(newLinked);
+
+        var copy = new MenuFlyoutItem
+        {
+            Text = "Copy contact details",
+            Icon = new FontIcon { Glyph = "\uE8C8" },
+            KeyboardAcceleratorTextOverride = "Ctrl+Shift+C",
+        };
+        copy.Click += (_, _) => CopyContactDetails();
+        MoreMenu.Items.Add(copy);
+        MoreMenu.Items.Add(new MenuFlyoutSeparator());
+
         var delete = new MenuFlyoutItem { Text = "Delete", Icon = new FontIcon { Glyph = "" } };
         delete.KeyboardAcceleratorTextOverride = "Del";
         delete.Click += async (_, _) => await DeleteWithConfirmationAsync();
         MoreMenu.Items.Add(delete);
+    }
+
+    private void CopyAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (ViewModel.IsAvailable)
+        {
+            args.Handled = true;
+            CopyContactDetails();
+        }
+    }
+
+    /// <summary>The name, the job and company line, and a line per phone and e-mail field, as plain text.</summary>
+    private void CopyContactDetails()
+    {
+        if (ViewModel.Contact is { } contact)
+        {
+            Copy(ContactLogic.CopyText(contact), NameText, "Contact details copied");
+        }
     }
 
     private async void Page_KeyDown(object sender, KeyRoutedEventArgs e)
