@@ -24,6 +24,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="64" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel>
                     <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind DayText}" />
@@ -54,6 +55,13 @@
                         TextWrapping="NoWrap"
                         Visibility="{x:Bind HasLinks}" />
                 </StackPanel>
+                <TextBlock
+                    Grid.Column="2"
+                    Margin="0,3,0,0"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="In trail"
+                    Visibility="{x:Bind helpers:Converters.InTrailNote(Id)}" />
             </Grid>
         </DataTemplate>
 

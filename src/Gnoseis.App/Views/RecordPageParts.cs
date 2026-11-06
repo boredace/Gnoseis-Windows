@@ -66,15 +66,21 @@ internal static partial class RecordPageParts
         return button;
     }
 
-    /// <summary>Right-click, Shift+F10 or the context-menu key on a linked record: Open and Unlink.</summary>
+    /// <summary>
+    /// Right-click, Shift+F10 or the context-menu key on a linked record: Open (adds it to the section's
+    /// trail), Show in its own section's list, and Unlink.
+    /// </summary>
     public static void ShowRowMenu(UIElement sender, ContextRequestedEventArgs args, RecordRef record, string name, Func<string, string, Task> unlink)
     {
         var open = new MenuFlyoutItem { Text = "Open", Icon = new FontIcon { Glyph = "" } };
-        open.Click += async (_, _) => await Navigator.OpenRecordAsync(record);
+        open.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(record);
         var unlinkItem = new MenuFlyoutItem { Text = "Unlink", Icon = new FontIcon { Glyph = "" } };
         unlinkItem.Click += async (_, _) => await unlink(record.Id, name);
+        open.KeyboardAcceleratorTextOverride = "Enter";
         var menu = new MenuFlyout();
         menu.Items.Add(open);
+        menu.Items.Add(ShowInListItem(record));
+        menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(unlinkItem);
         if (args.TryGetPosition(sender, out var point))
         {
@@ -85,6 +91,178 @@ internal static partial class RecordPageParts
             menu.ShowAt((FrameworkElement)sender);
         }
         args.Handled = true;
+    }
+
+    // ---------------------------------------------------------------- Trail of opened records
+
+    private const string OpenGlyph = "";
+
+    /// <summary>"Show in Notes list" (for a note): opens the record in its own section, selected in its list.</summary>
+    public static MenuFlyoutItem ShowInListItem(RecordRef record)
+    {
+        var item = new MenuFlyoutItem { Text = ShowInListText(record), Icon = new FontIcon { Glyph = OpenGlyph } };
+        item.Click += async (_, _) => await Navigator.OpenRecordAsync(record);
+        return item;
+    }
+
+    private static string ShowInListText(RecordRef record) => $"Show in {record.Type.PluralDisplayName()} list";
+
+    /// <summary>
+    /// Adds "Show in … list" to a record page's More menu while the record is in the section's trail
+    /// and isn't its first record (the one selected in the list).
+    /// </summary>
+    public static void AddShowInList(MenuFlyout menu, RecordRef record)
+    {
+        if (IsOpenedFromAnother(record))
+        {
+            menu.Items.Add(ShowInListItem(record));
+        }
+    }
+
+    /// <summary>True when the record shown was opened from another record's page (in the trail, after its first record).</summary>
+    public static bool IsOpenedFromAnother(RecordRef record) =>
+        Navigator.ActiveTrail is { IsOpen: true } trail && trail.IndexOf(record) > 0;
+
+    /// <summary>True for a linked record that is in the section's trail, other than the record shown.</summary>
+    public static bool IsInTrail(RecordRef record) =>
+        Navigator.ActiveTrail is { IsOpen: true } trail && trail.Contains(record) && trail.Current != record;
+
+    /// <summary>"In trail" in tertiary text, for the end of a linked row whose record is already in the trail.</summary>
+    public static TextBlock InTrailTag() => new()
+    {
+        Text = "In trail",
+        VerticalAlignment = VerticalAlignment.Top,
+        Margin = new Thickness(0, 3, 0, 0),
+        TextWrapping = TextWrapping.NoWrap,
+        Style = (Style)Application.Current.Resources["TertiaryCaptionTextStyle"],
+    };
+
+    /// <summary>
+    /// Ends a linked row (a button with a grid) with "In trail" when its record is already in the trail;
+    /// a click on the row then goes to that record in the trail, as for any open.
+    /// </summary>
+    public static void MarkInTrail(Button button, Grid grid, RecordRef record)
+    {
+        if (!IsInTrail(record))
+        {
+            return;
+        }
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var tag = InTrailTag();
+        Grid.SetColumn(tag, grid.ColumnDefinitions.Count - 1);
+        grid.Children.Add(tag);
+        AutomationProperties.SetName(button, $"{AutomationProperties.GetName(button)}. In trail");
+    }
+
+    /// <summary>
+    /// The line above the header of a record opened from another record: "Opened from", the previous
+    /// record's tile and title (a click does what Back does), and on the right "Show in … list". Null
+    /// for a record that wasn't opened from another one.
+    /// </summary>
+    public static FrameworkElement? OpenedFromLine(RecordRef record)
+    {
+        if (!IsOpenedFromAnother(record) || Navigator.ActiveTrail is not { } trail || trail.Previous is not { } previous)
+        {
+            return null;
+        }
+
+        var grid = new Grid { ColumnSpacing = 12 };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var from = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+        from.Children.Add(new TextBlock
+        {
+            Text = "Opened from",
+            VerticalAlignment = VerticalAlignment.Center,
+            Style = (Style)Application.Current.Resources["SecondaryCaptionTextStyle"],
+        });
+
+        var title = new TextBlock
+        {
+            Text = Navigator.ActiveSection?.TrailTitleOf(previous) ?? "",
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextWrapping = TextWrapping.NoWrap,
+            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+        };
+        var link = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        if (previous.Type == RecordType.Contact)
+        {
+            var picture = new PersonPicture { DisplayName = title.Text, Width = 18, Height = 18, Style = (Style)Application.Current.Resources["ContactPictureStyle"] };
+            AutomationProperties.SetAccessibilityView(picture, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+            link.Children.Add(picture);
+        }
+        else
+        {
+            link.Children.Add(new TypeTile { Type = previous.Type, Width = 18, Height = 18, CornerRadius = new CornerRadius(4), FontSize = 10 });
+        }
+        link.Children.Add(title);
+        var back = new Button
+        {
+            Content = link,
+            Style = (Style)Application.Current.Resources["RowButtonStyle"],
+            Padding = new Thickness(4, 2, 4, 2),
+        };
+        AutomationProperties.SetName(back, $"Opened from {previous.Type.DisplayName().ToLowerInvariant()} {title.Text}. Back to it");
+        ToolTipService.SetToolTip(back, "Back (Alt+Left)");
+        back.Click += async (_, _) => await Navigator.GoBackAsync();
+        from.Children.Add(back);
+        grid.Children.Add(from);
+
+        if (title.Text.Length == 0)
+        {
+            // The title isn't loaded yet (a record opened right after another): fill it in.
+            _ = FillTitleAsync(previous, title, back);
+        }
+
+        var showContent = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        showContent.Children.Add(new FontIcon { Glyph = OpenGlyph, FontSize = 12 });
+        showContent.Children.Add(new TextBlock { Text = ShowInListText(record), Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"] });
+        var show = new HyperlinkButton { Content = showContent, Padding = new Thickness(4, 2, 4, 2), VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(show, ShowInListText(record));
+        show.Click += async (_, _) => await Navigator.OpenRecordAsync(record);
+        Grid.SetColumn(show, 1);
+        grid.Children.Add(show);
+
+        // In a narrow window the breadcrumb above the record says the same.
+        if (Navigator.ActiveSection is { } section)
+        {
+            void Update(object? sender, EventArgs e) => grid.Visibility = section.IsNarrow ? Visibility.Collapsed : Visibility.Visible;
+            Update(null, EventArgs.Empty);
+            grid.Loaded += (_, _) => { section.NarrowChanged -= Update; section.NarrowChanged += Update; };
+            grid.Unloaded += (_, _) => section.NarrowChanged -= Update;
+        }
+        return grid;
+    }
+
+    private static async Task FillTitleAsync(RecordRef record, TextBlock title, Button button)
+    {
+        var summaries = await App.Container.Home.GetRecordSummariesAsync([(record.Type, record.Id)]);
+        if (summaries.Count == 1)
+        {
+            title.Text = TrailViewModel.TitleOf(summaries[0]);
+            if (((StackPanel)button.Content).Children[0] is PersonPicture picture)
+            {
+                picture.DisplayName = title.Text;
+            }
+            AutomationProperties.SetName(button, $"Opened from {record.Type.DisplayName().ToLowerInvariant()} {title.Text}. Back to it");
+        }
+    }
+
+    /// <summary>Puts the "Opened from" line at the top of a record page's header, if the record was opened from another.</summary>
+    public static void InsertOpenedFrom(Panel headerBlock, RecordRef record)
+    {
+        if (headerBlock.Children.Count > 0 && headerBlock.Children[0] is FrameworkElement { Tag: "OpenedFrom" } old)
+        {
+            headerBlock.Children.Remove(old);
+        }
+        if (OpenedFromLine(record) is { } line)
+        {
+            line.Tag = "OpenedFrom";
+            headerBlock.Children.Insert(0, line);
+        }
     }
 
     /// <summary>Puts text on the clipboard and says <paramref name="message"/> in <paramref name="tip"/>, next to <paramref name="source"/>.</summary>
@@ -402,8 +580,9 @@ internal sealed class SideColumn(FrameworkElement owner, Func<IReadOnlyList<Reco
         };
         AutomationProperties.SetName(button, string.Join(". ", new[] { $"{record.Type.DisplayName()}: {name}", second }.Where(s => s.Length > 0)));
         var target = new RecordRef(record.Type, record.Id);
-        button.Click += async (_, _) => await Navigator.OpenRecordAsync(target);
+        button.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(target);
         button.ContextRequested += (sender, args) => RecordPageParts.ShowRowMenu(sender, args, target, name, unlink);
+        RecordPageParts.MarkInTrail(button, grid, target);
         return button;
     }
 

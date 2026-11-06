@@ -14,7 +14,7 @@ namespace Gnoseis.App.Services;
 
 /// <summary>
 /// Navigation between the app's pages. Each record type has a section page (list + record);
-/// opening a linked record of another type switches section and adds a "back" step.
+/// a record opened from a record page is added to the section's trail of opened records.
 /// </summary>
 public static class Navigator
 {
@@ -55,6 +55,11 @@ public static class Navigator
             {
                 await section.ShowRecordAsync(selectedId);
             }
+            else
+            {
+                // The section already shown was picked again: back to its list.
+                await section.CloseTrailAsync();
+            }
             return;
         }
 
@@ -64,8 +69,21 @@ public static class Navigator
         await NavigateAsync(typeof(SectionPage), new SectionArgs(type, selectedId, edit), transition);
     }
 
-    /// <summary>Opens a record in its section.</summary>
+    /// <summary>Opens a record in its own section, with it selected in the list (search, Home, Show in … list).</summary>
     public static Task OpenRecordAsync(RecordRef record) => ShowSectionAsync(record.Type, record.Id);
+
+    /// <summary>
+    /// Opens a record from a link on a record page: the section stays as it is and the record is added to
+    /// its trail of opened records. Outside a section the record opens in its own section.
+    /// </summary>
+    public static Task OpenLinkedRecordAsync(RecordRef record) =>
+        ActiveSection != null && Frame.Content is SectionPage
+            ? ActiveSection.OpenLinkedRecordAsync(record)
+            : OpenRecordAsync(record);
+
+    /// <summary>The trail of records opened from one another in the section shown, if one is open.</summary>
+    public static Gnoseis.Core.Domain.RecordTrail<RecordRef>? ActiveTrail =>
+        ActiveSection != null && Frame.Content is SectionPage ? ActiveSection.Trail : null;
 
     /// <summary>Opens an editor: in the current section's detail pane, or in the record type's section.</summary>
     public static Task ShowEditorAsync(EditRequest request) =>
@@ -85,7 +103,16 @@ public static class Navigator
     public static Task ShowSettingsAsync() =>
         NavigateAsync(typeof(SettingsPage), null, new SuppressNavigationTransitionInfo());
 
-    /// <summary>Back: first within the section (narrow window), then to the previous page.</summary>
+    /// <summary>Forward: one step forward along the section's trail of opened records, if there is one.</summary>
+    public static async Task GoForwardAsync()
+    {
+        if (ActiveSection != null && Frame.Content is SectionPage)
+        {
+            await ActiveSection.TryGoForwardAsync();
+        }
+    }
+
+    /// <summary>Back: first along the section's trail, then within the section (narrow window), then to the previous page.</summary>
     public static async Task GoBackAsync()
     {
         if (ActiveSection != null && Frame.Content is SectionPage && await ActiveSection.TryHandleBackAsync())

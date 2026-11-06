@@ -95,6 +95,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
     {
         base.OnNavigatedTo(e);
         ViewModel = new RecordHistoryPageViewModel((RecordRef)e.Parameter);
+        RecordPageParts.InsertOpenedFrom(HeaderBlock, ViewModel.Record);
         TypeTile.Type = ViewModel.Type;
         CompactTypeTile.Type = ViewModel.Type;
         ViewModel.Loaded += ViewModel_Loaded;
@@ -648,7 +649,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
     {
         if (e.ClickedItem is HistoryRow row)
         {
-            await Navigator.OpenRecordAsync(row.ToRef());
+            await Navigator.OpenLinkedRecordAsync(row.ToRef());
         }
     }
 
@@ -770,7 +771,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         AutomationProperties.SetName(chip, $"{link.Type.DisplayName()}: {name}");
         ToolTipService.SetToolTip(chip, $"Open {name}");
         var target = new RecordRef(link.Type, link.Id);
-        chip.Click += async (_, _) => await Navigator.OpenRecordAsync(target);
+        chip.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(target);
         return chip;
     }
 
@@ -778,7 +779,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
     {
         if (_selectedNoteId is { } id)
         {
-            await Navigator.OpenRecordAsync(new RecordRef(RecordType.Note, id));
+            await Navigator.OpenLinkedRecordAsync(new RecordRef(RecordType.Note, id));
         }
     }
 
@@ -796,7 +797,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         if (HasReadingPane && (e.OriginalSource as FrameworkElement)?.DataContext is HistoryRow row)
         {
             e.Handled = true;
-            await Navigator.OpenRecordAsync(row.ToRef());
+            await Navigator.OpenLinkedRecordAsync(row.ToRef());
         }
     }
 
@@ -806,7 +807,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         if (HasReadingPane && e.Key == VirtualKey.Enter && HistoryList.SelectedItem is HistoryRow row)
         {
             e.Handled = true;
-            await Navigator.OpenRecordAsync(row.ToRef());
+            await Navigator.OpenLinkedRecordAsync(row.ToRef());
         }
     }
 
@@ -945,14 +946,14 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         surface.DoubleTapped += async (_, e) =>
         {
             e.Handled = true;
-            await Navigator.OpenRecordAsync(new RecordRef(RecordType.Contact, person.Id));
+            await Navigator.OpenLinkedRecordAsync(new RecordRef(RecordType.Contact, person.Id));
         };
         surface.PreviewKeyDown += async (_, e) =>
         {
             if (e.Key == VirtualKey.Enter)
             {
                 e.Handled = true;
-                await Navigator.OpenRecordAsync(new RecordRef(RecordType.Contact, person.Id));
+                await Navigator.OpenLinkedRecordAsync(new RecordRef(RecordType.Contact, person.Id));
             }
         };
         var contact = new RecordRef(RecordType.Contact, person.Id);
@@ -993,8 +994,17 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
             VerticalAlignment = VerticalAlignment.Top,
             Style = (Style)Application.Current.Resources["AccentCaptionTextStyle"],
         };
-        Grid.SetColumn(badge, 2);
-        who.Children.Add(badge);
+        var corner = new StackPanel { HorizontalAlignment = HorizontalAlignment.Right };
+        corner.Children.Add(badge);
+        if (RecordPageParts.IsInTrail(contact))
+        {
+            var inTrail = RecordPageParts.InTrailTag();
+            inTrail.HorizontalAlignment = HorizontalAlignment.Right;
+            corner.Children.Add(inTrail);
+            AutomationProperties.SetName(surface, $"{person.Name}. In trail");
+        }
+        Grid.SetColumn(corner, 2);
+        who.Children.Add(corner);
         grid.Children.Add(who);
 
         // How to reach them: the phone chip and the E-mail chip, or a dashed "Phone or e-mail".
@@ -1163,8 +1173,9 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         };
         AutomationProperties.SetName(button, string.Join(". ", new[] { $"Contact: {person.Name}", second }.Where(s => s.Length > 0)));
         var target = new RecordRef(RecordType.Contact, person.Id);
-        button.Click += async (_, _) => await Navigator.OpenRecordAsync(target);
+        button.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(target);
         button.ContextRequested += (sender, args) => ShowRowMenu(sender, args, target, person.Name);
+        RecordPageParts.MarkInTrail(button, grid, target);
         return button;
     }
 
@@ -1685,6 +1696,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         };
         copy.Click += (_, _) => CopyDetails();
         MoreMenu.Items.Add(copy);
+        RecordPageParts.AddShowInList(MoreMenu, Record);
         MoreMenu.Items.Add(new MenuFlyoutSeparator());
 
         var delete = new MenuFlyoutItem { Text = "Delete", Icon = new FontIcon { Glyph = "" } };

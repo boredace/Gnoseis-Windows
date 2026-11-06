@@ -58,6 +58,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
     {
         base.OnNavigatedTo(e);
         ViewModel = new NotePageViewModel((RecordRef)e.Parameter);
+        RecordPageParts.InsertOpenedFrom(HeaderBlock, ViewModel.Record);
         ViewModel.Loaded += ViewModel_Loaded;
         ViewModel.Activate();
         await ViewModel.LoadAsync();
@@ -626,6 +627,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         };
         copy.Click += (_, _) => CopyNoteText();
         MoreMenu.Items.Add(copy);
+        RecordPageParts.AddShowInList(MoreMenu, Record);
         MoreMenu.Items.Add(new MenuFlyoutSeparator());
 
         var delete = new MenuFlyoutItem { Text = "Delete", Icon = new FontIcon { Glyph = "\uE74D" }, KeyboardAcceleratorTextOverride = "Del" };

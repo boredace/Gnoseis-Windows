@@ -244,6 +244,12 @@ public sealed partial class MainWindow : Window
         await Navigator.GoBackAsync();
     }
 
+    private async void ForwardAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        await Navigator.GoForwardAsync();
+    }
+
     private async void SectionAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
@@ -261,11 +267,17 @@ public sealed partial class MainWindow : Window
 
     private async void RootGrid_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        // Mouse "back" button.
-        if (e.GetCurrentPoint(RootGrid).Properties.IsXButton1Pressed)
+        // Mouse "back" and "forward" buttons.
+        var properties = e.GetCurrentPoint(RootGrid).Properties;
+        if (properties.IsXButton1Pressed)
         {
             e.Handled = true;
             await Navigator.GoBackAsync();
+        }
+        else if (properties.IsXButton2Pressed)
+        {
+            e.Handled = true;
+            await Navigator.GoForwardAsync();
         }
     }
 

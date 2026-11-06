@@ -90,6 +90,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     {
         base.OnNavigatedTo(e);
         ViewModel = new ContactPageViewModel((RecordRef)e.Parameter);
+        RecordPageParts.InsertOpenedFrom(HeaderBlock, ViewModel.Record);
         ViewModel.Loaded += ViewModel_Loaded;
         ViewModel.Activate();
         await ViewModel.LoadAsync();
@@ -260,7 +261,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         ToolTipService.SetToolTip(link, $"Open {company.Organization!.Name}");
         AutomationProperties.SetName(link, $"Open organization {company.Organization.Name}");
         var organization = new RecordRef(RecordType.Organization, company.Organization.Id);
-        link.Click += async (_, _) => await Navigator.OpenRecordAsync(organization);
+        link.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(organization);
         line.Children.Add(link);
         HeaderLinePanel.Children.Add(line);
     }
@@ -719,7 +720,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     {
         if (e.ClickedItem is HistoryRow row)
         {
-            await Navigator.OpenRecordAsync(row.ToRef());
+            await Navigator.OpenLinkedRecordAsync(row.ToRef());
         }
     }
 
@@ -841,7 +842,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         AutomationProperties.SetName(chip, $"{link.Type.DisplayName()}: {name}");
         ToolTipService.SetToolTip(chip, $"Open {name}");
         var target = new RecordRef(link.Type, link.Id);
-        chip.Click += async (_, _) => await Navigator.OpenRecordAsync(target);
+        chip.Click += async (_, _) => await Navigator.OpenLinkedRecordAsync(target);
         return chip;
     }
 
@@ -849,7 +850,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     {
         if (_selectedNoteId is { } id)
         {
-            await Navigator.OpenRecordAsync(new RecordRef(RecordType.Note, id));
+            await Navigator.OpenLinkedRecordAsync(new RecordRef(RecordType.Note, id));
         }
     }
 
@@ -867,7 +868,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         if (HasReadingPane && (e.OriginalSource as FrameworkElement)?.DataContext is HistoryRow row)
         {
             e.Handled = true;
-            await Navigator.OpenRecordAsync(row.ToRef());
+            await Navigator.OpenLinkedRecordAsync(row.ToRef());
         }
     }
 
@@ -877,7 +878,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         if (HasReadingPane && e.Key == VirtualKey.Enter && HistoryList.SelectedItem is HistoryRow row)
         {
             e.Handled = true;
-            await Navigator.OpenRecordAsync(row.ToRef());
+            await Navigator.OpenLinkedRecordAsync(row.ToRef());
         }
     }
 
@@ -1287,6 +1288,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         };
         copy.Click += (_, _) => CopyContactDetails();
         MoreMenu.Items.Add(copy);
+        RecordPageParts.AddShowInList(MoreMenu, Record);
         MoreMenu.Items.Add(new MenuFlyoutSeparator());
 
         var delete = new MenuFlyoutItem { Text = "Delete", Icon = new FontIcon { Glyph = "" } };

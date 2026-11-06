@@ -17,6 +17,7 @@
 
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="Left" Modifiers="Menu" Invoked="BackAccelerator_Invoked" />
+            <KeyboardAccelerator Key="Right" Modifiers="Menu" Invoked="ForwardAccelerator_Invoked" />
             <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="SearchAccelerator_Invoked" />
             <KeyboardAccelerator Key="Number1" Modifiers="Control" Invoked="SectionAccelerator_Invoked" />
             <KeyboardAccelerator Key="Number2" Modifiers="Control" Invoked="SectionAccelerator_Invoked" />

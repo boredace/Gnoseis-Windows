@@ -45,6 +45,24 @@
                 <Setter Property="TextWrapping" Value="Wrap" />
             </Style>
 
+            <!-- A row in a section's trail of opened records; the disabled variants are for dimmed rows in high contrast. -->
+            <Style x:Key="TrailTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}" />
+            <Style x:Key="TrailTitleDisabledTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
+            </Style>
+            <Style x:Key="TrailSubtitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Style>
+            <Style x:Key="TrailSubtitleDisabledTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
+            </Style>
+            <Style x:Key="SecondaryGlyphStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Style>
+            <Style x:Key="DisabledGlyphStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
+            </Style>
+
             <!--
                 Colours for parts built in code. A brush taken from Application.Resources in code
                 follows the system theme, not the app's; these setters follow the element's theme.
