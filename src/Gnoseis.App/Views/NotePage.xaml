@@ -8,7 +8,20 @@
     PreviewKeyDown="Page_PreviewKeyDown"
     SizeChanged="Page_SizeChanged">
 
-    <Grid x:Name="Root">
+    <Page.Resources>
+        <!-- Edit shows as pressed while editing, in a subtle fill: Save is the only accent-coloured button -->
+        <StaticResource x:Key="AppBarToggleButtonBackgroundChecked" ResourceKey="SubtleFillColorSecondaryBrush" />
+        <StaticResource x:Key="AppBarToggleButtonBackgroundCheckedPointerOver" ResourceKey="SubtleFillColorTertiaryBrush" />
+        <StaticResource x:Key="AppBarToggleButtonBackgroundCheckedPressed" ResourceKey="SubtleFillColorSecondaryBrush" />
+        <StaticResource x:Key="AppBarToggleButtonForegroundChecked" ResourceKey="TextFillColorPrimaryBrush" />
+        <StaticResource x:Key="AppBarToggleButtonForegroundCheckedPointerOver" ResourceKey="TextFillColorPrimaryBrush" />
+        <StaticResource x:Key="AppBarToggleButtonForegroundCheckedPressed" ResourceKey="TextFillColorSecondaryBrush" />
+    </Page.Resources>
+
+    <Grid x:Name="Root" KeyboardAcceleratorPlacementMode="Hidden">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="C" Invoked="CopyAccelerator_Invoked" Modifiers="Control,Shift" />
+        </Grid.KeyboardAccelerators>
         <!-- Header and text scroll together -->
         <ScrollViewer
             x:Name="MainScroller"
@@ -99,6 +112,8 @@
                             </AppBarButton>
                         </CommandBar>
                     </Grid>
+                    <!-- No title: a dashed Title chip, indented to the title -->
+                    <controls:WrapPanel x:Name="ChipsPanel" Margin="72,0,0,0" />
                 </StackPanel>
 
                 <StackPanel x:Name="BodyPanel" Grid.Row="1" HorizontalAlignment="Left" Spacing="16">

@@ -148,6 +148,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+1 … Ctrl+6" />
                         <TextBlock Grid.Row="0" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Home, Notes, Contacts, Organizations, Categories, Items" />
@@ -156,7 +157,7 @@
                         <TextBlock Grid.Row="2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+N" />
                         <TextBlock Grid.Row="2" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="New record in the current section" />
                         <TextBlock Grid.Row="3" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+E" />
-                        <TextBlock Grid.Row="3" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Edit the selected record" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Edit the selected record (a note in place)" />
                         <TextBlock Grid.Row="4" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+L" />
                         <TextBlock Grid.Row="4" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Link existing records to the selected record" />
                         <TextBlock Grid.Row="5" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Delete" />
@@ -164,13 +165,15 @@
                         <TextBlock Grid.Row="6" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+S / Esc" />
                         <TextBlock Grid.Row="6" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Save / cancel while editing" />
                         <TextBlock Grid.Row="7" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Enter" />
-                        <TextBlock Grid.Row="7" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Add the quick note on Home, or save the note written on a contact" />
+                        <TextBlock Grid.Row="7" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Add the quick note on Home, save the note written on a contact, or save a note edited in place" />
                         <TextBlock Grid.Row="8" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Shift+N" />
                         <TextBlock Grid.Row="8" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Write a note about the contact shown" />
                         <TextBlock Grid.Row="9" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Shift+C" />
                         <TextBlock Grid.Row="9" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Copy the contact details of the contact shown" />
-                        <TextBlock Grid.Row="10" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Alt+Left" />
-                        <TextBlock Grid.Row="10" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Back" />
+                        <TextBlock Grid.Row="10" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Shift+C" />
+                        <TextBlock Grid.Row="10" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Copy the text of the note shown" />
+                        <TextBlock Grid.Row="11" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Alt+Left" />
+                        <TextBlock Grid.Row="11" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Back" />
                     </Grid>
                 </Border>
 

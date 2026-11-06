@@ -6,6 +6,7 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
+using System.Globalization;
 using Gnoseis.Core.Domain;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
@@ -128,6 +129,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
             _band = band;
             var wide = band >= RecordPageBand.L;
             Commands.DefaultLabelPosition = wide ? CommandBarDefaultLabelPosition.Right : CommandBarDefaultLabelPosition.Collapsed;
+            ShowChips();
             ShowTabs();
             ShowSideColumn();
         }
@@ -225,6 +227,23 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         TitleText.Foreground = (Brush)Application.Current.Resources[isPlaceholder ? "TextFillColorTertiaryBrush" : "TextFillColorPrimaryBrush"];
         TitleText.Visibility = _editing ? Visibility.Collapsed : Visibility.Visible;
         DayText.Text = ViewModel.DayAndTime;
+        ShowChips();
+    }
+
+    /// <summary>A note without a title gets a dashed "Title" chip that starts editing in the title box. Every note has a day and time.</summary>
+    private void ShowChips()
+    {
+        ChipsPanel.Children.Clear();
+        if (!_editing && !ViewModel.HasTitle)
+        {
+            ChipsPanel.Children.Add(RecordPageParts.DashedButton("\uE710", "Title", "Add title", () =>
+            {
+                StartEditing(focusTitle: true);
+                return Task.CompletedTask;
+            }));
+        }
+        ChipsPanel.Visibility = ChipsPanel.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ChipsPanel.Margin = new Thickness(_band == RecordPageBand.S ? 0 : 72, 0, 0, 0);
     }
 
     // ---------------------------------------------------------------- Text
@@ -287,6 +306,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
             ShowEditDay();
             TitleText.Visibility = Visibility.Collapsed;
             TitleBox.Visibility = Visibility.Visible;
+            ShowChips();
             NoteText.Visibility = Visibility.Collapsed;
             EditPanel.Visibility = Visibility.Visible;
             UpdateEditState();
@@ -318,11 +338,19 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
             return;
         }
         _editing = false;
+
+        // The focus leaves the boxes as they go: it goes to Edit, not to whatever comes next on the page.
+        var focused = XamlRoot != null ? FocusManager.GetFocusedElement(XamlRoot) : null;
+        var hadFocus = ReferenceEquals(focused, TitleBox) || ReferenceEquals(focused, EditTextBox);
         TitleBox.Visibility = Visibility.Collapsed;
         EditPanel.Visibility = Visibility.Collapsed;
         ShowHeader();
         ShowText();
         SyncEditButtons();
+        if (hadFocus)
+        {
+            (CompactHeader.Visibility == Visibility.Visible ? (Control)CompactEditButton : EditButton).Focus(FocusState.Programmatic);
+        }
     }
 
     /// <summary>Edit shows as pressed while editing.</summary>
@@ -570,12 +598,58 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         }
     }
 
+    // Built each time it opens: the glyph brushes are picked for the page's theme (or high contrast) at that moment.
     private void MoreMenu_Opening(object? sender, object e)
     {
         MoreMenu.Items.Clear();
-        var delete = new MenuFlyoutItem { Text = "Delete", Icon = new FontIcon { Glyph = "" }, KeyboardAcceleratorTextOverride = "Del" };
+
+        // New linked: a new record of that type, linked to the note (never a note).
+        var newLinked = new MenuFlyoutSubItem { Text = "New linked", Icon = new FontIcon { Glyph = "\uE710" } };
+        foreach (var type in new[] { RecordType.Contact, RecordType.Organization, RecordType.Category, RecordType.Item })
+        {
+            var item = new MenuFlyoutItem
+            {
+                Text = type.DisplayName(),
+                Icon = new FontIcon { Glyph = Glyphs.For(type), Foreground = RecordTypeStyles.Brush(this, type, ColorRole.Outline) },
+            };
+            AutomationProperties.SetName(item, $"New linked {type.DisplayName().ToLower(CultureInfo.CurrentCulture)}");
+            item.Click += async (_, _) => await Navigator.ShowEditorAsync(new EditRequest(type, LinkFrom: Record));
+            newLinked.Items.Add(item);
+        }
+        MoreMenu.Items.Add(newLinked);
+
+        var copy = new MenuFlyoutItem
+        {
+            Text = "Copy note text",
+            Icon = new FontIcon { Glyph = "\uE8C8" },
+            KeyboardAcceleratorTextOverride = "Ctrl+Shift+C",
+        };
+        copy.Click += (_, _) => CopyNoteText();
+        MoreMenu.Items.Add(copy);
+        MoreMenu.Items.Add(new MenuFlyoutSeparator());
+
+        var delete = new MenuFlyoutItem { Text = "Delete", Icon = new FontIcon { Glyph = "\uE74D" }, KeyboardAcceleratorTextOverride = "Del" };
         delete.Click += async (_, _) => await DeleteWithConfirmationAsync();
         MoreMenu.Items.Add(delete);
+    }
+
+    private void CopyAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (ViewModel?.IsAvailable == true)
+        {
+            args.Handled = true;
+            CopyNoteText();
+        }
+    }
+
+    /// <summary>The title (when there is one), the day and time, an empty line and the text, as plain text.</summary>
+    private void CopyNoteText()
+    {
+        if (ViewModel.Note is { } note)
+        {
+            FrameworkElement target = _editing ? TitleBox : TitleText;
+            RecordPageParts.Copy(Gnoseis.Core.Domain.NotePage.CopyText(note), CopiedTip, target, "Note text copied");
+        }
     }
 
     private async void Page_KeyDown(object sender, KeyRoutedEventArgs e)
