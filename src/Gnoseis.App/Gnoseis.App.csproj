@@ -43,6 +43,10 @@
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
     <Content Include="Assets\Gnoseis.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\TitleBarIcon.scale-*.png" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The icon sources (Assets\source) are for regenerating the images, not for the app. -->
+    <Content Remove="Assets\source\**" />
+    <None Remove="Assets\source\**" />
   </ItemGroup>
 
 </Project>
