@@ -64,6 +64,24 @@
             <Setter Property="MinHeight" Value="30" />
         </Style>
 
+        <!-- A year chip lit for the year of the topmost note shown -->
+        <Style x:Key="LitYearChipStyle" TargetType="Button" BasedOn="{StaticResource ContactChipButtonStyle}">
+            <Setter Property="Background" Value="{ThemeResource AccentFillColorTertiaryBrush}" />
+            <Setter Property="Foreground" Value="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+        </Style>
+
+        <!-- The note box: one line on the page, or a card while writing -->
+        <Style x:Key="NoteBoxClosedStyle" TargetType="Border">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource OverlayCornerRadius}" />
+        </Style>
+        <Style x:Key="NoteBoxOpenStyle" TargetType="Border" BasedOn="{StaticResource NoteBoxClosedStyle}">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+        </Style>
+
         <!-- History rows: no side padding, a hairline under each -->
         <Style x:Key="HistoryItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
             <Setter Property="Padding" Value="8,0" />
@@ -176,12 +194,7 @@
                     <SelectorBar x:Name="TabBar" Margin="-8,-8,0,0" SelectionChanged="TabBar_SelectionChanged" Visibility="Collapsed" />
 
                     <!-- Note box: a note about the item without leaving the page -->
-                    <Border
-                        x:Name="NoteBox"
-                        Background="Transparent"
-                        BorderBrush="Transparent"
-                        BorderThickness="1"
-                        CornerRadius="{StaticResource OverlayCornerRadius}">
+                    <Border x:Name="NoteBox" Style="{StaticResource NoteBoxClosedStyle}">
                         <StackPanel Spacing="8">
                             <TextBox
                                 x:Name="NoteTitleBox"

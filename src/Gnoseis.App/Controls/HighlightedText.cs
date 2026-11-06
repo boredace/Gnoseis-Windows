@@ -170,12 +170,20 @@ public sealed partial class HighlightedText : Grid
         }
         _drawn = rects;
         _lines.Children.Clear();
-        var brush = UsesAccent
-            ? (Brush)Application.Current.Resources["AccentTextFillColorPrimaryBrush"]
-            : RecordTypeStyles.Brush(this, Type, ColorRole.Outline) ?? (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
+        // The accent and text colours come from styles, so they follow this element's theme.
+        var brush = UsesAccent ? null : RecordTypeStyles.Brush(this, Type, ColorRole.Outline);
+        var style = (Style)Application.Current.Resources[UsesAccent ? "AccentLineStyle" : "TextLineStyle"];
         foreach (var rect in rects)
         {
-            var line = new Rectangle { Width = rect.Width, Height = rect.Height, Fill = brush };
+            var line = new Rectangle { Width = rect.Width, Height = rect.Height };
+            if (brush != null)
+            {
+                line.Fill = brush;
+            }
+            else
+            {
+                line.Style = style;
+            }
             Canvas.SetLeft(line, rect.X);
             Canvas.SetTop(line, rect.Y);
             _lines.Children.Add(line);

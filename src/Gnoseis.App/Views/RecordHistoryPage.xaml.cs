@@ -286,26 +286,21 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         {
             // The type in secondary text, the rest in tertiary.
             var type = ViewModel.Type.DisplayName();
-            var line = LineText(type, "TextFillColorSecondaryBrush");
-            line.Inlines.Clear();
-            line.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run { Text = type });
-            line.Inlines.Add(new Microsoft.UI.Xaml.Documents.Run
-            {
-                Text = text[type.Length..],
-                Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
-            });
-            HeaderLinePanel.Children.Add(line);
+            var parts = new StackPanel { Orientation = Orientation.Horizontal };
+            parts.Children.Add(LineText(type, "SecondaryLineTextStyle"));
+            parts.Children.Add(LineText(text[type.Length..], "TertiaryLineTextStyle"));
+            AutomationProperties.SetName(parts, text);
+            HeaderLinePanel.Children.Add(parts);
             return;
         }
-        HeaderLinePanel.Children.Add(LineText(text, "TextFillColorSecondaryBrush"));
+        HeaderLinePanel.Children.Add(LineText(text, "SecondaryLineTextStyle"));
     }
 
-    private static TextBlock LineText(string text, string brush) => new()
+    private static TextBlock LineText(string text, string style) => new()
     {
         Text = text,
         VerticalAlignment = VerticalAlignment.Center,
-        Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
-        Foreground = (Brush)Application.Current.Resources[brush],
+        Style = (Style)Application.Current.Resources[style],
         TextTrimming = TextTrimming.CharacterEllipsis,
         IsTextSelectionEnabled = true,
     };
@@ -539,16 +534,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         foreach (var chip in YearChips.Children.Concat(CompactYearChips.Children).OfType<Button>())
         {
             var lit = chip.Tag is int y && y == year;
-            if (lit)
-            {
-                chip.Background = (Brush)Application.Current.Resources["AccentFillColorTertiaryBrush"];
-                chip.Foreground = (Brush)Application.Current.Resources["TextOnAccentFillColorPrimaryBrush"];
-            }
-            else
-            {
-                chip.ClearValue(BackgroundProperty);
-                chip.ClearValue(ForegroundProperty);
-            }
+            chip.Style = lit ? (Style)Resources["LitYearChipStyle"] : ChipStyle;
         }
     }
 
@@ -995,8 +981,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
             names.Children.Add(new TextBlock
             {
                 Text = person.JobTitle,
-                Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                Style = (Style)Application.Current.Resources["SecondaryCaptionTextStyle"],
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 TextWrapping = TextWrapping.NoWrap,
             });
@@ -1006,8 +991,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         {
             Text = "Filtering history",
             VerticalAlignment = VerticalAlignment.Top,
-            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-            Foreground = (Brush)Application.Current.Resources["AccentTextFillColorPrimaryBrush"],
+            Style = (Style)Application.Current.Resources["AccentCaptionTextStyle"],
         };
         Grid.SetColumn(badge, 2);
         who.Children.Add(badge);
@@ -1037,8 +1021,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
             Text = notesLine,
             Margin = new Thickness(54, 8, 12, 12),
             IsHitTestVisible = false,
-            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-            Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
+            Style = (Style)Application.Current.Resources["TertiaryCaptionTextStyle"],
         };
         Grid.SetRow(notes, 2);
         grid.Children.Add(notes);
@@ -1046,7 +1029,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         var card = new Border
         {
             Child = grid,
-            Background = (Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"],
+            Style = (Style)Application.Current.Resources["CardSurfaceStyle"],
             CornerRadius = new CornerRadius(6),
         };
         _cards[person.Id] = (card, badge, surface, person);
@@ -1167,8 +1150,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
                 Text = second,
                 TextTrimming = TextTrimming.CharacterEllipsis,
                 TextWrapping = TextWrapping.NoWrap,
-                Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                Style = (Style)Application.Current.Resources["SecondaryCaptionTextStyle"],
             });
         }
         grid.Children.Add(lines);
@@ -1194,9 +1176,8 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         {
             RadiusX = 8,
             RadiusY = 8,
-            Stroke = (Brush)Application.Current.Resources["ControlStrongStrokeColorDefaultBrush"],
+            Style = (Style)Application.Current.Resources["DashedOutlineStyle"],
             StrokeDashArray = [4, 3],
-            StrokeThickness = 1,
         });
         grid.Children.Add(content);
         return grid;
@@ -1231,8 +1212,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         {
             Text = $"Company field says {name}, not linked:",
             TextWrapping = TextWrapping.Wrap,
-            Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-            Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            Style = (Style)Application.Current.Resources["SecondaryCaptionTextStyle"],
         });
         foreach (var contact in shown)
         {
@@ -1260,8 +1240,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
                     Text = contact.JobTitle,
                     TextTrimming = TextTrimming.CharacterEllipsis,
                     TextWrapping = TextWrapping.NoWrap,
-                    Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
-                    Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                    Style = (Style)Application.Current.Resources["SecondaryCaptionTextStyle"],
                 });
             }
             row.Children.Add(lines);
@@ -1359,8 +1338,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
             TextTrimming = TextTrimming.CharacterEllipsis,
             MaxLines = _aboutExpanded ? 0 : 4,
             IsTextSelectionEnabled = true,
-            Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
-            Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            Style = (Style)Application.Current.Resources["SecondaryTextStyle"],
         };
         panel.Children.Add(text);
         var more = new HyperlinkButton
@@ -1494,8 +1472,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         NoteBoxCommands.Visibility = Visibility.Visible;
         NoteTitleBox.Visibility = NoteTitleBox.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
         NoteBox.Padding = new Thickness(12);
-        NoteBox.Background = (Brush)Application.Current.Resources["CardBackgroundFillColorDefaultBrush"];
-        NoteBox.BorderBrush = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+        NoteBox.Style = (Style)Resources["NoteBoxOpenStyle"];
     }
 
     /// <summary>Back to one line. The draft stays unless <paramref name="clear"/>.</summary>
@@ -1514,8 +1491,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         NoteBoxCommands.Visibility = Visibility.Collapsed;
         NoteTitleBox.Visibility = Visibility.Collapsed;
         NoteBox.Padding = new Thickness(0);
-        NoteBox.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-        NoteBox.BorderBrush = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+        NoteBox.Style = (Style)Resources["NoteBoxClosedStyle"];
     }
 
     private void ShowNoteDay()
