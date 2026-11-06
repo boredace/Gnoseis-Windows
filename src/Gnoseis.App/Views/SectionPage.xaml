@@ -289,18 +289,11 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
+                <!-- No item template: the bar also draws its "…" item through it, with no data. -->
                 <BreadcrumbBar
                     x:Name="TrailBreadcrumb"
                     AutomationProperties.Name="Opened records"
-                    ItemClicked="TrailBreadcrumb_ItemClicked">
-                    <BreadcrumbBar.ItemTemplate>
-                        <DataTemplate x:DataType="vm:TrailCrumb">
-                            <BreadcrumbBarItem AutomationProperties.Name="{x:Bind AutomationName}">
-                                <TextBlock FontWeight="{x:Bind Weight}" Text="{x:Bind Text}" />
-                            </BreadcrumbBarItem>
-                        </DataTemplate>
-                    </BreadcrumbBar.ItemTemplate>
-                </BreadcrumbBar>
+                    ItemClicked="TrailBreadcrumb_ItemClicked" />
                 <StackPanel
                     x:Name="ForwardCrumbs"
                     Grid.Column="1"

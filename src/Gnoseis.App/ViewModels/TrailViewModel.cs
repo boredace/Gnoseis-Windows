@@ -62,19 +62,20 @@ public sealed class TrailRow
     public double RowOpacity => IsAfterCurrent && !Accessibility.HighContrast ? 0.5 : 1;
 
     public bool UsesDisabledText => IsAfterCurrent && Accessibility.HighContrast;
+
+    public override string ToString() => AutomationName;
 }
 
 /// <summary>
 /// An item of the narrow window's breadcrumb: the section (index -1, back to the list) or a record of
-/// the trail up to the one shown, which is last and semibold.
+/// the trail up to the one shown, which is last (the bar draws it as the current item). The bar shows
+/// and reads out <see cref="ToString"/>.
 /// </summary>
-public sealed class TrailCrumb(string text, int index, bool isCurrent, string automationName)
+public sealed class TrailCrumb(string text, int index, bool isCurrent)
 {
     public string Text { get; } = text;
     public int Index { get; } = index;
     public bool IsCurrent { get; } = isCurrent;
-    public string AutomationName { get; } = automationName;
-    public Windows.UI.Text.FontWeight Weight => IsCurrent ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
 
     public override string ToString() => Text;
 }
@@ -112,10 +113,10 @@ public sealed class TrailViewModel(RecordType sectionType, RecordTrail<RecordRef
     /// <summary>The breadcrumb up to the record shown: the section, then the trail's records.</summary>
     public List<TrailCrumb> Crumbs()
     {
-        var crumbs = new List<TrailCrumb> { new(SectionTitle, -1, false, $"{SectionTitle} list") };
+        var crumbs = new List<TrailCrumb> { new(SectionTitle, -1, false) };
         foreach (var row in Rows.Where(r => !r.IsAfterCurrent))
         {
-            crumbs.Add(new TrailCrumb(row.Title, row.Index, row.IsCurrent, $"{row.Title}, {row.TypeName}"));
+            crumbs.Add(new TrailCrumb(row.Title, row.Index, row.IsCurrent));
         }
         return crumbs;
     }
