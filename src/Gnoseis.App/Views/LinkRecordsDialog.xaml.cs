@@ -55,14 +55,21 @@ public sealed partial class LinkRecordsDialog : ContentDialog
     /// <summary>
     /// Shows the picker for a record and links what the user picks. When the user creates a record
     /// from the search instead, the ticked records are linked, the dialog closes and the editor opens
-    /// for a new record linked to <paramref name="source"/>.
+    /// for a new record linked to <paramref name="source"/>. With <paramref name="types"/>, only those
+    /// types are searched and offered to create; <paramref name="query"/> starts the search.
     /// </summary>
-    public static async Task ShowAsync(RecordRef source)
+    public static async Task ShowAsync(RecordRef source, IReadOnlyList<RecordType>? types = null, string? query = null)
     {
-        var model = new RecordSearchModel(SearchLogic.ChipTypes(source.Type), null, CreateFromSearch.TypesFor(source.Type), source);
+        var chipTypes = types ?? SearchLogic.ChipTypes(source.Type);
+        var createTypes = types ?? CreateFromSearch.TypesFor(source.Type);
+        var model = new RecordSearchModel(chipTypes, types?.Count == 1 ? types[0] : null, createTypes, source);
         var dialog = new LinkRecordsDialog(model);
         model.Activate();
         await model.LoadAsync();
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            model.Query = query;
+        }
         await Dialogs.ShowCustomAsync(dialog);
         if (dialog._createAfterClose is { } request)
         {

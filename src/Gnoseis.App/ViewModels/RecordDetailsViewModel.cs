@@ -8,35 +8,12 @@
 
 namespace Gnoseis.App.ViewModels;
 
-/// <summary>One value in the Details section, e.g. a phone number with its label.</summary>
-public sealed class DetailField(string value, string label, Uri? link = null)
-{
-    public string Value { get; } = value;
-    public string Label { get; } = label;
-    public Uri? Link { get; } = link;
-    public bool HasLink => Link != null;
-    public bool HasNoLink => Link == null;
-
-    /// <summary>A divider above the field: every field of a group but the first.</summary>
-    public bool HasDivider { get; init; }
-
-    public Microsoft.UI.Xaml.Thickness DividerThickness => new(0, HasDivider ? 1 : 0, 0, 0);
-}
-
-/// <summary>A titled group of fields in the Details section (e.g. "Phone"), shown as one card.</summary>
-public sealed class DetailSection(string header, IReadOnlyList<DetailField> fields)
-{
-    public string Header { get; } = header;
-    public IReadOnlyList<DetailField> Fields { get; } = fields;
-}
-
-/// <summary>Details of one record and the records linked to it (all five Android details pages).</summary>
+/// <summary>Details of a note, organization, category or item and the records linked to it (contacts have their own page).</summary>
 public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
 {
     private string _title = "";
     private string _subtitle = "";
     private string _body = "";
-    private IReadOnlyList<DetailSection> _sections = [];
     private LinkedRecordSet _linked = LinkedRecordSet.Empty;
     private bool _isMissing;
     private bool _isLoaded;
@@ -85,22 +62,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
 
     public bool HasBody => Body.Length > 0;
 
-    public IReadOnlyList<DetailSection> Sections
-    {
-        get => _sections;
-        private set
-        {
-            if (SetProperty(ref _sections, value))
-            {
-                OnPropertyChanged(nameof(HasSections));
-                OnPropertyChanged(nameof(HasNoDetails));
-            }
-        }
-    }
-
-    public bool HasSections => Sections.Count > 0;
-
-    public bool HasNoDetails => IsLoaded && !HasBody && !HasSections;
+    public bool HasNoDetails => IsLoaded && !HasBody;
 
     public string NoDetailsText => "No details";
 
@@ -126,11 +88,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
 
     public bool IsNote => Type == RecordType.Note;
 
-    public bool IsContact => Type == RecordType.Contact;
-
-    public bool ShowTypeTile => !IsContact;
-
-    /// <summary>Heading of the comments card of contacts, organizations, categories and items.</summary>
+    /// <summary>Heading of the comments card of organizations, categories and items.</summary>
     public string BodyHeader => "Comments";
 
     public bool ShowBodyCard => HasBody && !IsNote;
@@ -187,7 +145,6 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
                 Title = $"{TypeName} not found";
                 Subtitle = "";
                 Body = "";
-                Sections = [];
             }
             Linked = linked;
             IsLoaded = true;
@@ -252,18 +209,6 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
                 Body = note.TextContents ?? "";
                 return true;
 
-            case RecordType.Contact:
-                var contact = await Data.Contacts.GetContactAsync(Record.Id);
-                if (contact == null)
-                {
-                    return false;
-                }
-                Title = RecordText.ContactFullName(contact) is { Length: > 0 } name ? name : TypeName;
-                Subtitle = RecordText.JobAndCompany(contact);
-                Sections = BuildContactSections(contact);
-                Body = contact.Comments ?? "";
-                return true;
-
             case RecordType.Organization:
                 var organization = await Data.Organizations.GetOrganizationAsync(Record.Id);
                 if (organization == null)
@@ -299,41 +244,5 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
             default:
                 return false;
         }
-    }
-
-    private static List<DetailSection> BuildContactSections(Contact contact)
-    {
-        var sections = new List<DetailSection>();
-        AddSection(sections, "Work", (contact.Company, "Company", null), (contact.JobTitle, "Job title", null));
-        AddSection(sections, "Phone",
-            (contact.PhoneMain, "Main", "tel:"), (contact.PhoneWork, "Work", "tel:"),
-            (contact.PhoneHome, "Home", "tel:"), (contact.PhoneMobile, "Mobile", "tel:"));
-        AddSection(sections, "E-mail",
-            (contact.EmailMain, "Main", "mailto:"), (contact.EmailWork, "Work", "mailto:"),
-            (contact.EmailHome, "Home", "mailto:"), (contact.EmailMobile, "Mobile", "mailto:"));
-        return sections;
-    }
-
-    /// <summary>Adds a group with the values that aren't blank; an empty group is left out.</summary>
-    private static void AddSection(List<DetailSection> sections, string header, params (string? Value, string Label, string? Scheme)[] values)
-    {
-        var fields = values
-            .Where(v => !string.IsNullOrWhiteSpace(v.Value))
-            .Select((v, index) => new DetailField(v.Value!.Trim(), v.Label, MakeLink(v.Scheme, v.Value!)) { HasDivider = index > 0 })
-            .ToList();
-        if (fields.Count > 0)
-        {
-            sections.Add(new DetailSection(header, fields));
-        }
-    }
-
-    private static Uri? MakeLink(string? scheme, string value)
-    {
-        if (scheme == null)
-        {
-            return null;
-        }
-        var target = scheme == "tel:" ? new string(value.Where(c => char.IsDigit(c) || c == '+').ToArray()) : value.Trim();
-        return target.Length > 0 && Uri.TryCreate(scheme + target, UriKind.Absolute, out var uri) ? uri : null;
     }
 }

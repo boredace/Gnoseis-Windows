@@ -52,6 +52,15 @@ public sealed class ContactRepository(GnoseisDatabase database) : RepositoryBase
     public Task<Contact?> GetContactAsync(string id) =>
         QuerySingleAsync("SELECT * FROM Contact WHERE id = $id;", MapContact, ("$id", id));
 
+    /// <summary>When the contact was created (UTC epoch ms); null when unknown (made before schema v3) or not found.</summary>
+    public Task<long?> GetCreatedAtAsync(string id) =>
+        Task.Run(() =>
+        {
+            using var connection = Database.OpenConnection();
+            using var command = CreateCommand(connection, "SELECT createdAt FROM Contact WHERE id = $id;", [("$id", id)]);
+            return command.ExecuteScalar() is long value ? value : (long?)null;
+        });
+
     public async Task<Contact> AddContactAsync(Contact contact)
     {
         await ExecuteAsync(RecordType.Contact,

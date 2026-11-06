@@ -31,8 +31,8 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <controls:FormTextBox Field="{x:Bind ViewModel.JobTitle}" />
-            <controls:FormTextBox Grid.Column="1" Field="{x:Bind ViewModel.Company}" />
+            <controls:FormTextBox x:Name="JobTitleBox" Field="{x:Bind ViewModel.JobTitle}" />
+            <controls:FormTextBox x:Name="CompanyBox" Grid.Column="1" Field="{x:Bind ViewModel.Company}" />
         </Grid>
 
         <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Phone" />
@@ -45,7 +45,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <controls:FormTextBox Field="{x:Bind ViewModel.PhoneMain}" Kind="Phone" />
+            <controls:FormTextBox x:Name="PhoneMainBox" Field="{x:Bind ViewModel.PhoneMain}" Kind="Phone" />
             <controls:FormTextBox Grid.Column="1" Field="{x:Bind ViewModel.PhoneMobile}" Kind="Phone" />
             <controls:FormTextBox Grid.Row="1" Field="{x:Bind ViewModel.PhoneHome}" Kind="Phone" />
             <controls:FormTextBox Grid.Row="1" Grid.Column="1" Field="{x:Bind ViewModel.PhoneWork}" Kind="Phone" />
@@ -61,7 +61,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
-            <controls:FormTextBox Field="{x:Bind ViewModel.EmailMain}" Kind="Email" />
+            <controls:FormTextBox x:Name="EmailMainBox" Field="{x:Bind ViewModel.EmailMain}" Kind="Email" />
             <controls:FormTextBox Grid.Column="1" Field="{x:Bind ViewModel.EmailMobile}" Kind="Email" />
             <controls:FormTextBox Grid.Row="1" Field="{x:Bind ViewModel.EmailHome}" Kind="Email" />
             <controls:FormTextBox Grid.Row="1" Grid.Column="1" Field="{x:Bind ViewModel.EmailWork}" Kind="Email" />

@@ -195,10 +195,21 @@ switching and seeing related information at a glance.
 - **List and record side by side** in every section, like Mail and Outlook. You can move through the
   list with the arrow keys. A filter box narrows the list. Notes are grouped by *Today*,
   *Yesterday*, weekday and date, and the other lists by first letter.
-- **Record page**, the same for every record type: a header with the type, the title and the
-  commands, the record's details, and its linked records. The note text is readable, with
-  clickable web and e-mail links. A contact shows initials and field cards (Work, Phone, E-mail),
-  and phone numbers and e-mail addresses open the calling or mail app.
+- **Record page** for notes, organizations, categories and items: a header with the type, the
+  title and the commands, the record's details, and its linked records. The note text is readable,
+  with clickable web and e-mail links.
+- **Contact page**, built around the person: a header with the name, the job and company (the
+  company opens its organization when it's linked, or offers **Link as organization**), and a chip
+  per phone number and e-mail address that calls or writes (right-click to copy; the value is copied
+  when no app handles it). Below it, a note box writes a note linked to the contact without leaving
+  the page (Ctrl+Shift+N, Ctrl+Enter saves), and the contact's history lists its notes, newest
+  first, with month headers, a filter, year chips and **Show older** for long histories. The
+  organizations, categories and items sit in a side column, each with a **+** to link one more.
+  The layout follows the width of the record pane: tabs on a narrow one, a side column from 860 px,
+  and from 1700 px a reading pane that shows the selected note in full (Up and Down move through the
+  notes). Once the header scrolls away, a compact header keeps the name, the year chips and the
+  commands in view; Home returns to the top. **More** has **New linked**, **Copy contact details**
+  (Ctrl+Shift+C) and **Delete**.
 - **Linked records by type**: a selector shows **All**, then each linked type with its count, the
   type with the most links first. **All** shows the 3 latest records of each type, with *Show all*.
   Notes are grouped by day. Each row shows what the record holds (a note's first line, a contact's
@@ -224,7 +235,8 @@ switching and seeing related information at a glance.
   pane and the last section, plus the selected record in each section while the app is open.
 - **Narrow windows** show one pane at a time; Back returns from a record to the list.
 - **Keyboard**: Ctrl+1 to Ctrl+6 switch sections, Ctrl+N creates a record, Ctrl+E edits, Ctrl+L
-  links, Del deletes, Alt+Left or the mouse back button goes back. Settings lists every shortcut.
+  links, Del deletes, Alt+Left or the mouse back button goes back. On a contact, Ctrl+Shift+N writes
+  a note and Ctrl+Shift+C copies the contact details. Settings lists every shortcut.
 - Fluent design with Mica, a light, dark or system theme, and screen-reader names and headings.
 
 | Android | Windows |
@@ -232,7 +244,9 @@ switching and seeing related information at a glance.
 | Navigation drawer | Navigation pane (expanded, compact or hidden, depending on window width) |
 | Separate list and details screens | List and record side by side |
 | Floating "Add" button | **New** button in the list header (Ctrl+N) |
-| Expandable FAB (link existing / new linked record) | **Link** (Ctrl+L) and **New linked** menu in the record's command bar |
+| Expandable FAB (link existing / new linked record) | **Link** (Ctrl+L) and **New linked** menu in the record's command bar (on a contact, under **More**) |
+| Contact details screen (fields, then linked records) | Contact page: phone and e-mail chips in the header, the notes as a history with a note box above it, the other linked records in a side column |
+| New linked note from a contact | Note box on the contact page (or **Open full editor**) |
 | Linked-record tab row | Selector with **All** and each linked type, beside the details on a wide pane, tabs with **Details** on a narrow one |
 | Snackbar with Undo after unlinking | Info bar with **Undo** at the bottom of the record page |
 | Link Records page | Link picker dialog |

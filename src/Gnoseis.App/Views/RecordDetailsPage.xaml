@@ -15,11 +15,6 @@
             <Setter Property="Margin" Value="0,0,0,8" />
         </Style>
 
-        <!-- A card in the SettingsCard style: label left, value right, a divider between fields -->
-        <Style x:Key="FieldCardStyle" TargetType="Border" BasedOn="{StaticResource CardStyle}">
-            <Setter Property="Padding" Value="0" />
-        </Style>
-
         <!-- A card of linked rows: one day of notes (date left, weekday right), or records of another type -->
         <DataTemplate x:Key="LinkedCardTemplate" x:DataType="vm:LinkedCard">
             <Border Padding="4,6" Style="{StaticResource CardStyle}">
@@ -103,14 +98,6 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <PersonPicture
-                    Width="48"
-                    Height="48"
-                    VerticalAlignment="Top"
-                    AutomationProperties.AccessibilityView="Raw"
-                    DisplayName="{x:Bind ViewModel.Title, Mode=OneWay}"
-                    Style="{StaticResource ContactPictureStyle}"
-                    Visibility="{x:Bind ViewModel.IsContact}" />
                 <controls:TypeTile
                     Width="48"
                     Height="48"
@@ -118,8 +105,7 @@
                     AutomationProperties.AccessibilityView="Raw"
                     CornerRadius="10"
                     FontSize="22"
-                    Type="{x:Bind ViewModel.Type}"
-                    Visibility="{x:Bind ViewModel.ShowTypeTile}" />
+                    Type="{x:Bind ViewModel.Type}" />
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="0">
                     <TextBlock
@@ -220,73 +206,7 @@
                             LineHeight="22" />
                     </Border>
 
-                    <!-- Contact field groups: Work, Phone, E-mail -->
-                    <ItemsControl
-                        IsTabStop="False"
-                        ItemsSource="{x:Bind ViewModel.Sections, Mode=OneWay}"
-                        Visibility="{x:Bind ViewModel.HasSections, Mode=OneWay}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Spacing="20" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:DetailSection">
-                                <StackPanel>
-                                    <TextBlock
-                                        AutomationProperties.HeadingLevel="Level2"
-                                        Style="{StaticResource DetailHeaderTextStyle}"
-                                        Text="{x:Bind Header}" />
-                                    <Border Style="{StaticResource FieldCardStyle}">
-                                        <ItemsControl IsTabStop="False" ItemsSource="{x:Bind Fields}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="vm:DetailField">
-                                                    <Grid
-                                                        MinHeight="44"
-                                                        Padding="16,8"
-                                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                                        BorderThickness="{x:Bind DividerThickness}"
-                                                        ColumnSpacing="16">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="Auto" />
-                                                            <ColumnDefinition Width="*" />
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBlock
-                                                            VerticalAlignment="Center"
-                                                            Style="{StaticResource BodyTextBlockStyle}"
-                                                            Text="{x:Bind Label}" />
-                                                        <HyperlinkButton
-                                                            Grid.Column="1"
-                                                            Padding="4,2"
-                                                            HorizontalAlignment="Right"
-                                                            AutomationProperties.Name="{x:Bind Label}"
-                                                            NavigateUri="{x:Bind Link}"
-                                                            ToolTipService.ToolTip="{x:Bind Link}"
-                                                            Visibility="{x:Bind HasLink}">
-                                                            <TextBlock Text="{x:Bind Value}" TextTrimming="CharacterEllipsis" />
-                                                        </HyperlinkButton>
-                                                        <TextBlock
-                                                            Grid.Column="1"
-                                                            HorizontalAlignment="Right"
-                                                            VerticalAlignment="Center"
-                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                            IsTextSelectionEnabled="True"
-                                                            Style="{StaticResource BodyTextBlockStyle}"
-                                                            Text="{x:Bind Value}"
-                                                            TextAlignment="Right"
-                                                            TextWrapping="Wrap"
-                                                            Visibility="{x:Bind HasNoLink}" />
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </Border>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- Comments (contacts last; organizations, categories and items only these) -->
+                    <!-- Comments of organizations, categories and items -->
                     <StackPanel Visibility="{x:Bind ViewModel.ShowBodyCard, Mode=OneWay}">
                         <TextBlock
                             AutomationProperties.HeadingLevel="Level2"

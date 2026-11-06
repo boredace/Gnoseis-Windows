@@ -15,11 +15,32 @@ public sealed record RecordRef(RecordType Type, string Id);
 /// What an editor edits. <see cref="Id"/> is null for a new record. When <see cref="LinkFrom"/> is
 /// set, the new record is linked to that record after it is saved (the Android NEWLINK mode).
 /// <see cref="PrefillName"/> is a search query to fill in as a new record's name (creating a record
-/// from a search); how it is split and cut per type is in CreateFromSearch.
+/// from a search); how it is split and cut per type is in CreateFromSearch. <see cref="NoteDraft"/>
+/// fills in a new note (a draft carried over from the contact page's note box), and
+/// <see cref="FocusField"/> names the field that gets the focus when the editor opens.
 /// </summary>
-public sealed record EditRequest(RecordType Type, string? Id = null, RecordRef? LinkFrom = null, string? PrefillName = null)
+public sealed record EditRequest(
+    RecordType Type,
+    string? Id = null,
+    RecordRef? LinkFrom = null,
+    string? PrefillName = null,
+    NoteDraft? NoteDraft = null,
+    string? FocusField = null)
 {
     public bool IsNew => Id == null;
+}
+
+/// <summary>A new note's title, text, day and time, written before the editor opened.</summary>
+public sealed record NoteDraft(string Title, string Text, DateOnly Day, TimeSpan TimeOfDay);
+
+/// <summary>A page that shows a record in a section's detail pane.</summary>
+public interface IRecordPage
+{
+    /// <summary>The record shown.</summary>
+    RecordRef Record { get; }
+
+    /// <summary>Asks, then deletes the record (also used by the Delete key in the list).</summary>
+    Task DeleteWithConfirmationAsync();
 }
 
 /// <summary>Parameter of a section page: its record type, the record to show and an editor to open.</summary>

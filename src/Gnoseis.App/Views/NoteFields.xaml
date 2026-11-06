@@ -9,7 +9,7 @@
     <!-- The note's fields inside the shared edit page -->
     <StackPanel Margin="0,16,0,0" Spacing="16">
         <controls:FormTextBox x:Name="TitleBox" Field="{x:Bind ViewModel.NoteTitle}" PlaceholderText="Optional" />
-        <controls:FormTextBox Field="{x:Bind ViewModel.Text}" Kind="Multiline" />
+        <controls:FormTextBox x:Name="TextBox" Field="{x:Bind ViewModel.Text}" Kind="Multiline" />
         <CalendarDatePicker
             Date="{x:Bind ViewModel.Date, Mode=TwoWay}"
             Header="Day"

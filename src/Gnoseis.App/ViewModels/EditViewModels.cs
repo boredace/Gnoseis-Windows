@@ -165,7 +165,18 @@ public abstract class EditViewModelBase : PageViewModel
         var found = IsNew || await LoadRecordAsync();
         UpdateValidity();
         _savedSnapshot = Snapshot();
+        if (IsNew && Request.NoteDraft is { } draft)
+        {
+            // After the snapshot: a carried-over draft is unsaved, so leaving it asks to save.
+            ApplyNoteDraft(draft);
+            UpdateValidity();
+        }
         return found;
+    }
+
+    /// <summary>Fills in a new note from a draft written on the contact page (notes only).</summary>
+    protected virtual void ApplyNoteDraft(NoteDraft draft)
+    {
     }
 
     /// <summary>
@@ -252,6 +263,17 @@ public sealed class NoteEditViewModel : EditViewModelBase
 
     private DateOnly SelectedDay => DateOnly.FromDateTime((Date ?? DateTimeOffset.Now).Date);
 
+    // The time of day of a draft carried over from the contact page; otherwise the time of saving.
+    private TimeSpan? _draftTime;
+
+    protected override void ApplyNoteDraft(NoteDraft draft)
+    {
+        NoteTitle.Value = draft.Title.Length > TitleLength.Note ? draft.Title[..TitleLength.Note] : draft.Title;
+        Text.Value = draft.Text;
+        Date = new DateTimeOffset(draft.Day.ToDateTime(TimeOnly.MinValue));
+        _draftTime = draft.TimeOfDay;
+    }
+
     protected override void Prefill(string query) =>
         NoteTitle.Value = CreateFromSearch.PrefillName(query, RecordType.Note) ?? "";
 
@@ -270,7 +292,7 @@ public sealed class NoteEditViewModel : EditViewModelBase
 
     protected override async Task<string> InsertAsync()
     {
-        var (createDate, createDateTime) = NoteDates.ForNewNote(SelectedDay, DateTime.Now.TimeOfDay);
+        var (createDate, createDateTime) = NoteDates.ForNewNote(SelectedDay, _draftTime ?? DateTime.Now.TimeOfDay);
         var note = await Data.Notes.AddNoteAsync(new Note
         {
             OwnerDbId = "db1",
