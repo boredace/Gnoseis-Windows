@@ -67,13 +67,22 @@ public sealed class ContactRepository(GnoseisDatabase database) : RepositoryBase
         QuerySingleAsync("SELECT * FROM Contact WHERE id = $id;", MapContact, ("$id", id));
 
     /// <summary>When the contact was created (UTC epoch ms); null when unknown (made before schema v3) or not found.</summary>
-    public Task<long?> GetCreatedAtAsync(string id) =>
-        Task.Run(() =>
+    public Task<long?> GetCreatedAtAsync(string id) => GetCreatedAtAsync("Contact", id);
+
+    /// <summary>
+    /// Contacts whose company may be <paramref name="name"/>: every word of the name in order,
+    /// ignoring case. The caller compares the company exactly (runs of spaces as one).
+    /// </summary>
+    public Task<List<Contact>> GetContactsByCompanyAsync(string name)
+    {
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (words.Length == 0)
         {
-            using var connection = Database.OpenConnection();
-            using var command = CreateCommand(connection, "SELECT createdAt FROM Contact WHERE id = $id;", [("$id", id)]);
-            return command.ExecuteScalar() is long value ? value : (long?)null;
-        });
+            return Task.FromResult(new List<Contact>());
+        }
+        var pattern = "%" + string.Join("%", words.Select(w => w.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_"))) + "%";
+        return QueryAsync("SELECT * FROM Contact WHERE company LIKE $pattern ESCAPE '\\';", MapContact, ("$pattern", pattern));
+    }
 
     public async Task<Contact> AddContactAsync(Contact contact)
     {
@@ -120,6 +129,9 @@ public sealed class OrganizationRepository(GnoseisDatabase database) : Repositor
 
     public Task<Organization?> GetOrganizationAsync(string id) =>
         QuerySingleAsync("SELECT * FROM Organization WHERE id = $id;", MapOrganization, ("$id", id));
+
+    /// <summary>When the organization was created (UTC epoch ms); null when unknown or not found.</summary>
+    public Task<long?> GetCreatedAtAsync(string id) => GetCreatedAtAsync("Organization", id);
 
     public async Task<Organization> AddOrganizationAsync(Organization organization)
     {
@@ -186,6 +198,9 @@ public sealed class ItemRepository(GnoseisDatabase database) : RepositoryBase(da
 
     public Task<Item?> GetItemAsync(string id) =>
         QuerySingleAsync("SELECT * FROM Item WHERE id = $id;", MapItem, ("$id", id));
+
+    /// <summary>When the item was created (UTC epoch ms); null when unknown or not found.</summary>
+    public Task<long?> GetCreatedAtAsync(string id) => GetCreatedAtAsync("Item", id);
 
     /// <summary>The names of the item's parents, top first, joined by " › "; empty for a top-level item.</summary>
     public Task<string> GetParentPathAsync(Item item) =>

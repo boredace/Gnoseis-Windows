@@ -8,6 +8,6 @@
     <!-- The fields of an organization, category or item inside the shared edit page -->
     <StackPanel Margin="0,16,0,0" Spacing="16">
         <controls:FormTextBox x:Name="NameBox" Field="{x:Bind ViewModel.Name}" IsRequired="True" />
-        <controls:FormTextBox Field="{x:Bind ViewModel.Description}" Kind="Multiline" />
+        <controls:FormTextBox x:Name="CommentsBox" Field="{x:Bind ViewModel.Description}" Kind="Multiline" />
     </StackPanel>
 </UserControl>

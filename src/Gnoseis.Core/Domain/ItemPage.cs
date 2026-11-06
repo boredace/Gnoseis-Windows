@@ -51,20 +51,5 @@ public static class ItemPage
     /// <summary>
     /// Copy item details: the name, then an empty line and the comments when there are any.
     /// </summary>
-    public static string CopyText(Item item)
-    {
-        var lines = new List<string>();
-        var name = item.ItemName?.Trim() ?? "";
-        if (name.Length > 0)
-        {
-            lines.Add(name);
-        }
-        var comments = item.Comments?.Trim();
-        if (!string.IsNullOrWhiteSpace(comments))
-        {
-            lines.Add("");
-            lines.Add(comments);
-        }
-        return string.Join(Environment.NewLine, lines);
-    }
+    public static string CopyText(Item item) => RecordHistoryPage.CopyText(item.ItemName, item.Comments);
 }

@@ -92,53 +92,113 @@ public class OrganizationPageTests : IDisposable
             OrganizationPage.SideTypes);
     }
 
-    // ---------------------------------------------------------------- People order
+    // ---------------------------------------------------------------- People
+
+    private static HistoryNote NoteWith(string id, DateOnly day, params string[] linkedIds) => new()
+    {
+        Id = id,
+        Title = id,
+        CreateDate = EpochTime.UtcMidnight(day),
+        CreateDateTime = EpochTime.UtcMidnight(day),
+        Links = linkedIds.Select(l => new LinkedRecordSummary { Id = l, Type = RecordType.Contact, Name = l }).ToList(),
+    };
+
+    private static PersonSummary Person(string id, string sortKey, int count, DateOnly? latest) =>
+        new(id, id, sortKey, "", null, null, count, latest);
+
+    [Fact]
+    public void People_count_shared_notes_and_the_latest_note_day()
+    {
+        var emma = new Contact { Id = "c1", NameFirst = "Emma", NameLast = "van Leeuwen", JobTitle = " Owner " };
+        var daan = new Contact { Id = "c2", NameFirst = "Daan", NameLast = "Bakker" };
+        var history = new[]
+        {
+            NoteWith("n1", new DateOnly(2026, 10, 15), "c1"),
+            NoteWith("n2", new DateOnly(2026, 9, 1), "c1", "c2"),
+            NoteWith("n3", new DateOnly(2026, 11, 2)),
+        };
+
+        var people = OrganizationPage.People([emma, daan], history);
+
+        Assert.Equal(["c1", "c2"], people.Select(p => p.Id));
+        Assert.Equal((2, new DateOnly(2026, 10, 15)), (people[0].SharedNoteCount, people[0].LatestSharedNoteDay));
+        Assert.Equal((1, new DateOnly(2026, 9, 1)), (people[1].SharedNoteCount, people[1].LatestSharedNoteDay));
+        Assert.Equal("Emma van Leeuwen", people[0].Name);
+        Assert.Equal("Owner", people[0].JobTitle);
+    }
+
+    [Fact]
+    public void People_phone_is_the_main_number_else_the_mobile_and_email_the_first_address()
+    {
+        var withMain = new Contact { Id = "c1", NameLast = "A", PhoneMain = "030 1", PhoneMobile = "06 1", EmailWork = "a@example.org" };
+        var mobileOnly = new Contact { Id = "c2", NameLast = "B", PhoneMobile = "06 2" };
+        var none = new Contact { Id = "c3", NameLast = "C" };
+
+        var people = OrganizationPage.People([withMain, mobileOnly, none], []).ToDictionary(p => p.Id);
+
+        Assert.Equal("030 1", people["c1"].Phone?.Value);
+        Assert.Equal("a@example.org", people["c1"].Email?.Value);
+        Assert.Equal(ContactChipKind.Mobile, people["c2"].Phone?.Kind);
+        Assert.Null(people["c2"].Email);
+        Assert.True(people["c3"].HasNoWayToReach);
+        Assert.False(people["c1"].HasNoWayToReach);
+    }
 
     [Fact]
     public void People_order_latest_shared_note_first_then_by_name()
     {
         var people = new[]
         {
-            new PersonSummary("c3", "Anna Berg", "Berg\u0001Anna", "", "", "", 0, null),
-            new PersonSummary("c1", "Emma van Leeuwen", "van Leeuwen\u0001Emma", "", "", "", 5, new DateOnly(2026, 10, 15)),
-            new PersonSummary("c2", "Daan Bakker", "Bakker\u0001Daan", "", "", "", 3, new DateOnly(2026, 11, 1)),
+            Person("c3", "Berg\u0001Anna", 0, null),
+            Person("c1", "van Leeuwen\u0001Emma", 5, new DateOnly(2026, 10, 15)),
+            Person("c2", "Bakker\u0001Daan", 3, new DateOnly(2026, 11, 1)),
+            Person("c4", "Aalders\u0001Bo", 0, null),
         };
 
-        var ordered = OrganizationPage.PeopleOrder(people);
-
-        Assert.Equal(["c2", "c1", "c3"], ordered.Select(p => p.Id));
+        Assert.Equal(["c2", "c1", "c4", "c3"], OrganizationPage.PeopleOrder(people).Select(p => p.Id));
     }
 
     [Fact]
-    public void People_with_no_shared_notes_sorted_by_name_after_those_with_notes()
+    public void Notes_line_counts_and_names_the_latest_day()
     {
-        var people = new[]
-        {
-            new PersonSummary("c1", "Zara", "Zara", "", "", "", 2, new DateOnly(2026, 5, 1)),
-            new PersonSummary("c2", "Alice", "Alice", "", "", "", 0, null),
-            new PersonSummary("c3", "Bob", "Bob", "", "", "", 0, null),
-        };
+        var culture = System.Globalization.CultureInfo.GetCultureInfo("en-GB");
+        Assert.Equal("15 notes · last 15 Oct 2026", OrganizationPage.NotesLine(Person("c1", "", 15, new DateOnly(2026, 10, 15)), culture));
+        Assert.Equal("1 note · last 3 Jan 2025", OrganizationPage.NotesLine(Person("c1", "", 1, new DateOnly(2025, 1, 3)), culture));
+        Assert.Equal("no notes yet", OrganizationPage.NotesLine(Person("c1", "", 0, null), culture));
+    }
 
-        var ordered = OrganizationPage.PeopleOrder(people);
-
-        Assert.Equal(["c1", "c2", "c3"], ordered.Select(p => p.Id));
+    [Fact]
+    public void Shown_people_by_band()
+    {
+        Assert.Equal(6, OrganizationPage.ShownPeopleCount(RecordPageBand.L));
+        Assert.Equal(8, OrganizationPage.ShownPeopleCount(RecordPageBand.XL));
+        Assert.Equal(10, OrganizationPage.ShownPeopleCount(RecordPageBand.XXL));
+        Assert.Equal(5, OrganizationPage.ShownPeopleCount(RecordPageBand.M));
     }
 
     // ---------------------------------------------------------------- Person filter
 
     [Fact]
-    public void Person_filter_returns_notes_linked_to_both_org_and_person()
+    public void Person_filter_keeps_the_notes_linked_to_the_person()
     {
-        var note1 = new HistoryNote { Id = "n1", Title = "Call", Links = [new LinkedRecordSummary { Id = "c1", Type = RecordType.Contact, Name = "Emma" }] };
-        var note2 = new HistoryNote { Id = "n2", Title = "Meeting", Links = [new LinkedRecordSummary { Id = "c2", Type = RecordType.Contact, Name = "Daan" }] };
-        var note3 = new HistoryNote { Id = "n3", Title = "Email", Links = [new LinkedRecordSummary { Id = "c1", Type = RecordType.Contact, Name = "Emma" }, new LinkedRecordSummary { Id = "c2", Type = RecordType.Contact, Name = "Daan" }] };
+        var notes = new[]
+        {
+            NoteWith("n1", new DateOnly(2026, 1, 1), "c1"),
+            NoteWith("n2", new DateOnly(2026, 1, 2), "c2"),
+            NoteWith("n3", new DateOnly(2026, 1, 3), "c1", "c2"),
+        };
 
-        var person = new PersonSummary("c1", "Emma", "Emma", "", "", "", 2, new DateOnly(2026, 10, 1));
+        Assert.Equal(["n1", "n3"], OrganizationPage.PeopleFilter(notes, "c1").Select(n => n.Id));
+        Assert.Empty(OrganizationPage.PeopleFilter(notes, "c9"));
+    }
 
-        var filtered = OrganizationPage.PeopleFilter([note1, note2, note3], person);
-
-        Assert.Equal(2, filtered.Count);
-        Assert.Equal(new[] { "n1", "n3" }, filtered.Select(n => n.Id));
+    [Fact]
+    public void History_count_while_a_person_is_picked()
+    {
+        Assert.Equal("15 of 64 notes", OrganizationPage.HistoryCount(15, 64, personPicked: true));
+        Assert.Equal("64 notes", OrganizationPage.HistoryCount(64, 64, personPicked: false));
+        Assert.Equal("1 note", OrganizationPage.HistoryCount(1, 1, personPicked: false));
+        Assert.Equal("nothing yet", OrganizationPage.HistoryCount(0, 0, personPicked: false));
     }
 
     // ---------------------------------------------------------------- Not-linked contacts
@@ -147,74 +207,50 @@ public class OrganizationPageTests : IDisposable
     public async Task Not_linked_contacts_match_company_trimmed_case_insensitive_runs_of_spaces()
     {
         var org = await _data.Organizations.AddOrganizationAsync(new Organization { OrganizationName = "  Ruby   Eye Clinic  " });
-        var c1 = await _data.Contacts.AddContactAsync(new Contact { NameFirst = "Emma", NameLast = "van Leeuwen", Company = "ruby   EYE clinic " });
+        var c1 = await _data.Contacts.AddContactAsync(new Contact { NameFirst = "Emma", NameLast = "van Leeuwen", Company = "ruby   EYE clinic ", JobTitle = "Owner" });
         var c2 = await _data.Contacts.AddContactAsync(new Contact { NameFirst = "Daan", NameLast = "Bakker", Company = "Ruby Eye Clinic" });
+        await _data.Contacts.AddContactAsync(new Contact { NameFirst = "Iris", NameLast = "Smit", Company = "Ruby Eye Clinic Network" });
+        await _data.Contacts.AddContactAsync(new Contact { NameFirst = "Bas", NameLast = "Vos", Company = "Ruby Clinic" });
 
-        var linked = new List<PersonSummary> { new(c2.Id, "Daan Bakker", "Bakker\u0001Daan", "", "", "", 0, null) };
-
-        var allContacts = await _data.Contacts.GetContactsAsync();
-
-        var (shown, total) = OrganizationPage.NotLinkedContacts(org, linked, allContacts);
+        var candidates = await _data.Contacts.GetContactsByCompanyAsync(org.OrganizationName);
+        var (shown, total) = OrganizationPage.NotLinkedContacts(org, [c2.Id], candidates);
 
         Assert.Equal(1, total);
-        Assert.Single(shown);
-        Assert.Equal(c1.Id, shown[0].Id);
+        Assert.Equal(c1.Id, Assert.Single(shown).Id);
+        Assert.Equal("Owner", shown[0].JobTitle);
+        Assert.Equal("Emma van Leeuwen", shown[0].Name);
     }
 
     [Fact]
-    public async Task Not_linked_contacts_at_most_three_plus_count()
+    public async Task Company_query_finds_every_candidate_and_escapes_like_characters()
     {
-        var org = await _data.Organizations.AddOrganizationAsync(new Organization { OrganizationName = "Test Corp" });
-        var linked = new List<PersonSummary>();
+        await _data.Contacts.AddContactAsync(new Contact { NameLast = "A", Company = "100% Fresh" });
+        await _data.Contacts.AddContactAsync(new Contact { NameLast = "B", Company = "100 Fresh" });
 
-        for (var i = 0; i < 7; i++)
-        {
-            await _data.Contacts.AddContactAsync(new Contact
-            {
-                NameFirst = $"First{i}", NameLast = $"Last{i}", Company = "Test Corp",
-            });
-        }
+        var candidates = await _data.Contacts.GetContactsByCompanyAsync("100%   fresh");
 
-        var allContacts = await _data.Contacts.GetContactsAsync();
+        Assert.Equal(["A"], candidates.Select(c => c.NameLast));
+        Assert.Empty(await _data.Contacts.GetContactsByCompanyAsync("   "));
+    }
 
-        var (shown, total) = OrganizationPage.NotLinkedContacts(org, linked, allContacts);
+    [Fact]
+    public void Not_linked_contacts_at_most_three_by_name_plus_count()
+    {
+        var org = new Organization { OrganizationName = "Test Corp" };
+        var contacts = Enumerable.Range(0, 7).Select(i => new Contact { Id = $"c{i}", NameFirst = "F", NameLast = $"Last{6 - i}", Company = "Test Corp" }).ToList();
+
+        var (shown, total) = OrganizationPage.NotLinkedContacts(org, [], contacts);
 
         Assert.Equal(7, total);
-        Assert.Equal(3, shown.Count);
+        Assert.Equal(["c6", "c5", "c4"], shown.Select(c => c.Id));
     }
 
     [Fact]
-    public async Task Not_linked_contacts_leaves_out_already_linked()
+    public void Not_linked_contacts_empty_when_no_match_or_no_name()
     {
-        var org = await _data.Organizations.AddOrganizationAsync(new Organization { OrganizationName = "Test Corp" });
-        var c1 = await _data.Contacts.AddContactAsync(new Contact { NameFirst = "Emma", NameLast = "van Leeuwen", Company = "Test Corp" });
-        var c2 = await _data.Contacts.AddContactAsync(new Contact { NameFirst = "Daan", NameLast = "Bakker", Company = "Test Corp" });
+        var contacts = new[] { new Contact { Id = "c1", NameLast = "A", Company = "Other Corp" }, new Contact { Id = "c2", NameLast = "B", Company = "" } };
 
-        var linked = new List<PersonSummary>
-        {
-            new(c1.Id, "Emma van Leeuwen", "van Leeuwen\u0001Emma", "", "", "", 0, null),
-        };
-
-        var allContacts = await _data.Contacts.GetContactsAsync();
-
-        var (shown, total) = OrganizationPage.NotLinkedContacts(org, linked, allContacts);
-
-        Assert.Equal(1, total);
-        Assert.Single(shown);
-        Assert.Equal(c2.Id, shown[0].Id);
-    }
-
-    [Fact]
-    public async Task Not_linked_contacts_empty_when_no_match()
-    {
-        var org = await _data.Organizations.AddOrganizationAsync(new Organization { OrganizationName = "Test Corp" });
-        await _data.Contacts.AddContactAsync(new Contact { NameFirst = "Emma", NameLast = "van Leeuwen", Company = "Other Corp" });
-
-        var allContacts = await _data.Contacts.GetContactsAsync();
-
-        var (shown, total) = OrganizationPage.NotLinkedContacts(org, [], allContacts);
-
-        Assert.Equal(0, total);
-        Assert.Empty(shown);
+        Assert.Equal(0, OrganizationPage.NotLinkedContacts(new Organization { OrganizationName = "Test Corp" }, [], contacts).TotalCount);
+        Assert.Equal(0, OrganizationPage.NotLinkedContacts(new Organization { OrganizationName = " " }, [], contacts).TotalCount);
     }
 }

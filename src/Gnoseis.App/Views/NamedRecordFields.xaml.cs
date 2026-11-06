@@ -19,9 +19,15 @@ public sealed partial class NamedRecordFields : UserControl, IEditFields
         InitializeComponent();
     }
 
+    /// <summary>The edit request's focus field that puts the cursor in the comments.</summary>
+    public const string CommentsField = "Comments";
+
     public NamedRecordEditViewModel ViewModel { get; }
 
     public void FocusFirst() => NameBox.FocusText();
 
     public void FocusPrefilled() => NameBox.FocusText(caretAtEnd: true);
+
+    /// <summary>Puts the cursor at the end of the comments.</summary>
+    public void FocusComments() => CommentsBox.FocusText(caretAtEnd: true);
 }

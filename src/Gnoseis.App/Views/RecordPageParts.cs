@@ -171,12 +171,15 @@ internal sealed class SideColumn(FrameworkElement owner, Func<IReadOnlyList<Reco
     // Sections shown in full ("Show all"), kept while the page is open.
     private readonly HashSet<RecordType> _expanded = [];
 
-    /// <summary>Lays the sections out in one column, or in two (balancing their heights) in XXL.</summary>
-    public static void Flow(Grid panel, IReadOnlyList<FrameworkElement> sections, RecordPageBand band)
+    /// <summary>
+    /// Lays the sections out in one column, or in two (balancing their heights) in XXL, or in
+    /// <paramref name="columnCount"/> columns when it is given.
+    /// </summary>
+    public static void Flow(Grid panel, IReadOnlyList<FrameworkElement> sections, RecordPageBand band, int? columnCount = null)
     {
         panel.Children.Clear();
         panel.ColumnDefinitions.Clear();
-        var columns = band == RecordPageBand.XXL ? 2 : 1;
+        var columns = columnCount ?? (band == RecordPageBand.XXL ? 2 : 1);
         for (var i = 0; i < columns; i++)
         {
             panel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -317,7 +320,8 @@ internal sealed class SideColumn(FrameworkElement owner, Func<IReadOnlyList<Reco
         return grid;
     }
 
-    private static void AddToHeading(Grid heading, UIElement element) => ((StackPanel)heading.Children[1]).Children.Add(element);
+    /// <summary>Adds a command (Show all, +) to the right of a heading made by <see cref="Heading"/>.</summary>
+    public static void AddToHeading(Grid heading, UIElement element) => ((StackPanel)heading.Children[1]).Children.Add(element);
 
     /// <summary>
     /// A linked record: a contact's picture, "First Last" and job · company; a note's tile, title (or
