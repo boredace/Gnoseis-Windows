@@ -533,6 +533,8 @@ public sealed partial class ItemPage : Page, IRecordPage, IConfirmLeave
 
     private void CompactName_Click(object sender, RoutedEventArgs e) => ScrollToTop();
 
+    private void ScrollToTop() => MainScroller.ChangeView(null, 0, null, disableAnimation: false);
+
     /// <summary>Home and Ctrl+Home, outside a text box, scroll smoothly to the top (the history list doesn't take them).</summary>
     private void Page_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
