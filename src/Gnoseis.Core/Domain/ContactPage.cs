@@ -311,10 +311,13 @@ public sealed record HistoryNote
     public IReadOnlyList<LinkedRecordSummary> Links { get; init; } = [];
 }
 
-/// <summary>Month header threshold, order, rows, filter and year chips of the contact's history.</summary>
+/// <summary>Filter and month header thresholds, order, rows, filter and year chips of the contact's history.</summary>
 public static class ContactHistory
 {
-    /// <summary>Month headers, the filter and year chips from this many notes on.</summary>
+    /// <summary>The filter box from this many notes on (more than 5).</summary>
+    public const int FilterThreshold = 6;
+
+    /// <summary>Month headers and year chips from this many notes on.</summary>
     public const int GroupingThreshold = 13;
 
     /// <summary>Notes shown at first, and loaded by each "Show older".</summary>
@@ -334,7 +337,10 @@ public static class ContactHistory
             .ThenBy(n => n.Id, StringComparer.Ordinal)
             .ToList();
 
-    /// <summary>True from 13 notes: month headers, the filter box and (over more than one year) year chips.</summary>
+    /// <summary>True from 6 notes (more than 5): the filter box.</summary>
+    public static bool ShowsFilter(int noteCount) => noteCount >= FilterThreshold;
+
+    /// <summary>True from 13 notes: month headers and (over more than one year) year chips.</summary>
     public static bool IsGrouped(int noteCount) => noteCount >= GroupingThreshold;
 
     /// <summary>The note's day (its createDate, read in UTC, as the note list shows it).</summary>

@@ -291,7 +291,7 @@
                                 Style="{StaticResource CaptionTextBlockStyle}" />
                         </Grid>
 
-                        <!-- More than 12 notes: a filter, and year chips that jump to a year -->
+                        <!-- More than 5 notes: a filter; more than 12 over more than one year: year chips that jump to a year -->
                         <Grid x:Name="FilterRow" ColumnSpacing="12" Visibility="Collapsed">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" MinWidth="160" />
