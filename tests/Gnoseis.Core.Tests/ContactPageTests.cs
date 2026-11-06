@@ -264,6 +264,16 @@ public class ContactPageTests : IDisposable
     }
 
     [Fact]
+    public void Filter_from_6_notes()
+    {
+        Assert.False(ContactHistory.ShowsFilter(0));
+        Assert.False(ContactHistory.ShowsFilter(5));
+        Assert.True(ContactHistory.ShowsFilter(6));
+        Assert.True(ContactHistory.ShowsFilter(12));
+        Assert.True(ContactHistory.ShowsFilter(13));
+    }
+
+    [Fact]
     public void Month_headers_from_13_notes()
     {
         Assert.False(ContactHistory.IsGrouped(12));
