@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Gnoseis.App.Views.ItemPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Gnoseis.App.Controls"
+    xmlns:helpers="using:Gnoseis.App.Helpers"
+    xmlns:vm="using:Gnoseis.App.ViewModels"
+    KeyDown="Page_KeyDown"
+    PreviewKeyDown="Page_PreviewKeyDown"
+    SizeChanged="Page_SizeChanged">
+
+    <Page.Resources>
+        <CollectionViewSource x:Name="HistorySource" IsSourceGrouped="True" />
+
+        <!-- A history row: the date column, the title, one line of text and the note's other links -->
+        <DataTemplate x:Key="HistoryRowTemplate" x:DataType="vm:HistoryRow">
+            <Grid
+                Padding="0,10,0,10"
+                AutomationProperties.Name="{x:Bind AutomationName}"
+                Background="Transparent"
+                ColumnSpacing="12"
+                ContextRequested="HistoryRow_ContextRequested">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind DayText}" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind WeekdayText}" />
+                </StackPanel>
+                <StackPanel Grid.Column="1">
+                    <TextBlock
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="{x:Bind Title}"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="NoWrap" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource BodyTextBlockStyle}"
+                        Text="{x:Bind Text}"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="NoWrap"
+                        Visibility="{x:Bind HasText}" />
+                    <TextBlock
+                        Margin="0,2,0,0"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Links}"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="NoWrap"
+                        Visibility="{x:Bind HasLinks}" />
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <!-- A contact chip: a phone number or e-mail address that calls, writes or copies -->
+        <Style x:Key="ContactChipButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+            <Setter Property="Padding" Value="12,5,12,6" />
+            <Setter Property="CornerRadius" Value="15" />
+            <Setter Property="MinHeight" Value="30" />
+        </Style>
+
+        <!-- History rows: no side padding, a hairline under each -->
+        <Style x:Key="HistoryItemStyle" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="BorderBrush" Value="{ThemeResource DividerStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+    </Page.Resources>
+
+    <Grid x:Name="Root">
+        <Grid.KeyboardAccelerators>
+            <KeyboardAccelerator Key="N" Invoked="NoteAccelerator_Invoked" Modifiers="Control,Shift" />
+            <KeyboardAccelerator Key="C" Invoked="CopyAccelerator_Invoked" Modifiers="Control,Shift" />
+        </Grid.KeyboardAccelerators>
+        <!-- Header, note box and history scroll together -->
+        <ScrollViewer
+            x:Name="MainScroller"
+            HorizontalScrollMode="Disabled"
+            ViewChanged="MainScroller_ViewChanged"
+            Visibility="Collapsed">
+            <Grid x:Name="MainGrid" HorizontalAlignment="Left" RowSpacing="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Header: TypeTile, name, header line, Edit/Link/More command bar -->
+                <StackPanel x:Name="HeaderBlock" Spacing="14">
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <controls:TypeTile
+                            x:Name="TypeTile"
+                            Width="56"
+                            Height="56"
+                            AutomationProperties.AccessibilityView="Raw"
+                            Style="{StaticResource ItemTileStyle}" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock
+                                x:Name="NameText"
+                                AutomationProperties.HeadingLevel="Level1"
+                                IsTextSelectionEnabled="True"
+                                MaxLines="2"
+                                Style="{StaticResource SubtitleTextBlockStyle}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="Wrap" />
+                            <StackPanel x:Name="HeaderLinePanel" Orientation="Horizontal" Spacing="8" />
+                        </StackPanel>
+                        <CommandBar
+                            x:Name="Commands"
+                            Grid.Column="2"
+                            VerticalAlignment="Top"
+                            Background="Transparent"
+                            DefaultLabelPosition="Right"
+                            OverflowButtonVisibility="Collapsed">
+                            <AppBarButton x:Name="EditButton" Click="Edit_Click" Label="Edit" ToolTipService.ToolTip="Edit (Ctrl+E)">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE70F;" />
+                                </AppBarButton.Icon>
+                                <AppBarButton.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="E" Modifiers="Control" />
+                                </AppBarButton.KeyboardAccelerators>
+                            </AppBarButton>
+                            <AppBarButton x:Name="LinkButton" Click="Link_Click" Label="Link" ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE71B;" />
+                                </AppBarButton.Icon>
+                                <AppBarButton.KeyboardAccelerators>
+                                    <KeyboardAccelerator Key="L" Modifiers="Control" />
+                                </AppBarButton.KeyboardAccelerators>
+                            </AppBarButton>
+                            <AppBarButton
+                                x:Name="MoreButton"
+                                AutomationProperties.Name="More"
+                                LabelPosition="Collapsed"
+                                ToolTipService.ToolTip="More">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE712;" />
+                                </AppBarButton.Icon>
+                                <AppBarButton.Flyout>
+                                    <MenuFlyout x:Name="MoreMenu" Opening="MoreMenu_Opening" Placement="BottomEdgeAlignedRight" />
+                                </AppBarButton.Flyout>
+                            </AppBarButton>
+                        </CommandBar>
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel x:Name="BodyPanel" Grid.Row="1" HorizontalAlignment="Left" Spacing="16">
+                    <!-- Under 860 px: History, Linked records, About -->
+                    <SelectorBar x:Name="TabBar" Margin="-8,-8,0,0" SelectionChanged="TabBar_SelectionChanged" Visibility="Collapsed" />
+
+                    <!-- Note box: a note about the item without leaving the page -->
+                    <Border
+                        x:Name="NoteBox"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource OverlayCornerRadius}">
+                        <StackPanel Spacing="8">
+                            <TextBox
+                                x:Name="NoteTitleBox"
+                                AutomationProperties.Name="Note title"
+                                MaxLength="60"
+                                PlaceholderText="Title (optional)"
+                                PreviewKeyDown="NoteBox_PreviewKeyDown"
+                                TextChanged="NoteBox_TextChanged"
+                                Visibility="Collapsed" />
+                            <Grid>
+                                <TextBox
+                                    x:Name="NoteTextBox"
+                                    AcceptsReturn="True"
+                                    GotFocus="NoteTextBox_GotFocus"
+                                    PreviewKeyDown="NoteBox_PreviewKeyDown"
+                                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                    TextChanged="NoteBox_TextChanged"
+                                    TextWrapping="Wrap" />
+                                <Border
+                                    x:Name="ShortcutHint"
+                                    Margin="0,0,10,0"
+                                    Padding="6,1,6,2"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    IsHitTestVisible="False">
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="Ctrl+Shift+N" />
+                                </Border>
+                            </Grid>
+                            <StackPanel x:Name="NoteBoxCommands" Spacing="6" Visibility="Collapsed">
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <controls:WrapPanel VerticalAlignment="Center">
+                                        <Button x:Name="NoteDayButton" ToolTipService.ToolTip="Day and time of the note">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <FontIcon FontSize="14" Glyph="&#xE787;" />
+                                                <TextBlock x:Name="NoteDayText" />
+                                            </StackPanel>
+                                            <Button.Flyout>
+                                                <Flyout x:Name="NoteDayFlyout" Opening="NoteDayFlyout_Opening" Placement="BottomEdgeAlignedLeft">
+                                                    <StackPanel Spacing="12">
+                                                        <CalendarDatePicker
+                                                            x:Name="NoteDatePicker"
+                                                            DateChanged="NoteDatePicker_DateChanged"
+                                                            Header="Day"
+                                                            IsTodayHighlighted="True" />
+                                                        <TimePicker
+                                                            x:Name="NoteTimePicker"
+                                                            ClockIdentifier="24HourClock"
+                                                            Header="Time"
+                                                            TimeChanged="NoteTimePicker_TimeChanged" />
+                                                    </StackPanel>
+                                                </Flyout>
+                                            </Button.Flyout>
+                                        </Button>
+                                        <Button x:Name="NoteTitleButton" Click="NoteTitleButton_Click" ToolTipService.ToolTip="Add a title">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <FontIcon FontSize="14" Glyph="&#xE8D2;" />
+                                                <TextBlock Text="Title" />
+                                            </StackPanel>
+                                        </Button>
+                                        <HyperlinkButton Click="OpenFullEditor_Click" Content="Open full editor" />
+                                    </controls:WrapPanel>
+                                    <StackPanel
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal"
+                                        Spacing="8">
+                                        <Button Click="NoteCancel_Click" Content="Cancel" />
+                                        <Button
+                                            x:Name="NoteSaveButton"
+                                            AutomationProperties.Name="Save note"
+                                            Click="NoteSave_Click"
+                                            IsEnabled="False"
+                                            Style="{StaticResource AccentButtonStyle}"
+                                            ToolTipService.ToolTip="Save (Ctrl+Enter)">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="Save" />
+                                                <TextBlock
+                                                    VerticalAlignment="Center"
+                                                    Opacity="0.8"
+                                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                                    Text="Ctrl+Enter" />
+                                            </StackPanel>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Glyph="{x:Bind helpers:Glyphs.Link}" />
+                                    <TextBlock
+                                        x:Name="WillLinkText"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel x:Name="HistoryPanel" Spacing="8">
+                        <Grid>
+                            <TextBlock
+                                AutomationProperties.HeadingLevel="Level2"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="History" />
+                            <TextBlock
+                                x:Name="HistoryCountText"
+                                HorizontalAlignment="Right"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}" />
+                        </Grid>
+
+                        <!-- More than 5 notes: a filter; more than 12 over more than one year: year chips that jump to a year -->
+                        <Grid x:Name="FilterRow" ColumnSpacing="12" Visibility="Collapsed">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" MinWidth="160" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <AutoSuggestBox
+                                x:Name="FilterBox"
+                                AutomationProperties.Name="Filter history"
+                                PlaceholderText="Filter history"
+                                QueryIcon="Find"
+                                TextChanged="FilterBox_TextChanged" />
+                            <StackPanel
+                                x:Name="YearChips"
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal"
+                                Spacing="6" />
+                        </Grid>
+                        <TextBlock
+                            x:Name="NoMatchText"
+                            Margin="0,8,0,0"
+                            Style="{StaticResource SecondaryTextStyle}"
+                            Text="No notes match"
+                            Visibility="Collapsed" />
+
+                        <ListView
+                            x:Name="HistoryList"
+                            Margin="-8,0,0,0"
+                            AutomationProperties.Name="History"
+                            DoubleTapped="HistoryList_DoubleTapped"
+                            IsItemClickEnabled="True"
+                            ItemClick="HistoryList_ItemClick"
+                            ItemContainerStyle="{StaticResource HistoryItemStyle}"
+                            KeyDown="HistoryList_KeyDown"
+                            SelectionChanged="HistoryList_SelectionChanged"
+                            ItemTemplate="{StaticResource HistoryRowTemplate}"
+                            ScrollViewer.VerticalScrollMode="Disabled"
+                            ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                            SelectionMode="None">
+                            <ListView.GroupStyle>
+                                <GroupStyle HidesIfEmpty="True">
+                                    <GroupStyle.HeaderContainerStyle>
+                                        <Style TargetType="ListViewHeaderItem">
+                                            <Setter Property="Padding" Value="8,16,0,0" />
+                                            <Setter Property="Margin" Value="0" />
+                                            <Setter Property="MinHeight" Value="0" />
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                        </Style>
+                                    </GroupStyle.HeaderContainerStyle>
+                                    <GroupStyle.HeaderTemplate>
+                                        <DataTemplate x:DataType="vm:HistoryMonth">
+                                            <TextBlock
+                                                AutomationProperties.HeadingLevel="Level3"
+                                                Style="{StaticResource NoteGroupHeaderTextStyle}"
+                                                Text="{x:Bind Header}" />
+                                        </DataTemplate>
+                                    </GroupStyle.HeaderTemplate>
+                                </GroupStyle>
+                            </ListView.GroupStyle>
+                        </ListView>
+                        <Button
+                            x:Name="ShowOlderButton"
+                            Margin="0,4,0,0"
+                            Click="ShowOlder_Click"
+                            Visibility="Collapsed" />
+
+                        <!-- No notes yet -->
+                        <StackPanel x:Name="EmptyHistory" Spacing="8" Visibility="Collapsed">
+                            <Grid>
+                                <Rectangle
+                                    RadiusX="8"
+                                    RadiusY="8"
+                                    Stroke="{ThemeResource ControlStrongStrokeColorDefaultBrush}"
+                                    StrokeDashArray="4,3"
+                                    StrokeThickness="1" />
+                                <StackPanel Padding="20,16" Spacing="4">
+                                    <TextBlock x:Name="EmptyHistoryTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock x:Name="EmptyHistoryText" Style="{StaticResource SecondaryTextStyle}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Under 860 px: the side column's sections, and the comments, as tabs -->
+                    <StackPanel x:Name="TabLinkedPanel" Spacing="24" Visibility="Collapsed" />
+                    <TextBlock
+                        x:Name="TabAboutText"
+                        IsTextSelectionEnabled="True"
+                        LineHeight="22"
+                        Style="{StaticResource BodyTextBlockStyle}"
+                        TextWrapping="Wrap"
+                        Visibility="Collapsed" />
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+
+        <!-- Side column: stays in place while the history scrolls -->
+        <ScrollViewer
+            x:Name="SideScroller"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            HorizontalScrollMode="Disabled"
+            Visibility="Collapsed">
+            <Grid x:Name="SidePanel" Padding="0,0,0,24" ColumnSpacing="32" />
+        </ScrollViewer>
+
+        <!-- Reading pane (from 1700 px, with notes): the selected note in full; stays in place while the history scrolls -->
+        <ScrollViewer
+            x:Name="ReadingScroller"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            HorizontalScrollMode="Disabled"
+            Visibility="Collapsed">
+            <Border
+                x:Name="ReadingCard"
+                VerticalAlignment="Top"
+                Margin="0,0,0,24"
+                Padding="24,16,16,20"
+                AutomationProperties.LandmarkType="Custom"
+                AutomationProperties.LocalizedLandmarkType="Reading pane"
+                AutomationProperties.Name="Selected note"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource OverlayCornerRadius}">
+                <StackPanel Spacing="12">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            x:Name="ReadingCaptionText"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <AppBarButton
+                                Width="40"
+                                AutomationProperties.Name="Edit note"
+                                Click="ReadingEdit_Click"
+                                LabelPosition="Collapsed"
+                                ToolTipService.ToolTip="Edit note">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE70F;" />
+                                </AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarButton
+                                Width="40"
+                                AutomationProperties.Name="Open note"
+                                Click="ReadingOpen_Click"
+                                LabelPosition="Collapsed"
+                                ToolTipService.ToolTip="Open note (Enter)">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE8A7;" />
+                                </AppBarButton.Icon>
+                            </AppBarButton>
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Margin="0,0,8,0" Spacing="12">
+                        <TextBlock
+                            x:Name="ReadingTitle"
+                            AutomationProperties.HeadingLevel="Level2"
+                            IsTextSelectionEnabled="True"
+                            Style="{StaticResource SubtitleTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <!-- Body text, line height about 1.6, at most about 75 characters a line -->
+                        <TextBlock
+                            x:Name="ReadingText"
+                            MaxWidth="600"
+                            HorizontalAlignment="Left"
+                            IsTextSelectionEnabled="True"
+                            LineHeight="22"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                        <controls:WrapPanel
+                            x:Name="ReadingLinks"
+                            AutomationProperties.Name="Linked to"
+                            HorizontalSpacing="8"
+                            VerticalSpacing="8" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+
+        <!-- Compact header: once the full header has scrolled out of view -->
+        <Grid
+            x:Name="CompactHeader"
+            VerticalAlignment="Top"
+            Background="{ThemeResource SolidBackgroundFillColorTertiaryBrush}"
+            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+            BorderThickness="0,0,0,1"
+            ColumnSpacing="12"
+            Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Button
+                x:Name="CompactNameButton"
+                Padding="4"
+                Background="Transparent"
+                BorderThickness="0"
+                Click="CompactName_Click"
+                ToolTipService.ToolTip="Back to the top (Home)">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <controls:TypeTile
+                        x:Name="CompactTypeTile"
+                        Width="32"
+                        Height="32"
+                        AutomationProperties.AccessibilityView="Raw"
+                        Style="{StaticResource ItemTileStyle}" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock
+                            x:Name="CompactNameText"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            x:Name="CompactLineText"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </StackPanel>
+            </Button>
+            <StackPanel
+                x:Name="CompactYearChips"
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="6" />
+            <StackPanel Grid.Column="3" VerticalAlignment="Center" Orientation="Horizontal">
+                <AppBarButton
+                    Width="40"
+                    AutomationProperties.Name="Write a note"
+                    Click="CompactNote_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="Write a note (Ctrl+Shift+N)">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE70B;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton
+                    Width="40"
+                    AutomationProperties.Name="Edit"
+                    Click="Edit_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="Edit (Ctrl+E)">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE70F;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton
+                    Width="40"
+                    AutomationProperties.Name="Link"
+                    Click="Link_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE71B;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+                <AppBarButton
+                    x:Name="CompactMoreButton"
+                    Width="40"
+                    AutomationProperties.Name="More"
+                    Click="CompactMore_Click"
+                    LabelPosition="Collapsed"
+                    ToolTipService.ToolTip="More">
+                    <AppBarButton.Icon>
+                        <FontIcon Glyph="&#xE712;" />
+                    </AppBarButton.Icon>
+                </AppBarButton>
+            </StackPanel>
+        </Grid>
+
+        <!-- After Unlink: Undo. Stays until closed, the next unlink, or leaving the page. -->
+        <InfoBar
+            x:Name="UnlinkInfoBar"
+            MaxWidth="560"
+            Margin="16"
+            VerticalAlignment="Bottom"
+            AutomationProperties.LiveSetting="Polite"
+            Closed="UnlinkInfoBar_Closed"
+            IsClosable="True"
+            IsOpen="False"
+            Severity="Informational">
+            <InfoBar.ActionButton>
+                <Button Click="Undo_Click" Content="Undo" />
+            </InfoBar.ActionButton>
+        </InfoBar>
+
+        <!-- "Copied", next to what was copied -->
+        <TeachingTip
+            x:Name="CopiedTip"
+            IsLightDismissEnabled="True"
+            PreferredPlacement="Bottom" />
+
+        <!-- The item was deleted (e.g. while this page was in the back stack) -->
+        <StackPanel
+            x:Name="MissingState"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Spacing="12"
+            Visibility="Collapsed">
+            <FontIcon FontSize="48" Foreground="{ThemeResource TextFillColorTertiaryBrush}" Glyph="&#xE9CE;" />
+            <TextBlock HorizontalAlignment="Center" Style="{StaticResource SecondaryTextStyle}" Text="This record no longer exists." />
+        </StackPanel>
+    </Grid>
+</Page>
