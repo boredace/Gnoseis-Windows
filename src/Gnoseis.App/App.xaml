@@ -56,6 +56,12 @@
             <Style x:Key="TrailSubtitleDisabledTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
             </Style>
+            <Style x:Key="SecondaryGlyphStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Style>
+            <Style x:Key="DisabledGlyphStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorDisabledBrush}" />
+            </Style>
 
             <!--
                 Colours for parts built in code. A brush taken from Application.Resources in code

@@ -270,6 +270,45 @@
             Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
         <!-- Detail pane: the selected record, an editor, or a placeholder -->
-        <Frame x:Name="DetailFrame" Grid.Column="2" />
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!--
+                Narrow window with a trail open: the section, then the trail up to the record shown (the bar
+                folds the middle into "…"), then the records stepped back from, dimmed.
+            -->
+            <Grid
+                x:Name="TrailCrumbs"
+                Margin="16,12,16,0"
+                ColumnSpacing="4"
+                Visibility="Collapsed">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <BreadcrumbBar
+                    x:Name="TrailBreadcrumb"
+                    AutomationProperties.Name="Opened records"
+                    ItemClicked="TrailBreadcrumb_ItemClicked">
+                    <BreadcrumbBar.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TrailCrumb">
+                            <BreadcrumbBarItem AutomationProperties.Name="{x:Bind AutomationName}">
+                                <TextBlock FontWeight="{x:Bind Weight}" Text="{x:Bind Text}" />
+                            </BreadcrumbBarItem>
+                        </DataTemplate>
+                    </BreadcrumbBar.ItemTemplate>
+                </BreadcrumbBar>
+                <StackPanel
+                    x:Name="ForwardCrumbs"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal" />
+            </Grid>
+
+            <Frame x:Name="DetailFrame" Grid.Row="1" />
+        </Grid>
     </Grid>
 </Page>

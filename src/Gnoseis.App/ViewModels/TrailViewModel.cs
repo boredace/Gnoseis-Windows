@@ -65,6 +65,21 @@ public sealed class TrailRow
 }
 
 /// <summary>
+/// An item of the narrow window's breadcrumb: the section (index -1, back to the list) or a record of
+/// the trail up to the one shown, which is last and semibold.
+/// </summary>
+public sealed class TrailCrumb(string text, int index, bool isCurrent, string automationName)
+{
+    public string Text { get; } = text;
+    public int Index { get; } = index;
+    public bool IsCurrent { get; } = isCurrent;
+    public string AutomationName { get; } = automationName;
+    public Windows.UI.Text.FontWeight Weight => IsCurrent ? Microsoft.UI.Text.FontWeights.SemiBold : Microsoft.UI.Text.FontWeights.Normal;
+
+    public override string ToString() => Text;
+}
+
+/// <summary>
 /// The trail column of a section: a row per record opened from one another, with their titles loaded
 /// from the database and refreshed when data changes.
 /// </summary>
@@ -93,6 +108,17 @@ public sealed class TrailViewModel(RecordType sectionType, RecordTrail<RecordRef
     public string Hint => trail.CanGoForward
         ? "Dimmed records come back with Alt+→, until you open another link."
         : "Records you open from a record's links are added here. Alt+← steps back; from the first row, back to the list.";
+
+    /// <summary>The breadcrumb up to the record shown: the section, then the trail's records.</summary>
+    public List<TrailCrumb> Crumbs()
+    {
+        var crumbs = new List<TrailCrumb> { new(SectionTitle, -1, false, $"{SectionTitle} list") };
+        foreach (var row in Rows.Where(r => !r.IsAfterCurrent))
+        {
+            crumbs.Add(new TrailCrumb(row.Title, row.Index, row.IsCurrent, $"{row.Title}, {row.TypeName}"));
+        }
+        return crumbs;
+    }
 
     /// <summary>Raised after titles were loaded, with the records of the trail that no longer exist.</summary>
     public event EventHandler<IReadOnlyList<RecordRef>>? RecordsMissing;

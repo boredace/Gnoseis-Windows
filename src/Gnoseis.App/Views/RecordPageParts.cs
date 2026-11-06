@@ -225,6 +225,15 @@ internal static partial class RecordPageParts
         show.Click += async (_, _) => await Navigator.OpenRecordAsync(record);
         Grid.SetColumn(show, 1);
         grid.Children.Add(show);
+
+        // In a narrow window the breadcrumb above the record says the same.
+        if (Navigator.ActiveSection is { } section)
+        {
+            void Update(object? sender, EventArgs e) => grid.Visibility = section.IsNarrow ? Visibility.Collapsed : Visibility.Visible;
+            Update(null, EventArgs.Empty);
+            grid.Loaded += (_, _) => { section.NarrowChanged -= Update; section.NarrowChanged += Update; };
+            grid.Unloaded += (_, _) => section.NarrowChanged -= Update;
+        }
         return grid;
     }
 

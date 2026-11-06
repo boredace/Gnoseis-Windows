@@ -458,7 +458,64 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         {
             _updatingTrailSelection = false;
         }
+        UpdateBreadcrumb();
     }
+
+    private void UpdateBreadcrumb()
+    {
+        TrailBreadcrumb.ItemsSource = TrailView.Crumbs();
+        ForwardCrumbs.Children.Clear();
+        foreach (var row in TrailView.Rows.Where(r => r.IsAfterCurrent))
+        {
+            ForwardCrumbs.Children.Add(new FontIcon
+            {
+                Glyph = "",
+                FontSize = 10,
+                Margin = new Thickness(6, 0, 6, 0),
+                Opacity = row.RowOpacity,
+                Style = (Style)Application.Current.Resources[row.UsesDisabledText ? "DisabledGlyphStyle" : "SecondaryGlyphStyle"],
+            });
+            var button = new Button
+            {
+                Content = new TextBlock
+                {
+                    Text = row.Title,
+                    TextTrimming = TextTrimming.CharacterEllipsis,
+                    MaxWidth = 160,
+                    Style = (Style)Application.Current.Resources[row.UsesDisabledText ? "TrailSubtitleDisabledTextStyle" : "BodyTextBlockStyle"],
+                },
+                Opacity = row.RowOpacity,
+                Padding = new Thickness(4, 2, 4, 2),
+                Style = (Style)Application.Current.Resources["RowButtonStyle"],
+            };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, row.AutomationName);
+            var index = row.Index;
+            button.Click += async (_, _) => await GoToTrailRowAsync(index);
+            ForwardCrumbs.Children.Add(button);
+        }
+    }
+
+    private async void TrailBreadcrumb_ItemClicked(BreadcrumbBar sender, BreadcrumbBarItemClickedEventArgs args)
+    {
+        if (args.Item is not TrailCrumb crumb || crumb.IsCurrent)
+        {
+            return;
+        }
+        if (crumb.Index < 0)
+        {
+            await CloseTrailAsync();
+        }
+        else
+        {
+            await GoToTrailRowAsync(crumb.Index);
+        }
+    }
+
+    /// <summary>True while the section is narrower than 720 px (the list or the record, one at a time).</summary>
+    public bool IsNarrow => _isNarrow;
+
+    /// <summary>Raised when the section crosses the narrow width.</summary>
+    public event EventHandler? NarrowChanged;
 
     private void TrailView_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
@@ -578,8 +635,18 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     private void Page_SizeChanged(object sender, SizeChangedEventArgs e)
     {
+        var wasNarrow = _isNarrow;
         _isNarrow = e.NewSize.Width < NarrowWidth;
         UpdatePanes();
+        if (wasNarrow != _isNarrow)
+        {
+            if (!_isNarrow && !IsDetailShown && _selectedId != null)
+            {
+                // The list was shown alone with a record still selected (a trail closed): show it again.
+                ShowDetails(_selectedId);
+            }
+            NarrowChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void UpdatePanes()
@@ -596,6 +663,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
             ListColumn.Width = new GridLength(ActualWidth >= 1100 ? 380 : 320);
             ListPane.Visibility = _trail.IsOpen ? Visibility.Collapsed : Visibility.Visible;
             TrailPane.Visibility = _trail.IsOpen ? Visibility.Visible : Visibility.Collapsed;
+            TrailCrumbs.Visibility = Visibility.Collapsed;
             Divider.Visibility = Visibility.Visible;
             DetailFrame.Visibility = Visibility.Visible;
             DetailColumn.Width = new GridLength(1, GridUnitType.Star);
@@ -605,6 +673,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         // One pane at a time.
         TrailPane.Visibility = Visibility.Collapsed;
         var showDetail = IsDetailShown;
+        TrailCrumbs.Visibility = showDetail && _trail.IsOpen ? Visibility.Visible : Visibility.Collapsed;
         var star = new GridLength(1, GridUnitType.Star);
         ListPane.Visibility = showDetail ? Visibility.Collapsed : Visibility.Visible;
         DetailFrame.Visibility = showDetail ? Visibility.Visible : Visibility.Collapsed;

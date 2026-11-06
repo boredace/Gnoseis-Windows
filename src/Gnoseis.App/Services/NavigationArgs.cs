@@ -86,6 +86,12 @@ public interface ISectionHost
     /// </summary>
     Gnoseis.Core.Domain.RecordTrail<RecordRef> Trail { get; }
 
+    /// <summary>True while the section is narrow: the trail is then a breadcrumb above the record.</summary>
+    bool IsNarrow { get; }
+
+    /// <summary>Raised when the section crosses the narrow width.</summary>
+    event EventHandler? NarrowChanged;
+
     /// <summary>The title the trail shows for one of its records, if it's loaded.</summary>
     string? TrailTitleOf(RecordRef record);
 
