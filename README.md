@@ -229,7 +229,17 @@ switching and seeing related information at a glance.
   commands in view; Home returns to the top. **More** has **New linked**, **Copy contact details**
   (Ctrl+Shift+C) and **Delete**.
 - **Unlink** from a linked record's context menu (right-click, Shift+F10 or the menu key). There's
-  no confirmation: a message offers **Undo** until you close it or leave the page.
+  no confirmation: a message offers **Undo** until you close it or leave the page. The same menu
+  has **Open** and **Show in … list**.
+- **Linked records open beside the section**: a record opened from a record's page doesn't switch
+  sections. The list column becomes **Opened records**, the trail of records opened from one another:
+  the record picked in the list first, then each record opened from the one above it. A line above
+  the record says where it was opened from. Alt+Left (or the mouse back button) steps back along the
+  trail and, from its first record, returns to the list; Alt+Right (or the mouse forward button)
+  returns to records stepped back from, until another link is opened. A record is never in the trail
+  twice: opening one again goes to it. **Back to list** closes the trail, and **Show in … list** goes
+  to the record's own section. In a narrow window the trail is a breadcrumb above the record.
+  Search, Home and the navigation pane still open a record in its own section.
 - **Editing happens in place** in the record pane, on one edit page for every type, with Save
   (Ctrl+S) and Cancel (Esc); an existing note is edited on its own page. A record created with **New linked** shows which record it will be
   linked to. You're asked before unsaved changes are lost, including when you click another record.
@@ -246,7 +256,8 @@ switching and seeing related information at a glance.
   pane and the last section, plus the selected record in each section while the app is open.
 - **Narrow windows** show one pane at a time; Back returns from a record to the list.
 - **Keyboard**: Ctrl+1 to Ctrl+6 switch sections, Ctrl+N creates a record, Ctrl+E edits, Ctrl+L
-  links, Del deletes, Alt+Left or the mouse back button goes back. On a contact, organization or
+  links, Del deletes, Alt+Left or the mouse back button goes back, and Alt+Right or the mouse forward
+  button goes forward along the trail of opened records. On a contact, organization or
   item, Ctrl+Shift+N writes a note (on a category, in its Notes list) and Ctrl+Shift+C copies the
   record's details; on a note, Ctrl+Shift+C copies the note text. Home scrolls a record page back to
   the top. Settings lists every shortcut.
@@ -256,6 +267,7 @@ switching and seeing related information at a glance.
 |---|---|
 | Navigation drawer | Navigation pane (expanded, compact or hidden, depending on window width) |
 | Separate list and details screens | List and record side by side |
+| Opening a linked record (a new screen on the back stack) | The record opens beside the section, in a trail of opened records in the list column; Back and Forward step along it |
 | Floating "Add" button | **New** button in the list header (Ctrl+N) |
 | Expandable FAB (link existing / new linked record) | **Link** (Ctrl+L) and **New linked** menu in the record's command bar (on a contact or a note, under **More**) |
 | Contact details screen (fields, then linked records) | Contact page: phone and e-mail chips in the header, the notes as a history with a note box above it, the other linked records in a side column |

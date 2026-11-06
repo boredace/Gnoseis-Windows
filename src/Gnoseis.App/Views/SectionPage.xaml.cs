@@ -35,6 +35,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
     private int? _selectIndexAfterReload;
     private bool _isNarrow;
     private readonly RecordTrail<RecordRef> _trail = new();
+    private readonly Dictionary<RecordRef, double> _scrollOffsets = [];
 
     private bool _updatingTrailSelection;
 
@@ -71,6 +72,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         ViewModel.Activate();
         TrailView = new TrailViewModel(args.Type, _trail);
         TrailView.PropertyChanged += TrailView_PropertyChanged;
+        TrailView.RecordsMissing += TrailView_RecordsMissing;
         TrailView.Activate();
         Navigator.ActiveSection = this;
         App.Settings.LastSection = args.Type.ToString();
@@ -95,6 +97,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         ViewModel.GroupsChanged -= ViewModel_GroupsChanged;
         TrailView.Deactivate();
         TrailView.PropertyChanged -= TrailView_PropertyChanged;
+        TrailView.RecordsMissing -= TrailView_RecordsMissing;
         if (ReferenceEquals(Navigator.ActiveSection, this))
         {
             Navigator.ActiveSection = null;
@@ -230,15 +233,49 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         LastSelected[Type] = id;
         var record = new RecordRef(Type, id);
         _trail.Start(record);
+        _scrollOffsets.Clear();
         NavigateDetail(record, new EntranceNavigationTransitionInfo());
     }
 
     private void NavigateDetail(RecordRef record, NavigationTransitionInfo transition)
     {
+        // Each record in the trail is shown again where it was scrolled to.
+        if (DetailFrame.Content is IRecordPage shown && ScrollerOf(DetailFrame.Content) is { } oldScroller)
+        {
+            _scrollOffsets[shown.Record] = oldScroller.VerticalOffset;
+        }
+        var offset = _scrollOffsets.GetValueOrDefault(record);
+        if (!_trail.IsOpen)
+        {
+            _scrollOffsets.Clear();
+        }
+
         DetailFrame.Navigate(PageFor(record.Type), record, transition);
         DetailFrame.BackStack.Clear();
         UpdatePanes();
         TrailChanged?.Invoke(this, EventArgs.Empty);
+
+        if (offset > 0 && ScrollerOf(DetailFrame.Content) is { } scroller)
+        {
+            RestoreScroll(scroller, offset);
+        }
+    }
+
+    private static ScrollViewer? ScrollerOf(object? page) => (page as FrameworkElement)?.FindName("MainScroller") as ScrollViewer;
+
+    /// <summary>Scrolls a record page back to an offset once its content is tall enough (it loads after it's shown).</summary>
+    private static void RestoreScroll(ScrollViewer scroller, double offset)
+    {
+        var until = DateTime.UtcNow.AddSeconds(2);
+        void OnLayoutUpdated(object? sender, object e)
+        {
+            if (scroller.ScrollableHeight >= offset - 1 || DateTime.UtcNow > until)
+            {
+                scroller.LayoutUpdated -= OnLayoutUpdated;
+                scroller.ChangeView(null, Math.Min(offset, scroller.ScrollableHeight), null, disableAnimation: true);
+            }
+        }
+        scroller.LayoutUpdated += OnLayoutUpdated;
     }
 
     private bool IsShowing(RecordRef record) => DetailFrame.Content is IRecordPage page && page.Record == record;
@@ -325,6 +362,17 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     public void OnRecordDeleted(string id)
     {
+        if (_trail.IsOpen && _trail.First!.Id != id)
+        {
+            // A record of the trail other than the list's: only it is removed, one step back. (Not in
+            // the trail any more: it was already removed when the data change was noticed.)
+            if (_trail.Items.FirstOrDefault(r => r.Id == id) is { } deleted)
+            {
+                RemoveFromTrail(deleted);
+            }
+            return;
+        }
+
         var rows = ViewModel.VisibleRows;
         var index = rows.FindIndex(r => r.Id == id);
         LastSelected.Remove(Type);
@@ -429,6 +477,53 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
     // ---------------------------------------------------------------- Trail column
 
     public string? TrailTitleOf(RecordRef record) => TrailView?.TitleOf(record);
+
+    /// <summary>
+    /// Removes a deleted record from the trail; the others keep their order. When it was shown, the
+    /// record before it is shown instead; when one record is left, the trail closes.
+    /// </summary>
+    private void RemoveFromTrail(RecordRef record)
+    {
+        var wasShown = _trail.Current == record;
+        _trail.Remove(record);
+        _scrollOffsets.Remove(record);
+        if (!_trail.IsOpen)
+        {
+            _scrollOffsets.Clear();
+            if (_trail.First is { } first)
+            {
+                SetListSelection(first.Id);
+            }
+        }
+        if (wasShown && _trail.Current is { } current)
+        {
+            NavigateDetail(current, Slide(forward: false));
+        }
+        else
+        {
+            UpdatePanes();
+            TrailChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Records of the trail deleted elsewhere (another window, a restore, a sync).</summary>
+    private void TrailView_RecordsMissing(object? sender, IReadOnlyList<RecordRef> missing)
+    {
+        foreach (var record in missing)
+        {
+            if (!_trail.Contains(record))
+            {
+                continue;
+            }
+            if (record == _trail.First)
+            {
+                // The list's own record: the list moves on, as after any delete.
+                OnRecordDeleted(record.Id);
+                return;
+            }
+            RemoveFromTrail(record);
+        }
+    }
 
     private void RefreshTrailColumn()
     {

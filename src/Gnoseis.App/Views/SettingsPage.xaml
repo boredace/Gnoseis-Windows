@@ -151,6 +151,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+1 … Ctrl+6" />
                         <TextBlock Grid.Row="0" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Home, Notes, Contacts, Organizations, Categories, Items" />
@@ -179,7 +180,9 @@
                         <TextBlock Grid.Row="12" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Esc" />
                         <TextBlock Grid.Row="12" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Clear a category's search, or show every note again after picking a person on an organization" />
                         <TextBlock Grid.Row="13" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Alt+Left" />
-                        <TextBlock Grid.Row="13" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Back" />
+                        <TextBlock Grid.Row="13" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Back (along the trail of opened records first, then from the record to the list in a narrow window)" />
+                        <TextBlock Grid.Row="14" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Alt+Right" />
+                        <TextBlock Grid.Row="14" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Forward along the trail of opened records" />
                     </Grid>
                 </Border>
 
