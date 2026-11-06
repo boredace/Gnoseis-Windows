@@ -320,9 +320,12 @@
                             x:Name="HistoryList"
                             Margin="-8,0,0,0"
                             AutomationProperties.Name="History"
+                            DoubleTapped="HistoryList_DoubleTapped"
                             IsItemClickEnabled="True"
                             ItemClick="HistoryList_ItemClick"
                             ItemContainerStyle="{StaticResource HistoryItemStyle}"
+                            KeyDown="HistoryList_KeyDown"
+                            SelectionChanged="HistoryList_SelectionChanged"
                             ItemTemplate="{StaticResource HistoryRowTemplate}"
                             ScrollViewer.VerticalScrollMode="Disabled"
                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
@@ -397,6 +400,86 @@
             HorizontalScrollMode="Disabled"
             Visibility="Collapsed">
             <Grid x:Name="SidePanel" Padding="0,0,0,24" ColumnSpacing="32" />
+        </ScrollViewer>
+
+        <!-- Reading pane (from 1700 px, with notes): the selected note in full; stays in place while the history scrolls -->
+        <ScrollViewer
+            x:Name="ReadingScroller"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Top"
+            HorizontalScrollMode="Disabled"
+            Visibility="Collapsed">
+            <Border
+                x:Name="ReadingCard"
+                VerticalAlignment="Top"
+                Margin="0,0,0,24"
+                Padding="24,16,16,20"
+                AutomationProperties.LandmarkType="Custom"
+                AutomationProperties.LocalizedLandmarkType="Reading pane"
+                AutomationProperties.Name="Selected note"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                CornerRadius="{StaticResource OverlayCornerRadius}">
+                <StackPanel Spacing="12">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            x:Name="ReadingCaptionText"
+                            VerticalAlignment="Center"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <AppBarButton
+                                Width="40"
+                                AutomationProperties.Name="Edit note"
+                                Click="ReadingEdit_Click"
+                                LabelPosition="Collapsed"
+                                ToolTipService.ToolTip="Edit note">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE70F;" />
+                                </AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarButton
+                                Width="40"
+                                AutomationProperties.Name="Open note"
+                                Click="ReadingOpen_Click"
+                                LabelPosition="Collapsed"
+                                ToolTipService.ToolTip="Open note (Enter)">
+                                <AppBarButton.Icon>
+                                    <FontIcon Glyph="&#xE8A7;" />
+                                </AppBarButton.Icon>
+                            </AppBarButton>
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Margin="0,0,8,0" Spacing="12">
+                        <TextBlock
+                            x:Name="ReadingTitle"
+                            AutomationProperties.HeadingLevel="Level2"
+                            IsTextSelectionEnabled="True"
+                            Style="{StaticResource SubtitleTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <!-- Body text, line height about 1.6, at most about 75 characters a line -->
+                        <TextBlock
+                            x:Name="ReadingText"
+                            MaxWidth="600"
+                            HorizontalAlignment="Left"
+                            IsTextSelectionEnabled="True"
+                            LineHeight="22"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                        <controls:WrapPanel
+                            x:Name="ReadingLinks"
+                            AutomationProperties.Name="Linked to"
+                            HorizontalSpacing="8"
+                            VerticalSpacing="8" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </ScrollViewer>
 
         <!-- Compact header: once the full header has scrolled out of view -->

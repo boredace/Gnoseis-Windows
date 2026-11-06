@@ -169,28 +169,36 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             ShowTabs();
             ShowSideColumn();
         }
+        ReadingScroller.Width = Math.Max(0, _readingWidth);
+        UpdateHistoryMode();
         UpdateCompactHeader();
         PositionSideColumn();
     }
 
     /// <summary>
-    /// The side column moves up with the header, then stays below the top of the pane while the
-    /// history scrolls on.
+    /// The side column and the reading pane move up with the header, then stay below the top of
+    /// the pane while the history scrolls on.
     /// </summary>
     private void PositionSideColumn()
     {
         if (_band is not { } band || band == ContactPageBand.S || !ViewModel.IsAvailable)
         {
             SideScroller.Visibility = Visibility.Collapsed;
+            ReadingScroller.Visibility = Visibility.Collapsed;
             return;
         }
 
         var top = TopPadding + HeaderBlock.ActualHeight + MainGrid.RowSpacing - MainScroller.VerticalOffset;
         top = Math.Max(top, MinimumColumnTop);
+        var height = Math.Max(0, Root.ActualHeight - top);
         var left = _padding + _historyWidth + Gap + (_readingWidth > 0 ? _readingWidth + Gap : 0);
         SideScroller.Visibility = Visibility.Visible;
         SideScroller.Margin = new Thickness(left, top, 0, 0);
-        SideScroller.Height = Math.Max(0, Root.ActualHeight - top);
+        SideScroller.Height = height;
+
+        ReadingScroller.Visibility = HasReadingPane ? Visibility.Visible : Visibility.Collapsed;
+        ReadingScroller.Margin = new Thickness(_padding + _historyWidth + Gap, top, 0, 0);
+        ReadingScroller.Height = height;
     }
 
     /// <summary>The highest the side column goes when the header has scrolled away.</summary>
@@ -491,6 +499,8 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         HistoryList.Visibility = _rows.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
         NoMatchText.Visibility = notes.Count > 0 && matching.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
+        SelectNote();
+
         var older = matching.Count - _rows.Count;
         ShowOlderButton.Visibility = older > 0 ? Visibility.Visible : Visibility.Collapsed;
         ShowOlderButton.Content = $"Show older ({older.ToString(CultureInfo.CurrentCulture)})";
@@ -679,6 +689,164 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     {
         if (e.ClickedItem is HistoryRow row)
         {
+            await Navigator.OpenRecordAsync(row.ToRef());
+        }
+    }
+
+    // ---------------------------------------------------------------- Reading pane
+
+    // The note in the reading pane: the newest on opening, then the one selected.
+    private string? _selectedNoteId;
+    private bool _selectingNote;
+
+    private bool HasReadingPane => _readingWidth > 0;
+
+    /// <summary>
+    /// With the reading pane a click (or Up and Down) selects a note and double-click or Enter
+    /// opens it; without it a click opens the note.
+    /// </summary>
+    private void UpdateHistoryMode()
+    {
+        var reading = HasReadingPane;
+        var mode = reading ? ListViewSelectionMode.Single : ListViewSelectionMode.None;
+        if (HistoryList.SelectionMode == mode)
+        {
+            return;
+        }
+        HistoryList.SelectionMode = mode;
+        HistoryList.IsItemClickEnabled = !reading;
+        if (reading)
+        {
+            SelectNote();
+        }
+    }
+
+    /// <summary>Selects the note just saved, else the one selected before, else the newest shown, and shows it.</summary>
+    private void SelectNote()
+    {
+        if (!HasReadingPane)
+        {
+            return;
+        }
+        var id = _selectAfterLoad is { } saved && _rows.Exists(r => r.Id == saved) ? saved : _selectedNoteId;
+        _selectAfterLoad = null;
+        var row = _rows.Find(r => r.Id == id) ?? (_rows.Count > 0 ? _rows[0] : null);
+        _selectingNote = true;
+        try
+        {
+            HistoryList.SelectedItem = row;
+        }
+        finally
+        {
+            _selectingNote = false;
+        }
+
+        // Nothing shown (the filter matches none): the pane keeps the note it had, if it still exists.
+        var note = row?.Note
+            ?? ViewModel.History.FirstOrDefault(n => n.Id == _selectedNoteId)
+            ?? ViewModel.History.FirstOrDefault();
+        ShowReading(note);
+    }
+
+    private void HistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_selectingNote && HasReadingPane && HistoryList.SelectedItem is HistoryRow row)
+        {
+            ShowReading(row.Note);
+        }
+    }
+
+    private void ShowReading(HistoryNote? note)
+    {
+        _selectedNoteId = note?.Id;
+        ReadingCard.Visibility = note != null ? Visibility.Visible : Visibility.Collapsed;
+        if (note == null)
+        {
+            return;
+        }
+
+        ReadingCaptionText.Text = ContactHistory.ReadingCaption(note);
+        var title = ContactHistory.FullTitle(note);
+        ReadingTitle.Text = title;
+        AutomationProperties.SetName(ReadingCard, $"Selected note: {title}");
+
+        // Untitled: the first line is the title, the rest the text.
+        var text = note.Text.Replace("\r\n", "\n").Replace('\r', '\n').Trim('\n');
+        if (note.Title.Length == 0)
+        {
+            var newline = text.IndexOf('\n');
+            text = newline < 0 ? "" : text[(newline + 1)..].TrimStart('\n');
+        }
+        ReadingText.Text = text;
+        ReadingText.Visibility = text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        ReadingLinks.Children.Clear();
+        foreach (var link in note.Links)
+        {
+            ReadingLinks.Children.Add(CreateReadingChip(link));
+        }
+    }
+
+    /// <summary>A linked record of the note: a type-colour dot and the name; opens the record.</summary>
+    private Button CreateReadingChip(LinkedRecordSummary link)
+    {
+        var name = link.Name.Length > 0 ? link.Name : link.FirstLine.Length > 0 ? link.FirstLine : link.Type.DisplayName();
+        var dot = new Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center, Style = RecordTypeStyles.Dot(link.Type) };
+        var chip = new Button
+        {
+            Content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 8,
+                Children =
+                {
+                    dot,
+                    new TextBlock { Text = name, Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"], TextTrimming = TextTrimming.CharacterEllipsis },
+                },
+            },
+            Style = ChipStyle,
+            Padding = new Thickness(10, 4, 12, 5),
+            MinHeight = 0,
+        };
+        AutomationProperties.SetName(chip, $"{link.Type.DisplayName()}: {name}");
+        ToolTipService.SetToolTip(chip, $"Open {name}");
+        var target = new RecordRef(link.Type, link.Id);
+        chip.Click += async (_, _) => await Navigator.OpenRecordAsync(target);
+        return chip;
+    }
+
+    private async void ReadingOpen_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedNoteId is { } id)
+        {
+            await Navigator.OpenRecordAsync(new RecordRef(RecordType.Note, id));
+        }
+    }
+
+    private async void ReadingEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedNoteId is { } id)
+        {
+            await Navigator.ShowEditorAsync(new EditRequest(RecordType.Note, id));
+        }
+    }
+
+    /// <summary>With the reading pane: double-click opens the note.</summary>
+    private async void HistoryList_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (HasReadingPane && (e.OriginalSource as FrameworkElement)?.DataContext is HistoryRow row)
+        {
+            e.Handled = true;
+            await Navigator.OpenRecordAsync(row.ToRef());
+        }
+    }
+
+    /// <summary>With the reading pane: Enter opens the selected note.</summary>
+    private async void HistoryList_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (HasReadingPane && e.Key == VirtualKey.Enter && HistoryList.SelectedItem is HistoryRow row)
+        {
+            e.Handled = true;
             await Navigator.OpenRecordAsync(row.ToRef());
         }
     }
