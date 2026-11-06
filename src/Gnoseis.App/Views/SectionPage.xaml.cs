@@ -186,8 +186,13 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
     {
         _selectedId = id;
         LastSelected[Type] = id;
-        // Contacts have their own page; the other types share the record page.
-        var page = Type == RecordType.Contact ? typeof(ContactPage) : typeof(RecordDetailsPage);
+        // Contacts and notes have their own pages; the other types share the record page.
+        var page = Type switch
+        {
+            RecordType.Contact => typeof(ContactPage),
+            RecordType.Note => typeof(NotePage),
+            _ => typeof(RecordDetailsPage),
+        };
         DetailFrame.Navigate(page, new RecordRef(Type, id), new EntranceNavigationTransitionInfo());
         DetailFrame.BackStack.Clear();
         UpdatePanes();

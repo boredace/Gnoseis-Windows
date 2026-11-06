@@ -198,14 +198,6 @@
                 <!-- Details: per type -->
                 <StackPanel x:Name="DetailsPanel" Spacing="20">
 
-                    <!-- Note text: a readable column with clickable web and e-mail links -->
-                    <Border Style="{StaticResource CardStyle}" Visibility="{x:Bind ViewModel.ShowNoteText, Mode=OneWay}">
-                        <RichTextBlock
-                            x:Name="NoteText"
-                            IsTextSelectionEnabled="True"
-                            LineHeight="22" />
-                    </Border>
-
                     <!-- Comments of organizations, categories and items -->
                     <StackPanel Visibility="{x:Bind ViewModel.ShowBodyCard, Mode=OneWay}">
                         <TextBlock

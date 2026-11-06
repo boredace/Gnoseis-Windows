@@ -8,7 +8,7 @@
 
 namespace Gnoseis.App.ViewModels;
 
-/// <summary>Details of a note, organization, category or item and the records linked to it (contacts have their own page).</summary>
+/// <summary>Details of an organization, category or item and the records linked to it (contacts and notes have their own pages).</summary>
 public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
 {
     private string _title = "";
@@ -44,7 +44,7 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
 
     public bool HasSubtitle => Subtitle.Length > 0;
 
-    /// <summary>Note text or record comments.</summary>
+    /// <summary>The record's comments.</summary>
     public string Body
     {
         get => _body;
@@ -55,7 +55,6 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
                 OnPropertyChanged(nameof(HasBody));
                 OnPropertyChanged(nameof(HasNoDetails));
                 OnPropertyChanged(nameof(ShowBodyCard));
-                OnPropertyChanged(nameof(ShowNoteText));
             }
         }
     }
@@ -86,14 +85,10 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
 
     public bool HasNoLinks => IsLoaded && LinkedRecordCount == 0;
 
-    public bool IsNote => Type == RecordType.Note;
-
     /// <summary>Heading of the comments card of organizations, categories and items.</summary>
     public string BodyHeader => "Comments";
 
-    public bool ShowBodyCard => HasBody && !IsNote;
-
-    public bool ShowNoteText => HasBody && IsNote;
+    public bool ShowBodyCard => HasBody;
 
     public bool IsMissing
     {
@@ -198,17 +193,6 @@ public sealed class RecordDetailsViewModel(RecordRef record) : PageViewModel
     {
         switch (Type)
         {
-            case RecordType.Note:
-                var note = await Data.Notes.GetNoteAsync(Record.Id);
-                if (note == null)
-                {
-                    return false;
-                }
-                Title = RecordRows.NoteTitleAndPreview(note).Title;
-                Subtitle = RecordRows.NoteDayText(note);
-                Body = note.TextContents ?? "";
-                return true;
-
             case RecordType.Organization:
                 var organization = await Data.Organizations.GetOrganizationAsync(Record.Id);
                 if (organization == null)
