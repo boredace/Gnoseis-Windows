@@ -85,7 +85,7 @@
     <Grid x:Name="Root">
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="N" Invoked="NoteAccelerator_Invoked" Modifiers="Control,Shift" />
-            <KeyboardAccelerator Key="C" Invoked="CopyAccelerator_Invoked" Modifiers="Control,Shift" />
+            <KeyboardAccelerator Key="C" Invoked="CopyAccelerator_Invoked" Modifiers="Control" />
         </Grid.KeyboardAccelerators>
         <!-- Header, chips, note box and history scroll together -->
         <ScrollViewer
@@ -137,12 +137,12 @@
                                     <FontIcon Glyph="&#xE70F;" />
                                 </AppBarButton.Icon>
                             </AppBarButton>
-                            <AppBarButton x:Name="LinkButton" Click="Link_Click" Label="Link" ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                            <AppBarButton x:Name="LinkButton" Click="Link_Click" Label="Link" ToolTipService.ToolTip="Link existing records (Ctrl+K)">
                                 <AppBarButton.Icon>
                                     <FontIcon Glyph="&#xE71B;" />
                                 </AppBarButton.Icon>
                                 <AppBarButton.KeyboardAccelerators>
-                                    <KeyboardAccelerator Key="L" Modifiers="Control" />
+                                    <KeyboardAccelerator Key="K" Modifiers="Control" />
                                 </AppBarButton.KeyboardAccelerators>
                             </AppBarButton>
                             <AppBarButton
@@ -563,7 +563,7 @@
                     AutomationProperties.Name="Link"
                     Click="Link_Click"
                     LabelPosition="Collapsed"
-                    ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                    ToolTipService.ToolTip="Link existing records (Ctrl+K)">
                     <AppBarButton.Icon>
                         <FontIcon Glyph="&#xE71B;" />
                     </AppBarButton.Icon>

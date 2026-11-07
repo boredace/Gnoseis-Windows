@@ -202,6 +202,11 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
             e.Handled = true;
             await SaveEditAsync();
         }
+        else if (_editing && e.Key == VirtualKey.K && IsControlDown())
+        {
+            // Linking waits until the note is saved or the edit is cancelled.
+            e.Handled = true;
+        }
         else if (_editing && e.Key == VirtualKey.Escape)
         {
             e.Handled = true;
@@ -582,7 +587,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
                     ("Link a contact", () => LinkAsync([RecordType.Contact], null)),
                     ("Link an organization", () => LinkAsync([RecordType.Organization], null)),
                     ("Add to a category", () => LinkAsync([RecordType.Category], null)),
-                    ("Link anything… (Ctrl+L)", () => LinkAsync(null, null)),
+                    ("Link anything… (Ctrl+K)", () => LinkAsync(null, null)),
                 ]),
             ];
         }
@@ -651,7 +656,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         {
             Text = "Copy note text",
             Icon = new FontIcon { Glyph = "\uE8C8" },
-            KeyboardAcceleratorTextOverride = "Ctrl+Shift+C",
+            KeyboardAcceleratorTextOverride = "Ctrl+C",
         };
         copy.Click += (_, _) => CopyNoteText();
         MoreMenu.Items.Add(copy);
@@ -665,6 +670,11 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
 
     private void CopyAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
+        // In a text box, or with text selected, Ctrl+C copies the text as usual.
+        if (RecordPageParts.TextHasKeys(KeyboardFocus.Focused(XamlRoot)))
+        {
+            return;
+        }
         if (ViewModel?.IsAvailable == true)
         {
             args.Handled = true;
@@ -684,11 +694,17 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
 
     private async void Page_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        // Del deletes the note (with a confirmation), unless a text box has the focus.
-        if (e.Key == VirtualKey.Delete && !RecordPageParts.IsTextInput(e.OriginalSource))
+        // Del and Ctrl+D delete the note (with a confirmation), unless a text box has the focus.
+        if (RecordPageParts.IsDeleteKey(e.Key) && !RecordPageParts.IsTextInput(e.OriginalSource))
         {
             e.Handled = true;
             await DeleteWithConfirmationAsync();
+        }
+        // Ctrl+Z undoes the last unlink while its Undo bar shows, unless a text box has the focus.
+        else if (e.Key == VirtualKey.Z && KeyboardFocus.IsControlDown() && UnlinkInfoBar.IsOpen && !RecordPageParts.IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            Undo_Click(UnlinkInfoBar, new RoutedEventArgs());
         }
         // F2 edits the note in place, unless a text box has the focus.
         else if (e.Key == VirtualKey.F2 && !_editing && !RecordPageParts.IsTextInput(e.OriginalSource))

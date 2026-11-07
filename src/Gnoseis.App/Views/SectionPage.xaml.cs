@@ -182,7 +182,7 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     private async void RecordList_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.Delete && DetailFrame.Content is IRecordPage details)
+        if (RecordPageParts.IsDeleteKey(e.Key) && DetailFrame.Content is IRecordPage details)
         {
             e.Handled = true;
             await details.DeleteWithConfirmationAsync();

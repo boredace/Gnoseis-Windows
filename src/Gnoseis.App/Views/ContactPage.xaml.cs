@@ -982,7 +982,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             (company.CanLinkAsOrganization ? $"Link {company.Company}" : "Link an organization",
                 () => LinkAsync([RecordType.Organization], company.CanLinkAsOrganization ? company.Company : null)),
             ("Add to a category", () => LinkAsync([RecordType.Category], null)),
-            ("Link anything… (Ctrl+L)", () => LinkAsync(null, null)),
+            ("Link anything… (Ctrl+K)", () => LinkAsync(null, null)),
         ]);
     }
 
@@ -1289,7 +1289,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         {
             Text = "Copy contact details",
             Icon = new FontIcon { Glyph = "\uE8C8" },
-            KeyboardAcceleratorTextOverride = "Ctrl+Shift+C",
+            KeyboardAcceleratorTextOverride = "Ctrl+C",
         };
         copy.Click += (_, _) => CopyContactDetails();
         MoreMenu.Items.Add(copy);
@@ -1304,6 +1304,11 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 
     private void CopyAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
+        // In a text box, or with text selected, Ctrl+C copies the text as usual.
+        if (RecordPageParts.TextHasKeys(KeyboardFocus.Focused(XamlRoot)))
+        {
+            return;
+        }
         if (ViewModel.IsAvailable)
         {
             args.Handled = true;
@@ -1322,11 +1327,17 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 
     private async void Page_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        // Del deletes the contact (with a confirmation), unless a text box has the focus.
-        if (e.Key == VirtualKey.Delete && !RecordPageParts.IsTextInput(e.OriginalSource))
+        // Del and Ctrl+D delete the contact (with a confirmation), unless a text box has the focus.
+        if (RecordPageParts.IsDeleteKey(e.Key) && !RecordPageParts.IsTextInput(e.OriginalSource))
         {
             e.Handled = true;
             await DeleteWithConfirmationAsync();
+        }
+        // Ctrl+Z undoes the last unlink while its Undo bar shows, unless a text box has the focus.
+        else if (e.Key == VirtualKey.Z && KeyboardFocus.IsControlDown() && UnlinkInfoBar.IsOpen && !RecordPageParts.IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            Undo_Click(UnlinkInfoBar, new RoutedEventArgs());
         }
         // F2 edits the contact, unless a text box has the focus.
         else if (e.Key == VirtualKey.F2 && !RecordPageParts.IsTextInput(e.OriginalSource))

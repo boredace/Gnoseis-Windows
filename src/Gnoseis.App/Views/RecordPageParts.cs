@@ -31,6 +31,22 @@ internal static partial class RecordPageParts
     /// <summary>True for controls that take typed text (where Del, Home and the like stay with the control).</summary>
     public static bool IsTextInput(object source) => source is TextBox or RichEditBox or PasswordBox or AutoSuggestBox;
 
+    /// <summary>Del, or Ctrl+D as in Outlook.</summary>
+    public static bool IsDeleteKey(Windows.System.VirtualKey key) =>
+        key == Windows.System.VirtualKey.Delete || (key == Windows.System.VirtualKey.D && KeyboardFocus.IsControlDown() && !KeyboardFocus.IsShiftDown());
+
+    /// <summary>
+    /// The focused element takes copy keys itself: a text box, or text with a selection in it. Then
+    /// Ctrl+C copies that text rather than the record.
+    /// </summary>
+    public static bool TextHasKeys(DependencyObject? focused) => focused switch
+    {
+        null => false,
+        TextBlock { IsTextSelectionEnabled: true } block => block.SelectedText.Length > 0,
+        RichTextBlock { IsTextSelectionEnabled: true } block => block.SelectedText.Length > 0,
+        _ => IsTextInput(focused),
+    };
+
     /// <summary>A dashed button: a missing fact, "Link as organization", "Title".</summary>
     public static Button DashedButton(string glyph, string text, string automationName, Func<Task> click, bool accentText = false)
     {
