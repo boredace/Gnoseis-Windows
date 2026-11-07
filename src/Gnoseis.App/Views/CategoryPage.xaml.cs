@@ -61,6 +61,10 @@ public sealed partial class CategoryPage : Page, IRecordPage, IConfirmLeave
 
     public RecordRef Record => ViewModel.Record;
 
+    public bool IsFindBoxShowing => KeyboardFocus.IsShowing(SearchBox);
+
+    public void FocusFindBox() => KeyboardFocus.FocusAndSelectAll(SearchBox);
+
     private bool Searching => _query.Trim().Length > 0;
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)

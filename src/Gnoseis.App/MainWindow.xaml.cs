@@ -308,10 +308,35 @@ public sealed partial class MainWindow : Window
 
     // ---------------------------------------------------------------- Search
 
+    /// <summary>Ctrl+E and F3: search everything.</summary>
     private void SearchAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        SearchBox.Focus(FocusState.Keyboard);
+        FocusSearchEverything();
+    }
+
+    /// <summary>Ctrl+F: find on this screen, else search everything.</summary>
+    private void FindAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (ContentFrame.Content is SectionPage section && section.FocusFindBox())
+        {
+            return;
+        }
+        FocusSearchEverything();
+    }
+
+    /// <summary>The title bar search box, or the search page's own box while it's shown.</summary>
+    private void FocusSearchEverything()
+    {
+        if (ContentFrame.Content is SearchPage search)
+        {
+            search.FocusSearchBox();
+        }
+        else if (SearchBox.IsEnabled)
+        {
+            KeyboardFocus.FocusAndSelectAll(SearchBox);
+        }
     }
 
     private async void SearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)

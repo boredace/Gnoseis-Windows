@@ -194,6 +194,30 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         }
     }
 
+    /// <summary>
+    /// Find on this screen: focuses the record page's own search or filter box, or the list's filter
+    /// box, with its text selected. False when neither is showing, so the caller searches everything.
+    /// </summary>
+    public bool FocusFindBox()
+    {
+        var record = DetailFrame.Content as IRecordPage;
+        var recordBox = record != null && DetailFrame.Visibility == Visibility.Visible && record.IsFindBoxShowing;
+        var focusInRecord = KeyboardFocus.IsInside(KeyboardFocus.Focused(XamlRoot), DetailFrame);
+        var listFilter = ListPane.Visibility == Visibility.Visible && KeyboardFocus.IsShowing(FilterBox);
+
+        switch (FindOnScreen.Choose(focusInRecord, recordBox, listFilter))
+        {
+            case FindTarget.RecordPageBox:
+                record!.FocusFindBox();
+                return true;
+            case FindTarget.ListFilterBox:
+                KeyboardFocus.FocusAndSelectAll(FilterBox);
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private async void NewButton_Click(object sender, RoutedEventArgs e) =>
         await ShowEditorAsync(new EditRequest(Type));
 

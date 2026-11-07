@@ -88,6 +88,10 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
 
     public RecordRef Record => ViewModel.Record;
 
+    public bool IsFindBoxShowing => KeyboardFocus.IsShowing(FilterBox);
+
+    public void FocusFindBox() => KeyboardFocus.FocusAndSelectAll(FilterBox);
+
     /// <summary>"item" or "organization", for texts.</summary>
     private string TypeWord => ViewModel.Type.DisplayName().ToLower(CultureInfo.CurrentCulture);
 

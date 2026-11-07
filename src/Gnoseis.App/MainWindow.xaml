@@ -18,7 +18,9 @@
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="Left" Modifiers="Menu" Invoked="BackAccelerator_Invoked" />
             <KeyboardAccelerator Key="Right" Modifiers="Menu" Invoked="ForwardAccelerator_Invoked" />
-            <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="SearchAccelerator_Invoked" />
+            <KeyboardAccelerator Key="E" Modifiers="Control" Invoked="SearchAccelerator_Invoked" />
+            <KeyboardAccelerator Key="F3" Invoked="SearchAccelerator_Invoked" />
+            <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="FindAccelerator_Invoked" />
             <KeyboardAccelerator Key="Number1" Modifiers="Control" Invoked="SectionAccelerator_Invoked" />
             <KeyboardAccelerator Key="Number2" Modifiers="Control" Invoked="SectionAccelerator_Invoked" />
             <KeyboardAccelerator Key="Number3" Modifiers="Control" Invoked="SectionAccelerator_Invoked" />
@@ -47,7 +49,7 @@
                 VerticalAlignment="Center"
                 AutomationProperties.Name="Search all records"
                 ItemTemplate="{StaticResource SearchSuggestionTemplate}"
-                PlaceholderText="Search notes, contacts, organizations… (Ctrl+F)"
+                PlaceholderText="Search notes, contacts, organizations… (Ctrl+E)"
                 QueryIcon="Find"
                 QuerySubmitted="SearchBox_QuerySubmitted"
                 TextChanged="SearchBox_TextChanged" />

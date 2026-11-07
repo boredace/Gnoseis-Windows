@@ -86,6 +86,10 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 
     public RecordRef Record => ViewModel.Record;
 
+    public bool IsFindBoxShowing => KeyboardFocus.IsShowing(FilterBox);
+
+    public void FocusFindBox() => KeyboardFocus.FocusAndSelectAll(FilterBox);
+
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);

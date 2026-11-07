@@ -41,6 +41,12 @@ public interface IRecordPage
 
     /// <summary>Asks, then deletes the record (also used by the Delete key in the list).</summary>
     Task DeleteWithConfirmationAsync();
+
+    /// <summary>The page shows its own search or filter box (what Ctrl+F finds in).</summary>
+    bool IsFindBoxShowing => false;
+
+    /// <summary>Focuses the page's own search or filter box with its text selected.</summary>
+    void FocusFindBox() { }
 }
 
 /// <summary>Parameter of a section page: its record type, the record to show and an editor to open.</summary>
