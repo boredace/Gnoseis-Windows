@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:Gnoseis.App.Controls"
     xmlns:helpers="using:Gnoseis.App.Helpers"
+    PreviewKeyDown="Page_PreviewKeyDown"
     SizeChanged="Page_SizeChanged">
 
     <!-- One edit page for every record type: header, then the type's fields -->
@@ -46,7 +47,7 @@
                     Content="Save"
                     IsEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
                     Style="{StaticResource AccentButtonStyle}"
-                    ToolTipService.ToolTip="Save (Ctrl+S)">
+                    ToolTipService.ToolTip="Save (Ctrl+Enter)">
                     <Button.KeyboardAccelerators>
                         <KeyboardAccelerator Key="S" Modifiers="Control" />
                     </Button.KeyboardAccelerators>

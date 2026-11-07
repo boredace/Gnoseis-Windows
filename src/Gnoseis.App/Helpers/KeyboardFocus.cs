@@ -16,6 +16,14 @@ namespace Gnoseis.App.Helpers;
 /// <summary>Moving the keyboard focus for the app's shortcuts.</summary>
 internal static class KeyboardFocus
 {
+    public static bool IsControlDown() => IsDown(Windows.System.VirtualKey.Control);
+
+    public static bool IsShiftDown() => IsDown(Windows.System.VirtualKey.Shift);
+
+    private static bool IsDown(Windows.System.VirtualKey key) =>
+        Microsoft.UI.Input.InputKeyboardSource.GetKeyStateForCurrentThread(key)
+            .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+
     /// <summary>Focuses a text box or a search box by keyboard and selects its text.</summary>
     public static void FocusAndSelectAll(Control box)
     {

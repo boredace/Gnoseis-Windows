@@ -1655,8 +1655,9 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
 
     // ---------------------------------------------------------------- Commands
 
-    private async void Edit_Click(object sender, RoutedEventArgs e) =>
-        await Navigator.ShowEditorAsync(new EditRequest(ViewModel.Type, Record.Id));
+    private void Edit_Click(object sender, RoutedEventArgs e) => Edit();
+
+    public async void Edit() => await Navigator.ShowEditorAsync(new EditRequest(ViewModel.Type, Record.Id));
 
     private async void Link_Click(object sender, RoutedEventArgs e) => await LinkAsync(null, null);
 
@@ -1739,6 +1740,12 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         {
             e.Handled = true;
             _ = DeleteWithConfirmationAsync();
+        }
+        // F2 edits the record, unless a text box has the focus.
+        else if (e.Key == VirtualKey.F2 && !RecordPageParts.IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            Edit();
         }
         // Esc shows every note again after a person was picked.
         else if (e.Key == VirtualKey.Escape && _pickedPersonId != null)

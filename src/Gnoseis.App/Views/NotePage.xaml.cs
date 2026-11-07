@@ -193,11 +193,11 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
 
     /// <summary>
     /// Home and Ctrl+Home, outside a text box, scroll smoothly to the top. While editing, Ctrl+Enter
-    /// saves and Esc cancels.
+    /// and Ctrl+S save, and Esc cancels: with changes it first asks, as the edit page does.
     /// </summary>
     private async void Page_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (_editing && e.Key == VirtualKey.Enter && IsControlDown())
+        if (_editing && (e.Key == VirtualKey.Enter || e.Key == VirtualKey.S) && IsControlDown())
         {
             e.Handled = true;
             await SaveEditAsync();
@@ -205,7 +205,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         else if (_editing && e.Key == VirtualKey.Escape)
         {
             e.Handled = true;
-            StopEditing();
+            await CancelEditAsync();
         }
         else if (e.Key == VirtualKey.Home && !RecordPageParts.IsTextInput(e.OriginalSource))
         {
@@ -462,6 +462,34 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         }
     }
 
+    /// <summary>Esc while editing: stops at once without changes; with changes asks to save, don't save or stay.</summary>
+    private async Task CancelEditAsync()
+    {
+        if (_saving || _asking)
+        {
+            return;
+        }
+        if (!IsDirty)
+        {
+            StopEditing();
+            return;
+        }
+        _asking = true;
+        try
+        {
+            if (await EditPageFlow.AskToLeaveAsync(RecordType.Note, IsEditValid, SaveEditAsync))
+            {
+                StopEditing();
+            }
+        }
+        finally
+        {
+            _asking = false;
+        }
+    }
+
+    private bool _asking;
+
     /// <summary>Leaving the page with changes asks to save them, as the edit page does.</summary>
     public async Task<bool> CanLeaveAsync()
     {
@@ -575,11 +603,11 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
     /// <summary>Edit, and Edit while editing: the editor with the focus in the text.</summary>
     private void Edit_Click(object sender, RoutedEventArgs e) => StartEditing();
 
-    private void EditAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    /// <summary>F2: edits the note in place.</summary>
+    public void Edit()
     {
         if (ViewModel?.IsAvailable == true)
         {
-            args.Handled = true;
             StartEditing();
         }
     }
@@ -661,6 +689,12 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         {
             e.Handled = true;
             await DeleteWithConfirmationAsync();
+        }
+        // F2 edits the note in place, unless a text box has the focus.
+        else if (e.Key == VirtualKey.F2 && !_editing && !RecordPageParts.IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            Edit();
         }
     }
 

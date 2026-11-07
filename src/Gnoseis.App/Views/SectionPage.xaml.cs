@@ -187,6 +187,11 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
             e.Handled = true;
             await details.DeleteWithConfirmationAsync();
         }
+        else if (e.Key == VirtualKey.F2 && DetailFrame.Content is IRecordPage shown)
+        {
+            e.Handled = true;
+            shown.Edit();
+        }
         else if (e.Key == VirtualKey.Enter && DetailFrame.Content is IRecordPage)
         {
             e.Handled = true;

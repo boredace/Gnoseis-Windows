@@ -42,6 +42,9 @@ public interface IRecordPage
     /// <summary>Asks, then deletes the record (also used by the Delete key in the list).</summary>
     Task DeleteWithConfirmationAsync();
 
+    /// <summary>Edits the record: opens the edit page, or edits a note in place.</summary>
+    void Edit();
+
     /// <summary>The page shows its own search or filter box (what Ctrl+F finds in).</summary>
     bool IsFindBoxShowing => false;
 

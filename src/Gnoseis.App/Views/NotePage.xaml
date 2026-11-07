@@ -82,13 +82,10 @@
                             Background="Transparent"
                             DefaultLabelPosition="Right"
                             OverflowButtonVisibility="Collapsed">
-                            <AppBarToggleButton x:Name="EditButton" Click="Edit_Click" Label="Edit" ToolTipService.ToolTip="Edit (Ctrl+E)">
+                            <AppBarToggleButton x:Name="EditButton" Click="Edit_Click" Label="Edit" ToolTipService.ToolTip="Edit (F2)">
                                 <AppBarToggleButton.Icon>
                                     <FontIcon Glyph="&#xE70F;" />
                                 </AppBarToggleButton.Icon>
-                                <AppBarToggleButton.KeyboardAccelerators>
-                                    <KeyboardAccelerator Key="E" Invoked="EditAccelerator_Invoked" Modifiers="Control" />
-                                </AppBarToggleButton.KeyboardAccelerators>
                             </AppBarToggleButton>
                             <AppBarButton x:Name="LinkButton" Click="Link_Click" Label="Link" ToolTipService.ToolTip="Link existing records (Ctrl+L)">
                                 <AppBarButton.Icon>
@@ -270,7 +267,7 @@
                     AutomationProperties.Name="Edit"
                     Click="Edit_Click"
                     LabelPosition="Collapsed"
-                    ToolTipService.ToolTip="Edit (Ctrl+E)">
+                    ToolTipService.ToolTip="Edit (F2)">
                     <AppBarToggleButton.Icon>
                         <FontIcon Glyph="&#xE70F;" />
                     </AppBarToggleButton.Icon>

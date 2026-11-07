@@ -658,8 +658,9 @@ public sealed partial class CategoryPage : Page, IRecordPage, IConfirmLeave
 
     // ---------------------------------------------------------------- Commands
 
-    private async void Edit_Click(object sender, RoutedEventArgs e) =>
-        await Navigator.ShowEditorAsync(new EditRequest(RecordType.Category, Record.Id));
+    private void Edit_Click(object sender, RoutedEventArgs e) => Edit();
+
+    public async void Edit() => await Navigator.ShowEditorAsync(new EditRequest(RecordType.Category, Record.Id));
 
     private async void Link_Click(object sender, RoutedEventArgs e) => await LinkAsync(null, null);
 
@@ -736,6 +737,12 @@ public sealed partial class CategoryPage : Page, IRecordPage, IConfirmLeave
         {
             e.Handled = true;
             _ = DeleteWithConfirmationAsync();
+        }
+        // F2 edits the category, unless a text box has the focus.
+        else if (e.Key == VirtualKey.F2 && !RecordPageParts.IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            Edit();
         }
         // Esc anywhere on the page clears the search.
         else if (e.Key == VirtualKey.Escape && SearchBox.Text.Length > 0)

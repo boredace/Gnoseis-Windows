@@ -85,6 +85,19 @@ public sealed partial class RecordEditPage : Page, IConfirmLeave
 
     private async void Save_Click(object sender, RoutedEventArgs e) => await EditPageFlow.SaveAndCloseAsync(ViewModel);
 
+    /// <summary>Ctrl+Enter saves from any field, multi-line ones included, before the field adds a line.</summary>
+    private async void Page_PreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter && KeyboardFocus.IsControlDown())
+        {
+            e.Handled = true;
+            if (ViewModel.CanSave)
+            {
+                await EditPageFlow.SaveAndCloseAsync(ViewModel);
+            }
+        }
+    }
+
     private async void Cancel_Click(object sender, RoutedEventArgs e) => await EditPageFlow.CancelAsync(ViewModel);
 
     private void Page_SizeChanged(object sender, SizeChangedEventArgs e)

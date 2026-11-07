@@ -1247,8 +1247,9 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
 
     // ---------------------------------------------------------------- Commands
 
-    private async void Edit_Click(object sender, RoutedEventArgs e) =>
-        await Navigator.ShowEditorAsync(new EditRequest(RecordType.Contact, Record.Id));
+    private void Edit_Click(object sender, RoutedEventArgs e) => Edit();
+
+    public async void Edit() => await Navigator.ShowEditorAsync(new EditRequest(RecordType.Contact, Record.Id));
 
     private async void Link_Click(object sender, RoutedEventArgs e) => await LinkAsync(null, null);
 
@@ -1326,6 +1327,12 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         {
             e.Handled = true;
             await DeleteWithConfirmationAsync();
+        }
+        // F2 edits the contact, unless a text box has the focus.
+        else if (e.Key == VirtualKey.F2 && !RecordPageParts.IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            Edit();
         }
     }
 
