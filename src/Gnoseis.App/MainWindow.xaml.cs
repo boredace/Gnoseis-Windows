@@ -308,10 +308,107 @@ public sealed partial class MainWindow : Window
 
     // ---------------------------------------------------------------- Search
 
+    /// <summary>Ctrl+E and F3: search everything.</summary>
     private void SearchAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
         args.Handled = true;
-        SearchBox.Focus(FocusState.Keyboard);
+        FocusSearchEverything();
+    }
+
+    /// <summary>Ctrl+F: find on this screen, else search everything.</summary>
+    private void FindAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (ContentFrame.Content is SectionPage section && section.FocusFindBox())
+        {
+            return;
+        }
+        FocusSearchEverything();
+    }
+
+    // ---------------------------------------------------------------- Panes
+
+    /// <summary>
+    /// F6 and Shift+F6: the search box, the navigation pane, the list (or trail column) and the
+    /// record, in that order, skipping those not showing and wrapping around.
+    /// </summary>
+    private void PaneAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (!NavView.IsEnabled)
+        {
+            return;
+        }
+
+        var section = ContentFrame.Content as SectionPage;
+        var record = section != null ? section.FirstInRecord() : FocusManager.FindFirstFocusableElement(ContentFrame) as Control;
+        var showing = new List<Pane>();
+        if (SearchBox.IsEnabled)
+        {
+            showing.Add(Pane.Search);
+        }
+        if (NavigationTarget() != null)
+        {
+            showing.Add(Pane.Navigation);
+        }
+        if (section?.IsListShowing == true)
+        {
+            showing.Add(Pane.List);
+        }
+        if (record != null)
+        {
+            showing.Add(Pane.Record);
+        }
+
+        var focused = KeyboardFocus.Focused(RootGrid.XamlRoot);
+        Pane? current =
+            KeyboardFocus.IsInside(focused, SearchBox) ? Pane.Search
+            : KeyboardFocus.IsInside(focused, ContentFrame) ? section?.PaneOf(focused) ?? Pane.Record
+            : KeyboardFocus.IsInside(focused, NavView) ? Pane.Navigation
+            : null;
+
+        switch (PaneCycle.Next(current, sender.Modifiers == VirtualKeyModifiers.Shift, showing))
+        {
+            case Pane.Search:
+                SearchBox.Focus(FocusState.Keyboard);
+                break;
+            case Pane.Navigation:
+                NavigationTarget()?.Focus(FocusState.Keyboard);
+                break;
+            case Pane.List:
+                section!.FocusList();
+                break;
+            case Pane.Record:
+                record!.Focus(FocusState.Keyboard);
+                break;
+        }
+    }
+
+    /// <summary>The navigation pane's selected item, else its first; null while the pane is hidden.</summary>
+    private Control? NavigationTarget()
+    {
+        if (NavView.DisplayMode == NavigationViewDisplayMode.Minimal && !NavView.IsPaneOpen)
+        {
+            return null;
+        }
+        if (NavView.SelectedItem is NavigationViewItem { Visibility: Visibility.Visible } selected)
+        {
+            return selected;
+        }
+        return NavView.MenuItems.OfType<NavigationViewItem>().FirstOrDefault();
+    }
+
+    /// <summary>The title bar search box, or the search page's own box while it's shown.</summary>
+    private void FocusSearchEverything()
+    {
+        if (ContentFrame.Content is SearchPage search)
+        {
+            search.FocusSearchBox();
+        }
+        else if (SearchBox.IsEnabled)
+        {
+            KeyboardFocus.FocusAndSelectAll(SearchBox);
+        }
     }
 
     private async void SearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)

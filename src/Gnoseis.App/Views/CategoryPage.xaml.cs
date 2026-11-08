@@ -61,6 +61,10 @@ public sealed partial class CategoryPage : Page, IRecordPage, IConfirmLeave
 
     public RecordRef Record => ViewModel.Record;
 
+    public bool IsFindBoxShowing => KeyboardFocus.IsShowing(SearchBox);
+
+    public void FocusFindBox() => KeyboardFocus.FocusAndSelectAll(SearchBox);
+
     private bool Searching => _query.Trim().Length > 0;
 
     protected override async void OnNavigatedTo(NavigationEventArgs e)
@@ -654,8 +658,9 @@ public sealed partial class CategoryPage : Page, IRecordPage, IConfirmLeave
 
     // ---------------------------------------------------------------- Commands
 
-    private async void Edit_Click(object sender, RoutedEventArgs e) =>
-        await Navigator.ShowEditorAsync(new EditRequest(RecordType.Category, Record.Id));
+    private void Edit_Click(object sender, RoutedEventArgs e) => Edit();
+
+    public async void Edit() => await Navigator.ShowEditorAsync(new EditRequest(RecordType.Category, Record.Id));
 
     private async void Link_Click(object sender, RoutedEventArgs e) => await LinkAsync(null, null);
 
@@ -695,7 +700,7 @@ public sealed partial class CategoryPage : Page, IRecordPage, IConfirmLeave
         {
             Text = "Copy category details",
             Icon = new FontIcon { Glyph = "" },
-            KeyboardAcceleratorTextOverride = "Ctrl+Shift+C",
+            KeyboardAcceleratorTextOverride = "Ctrl+C",
         };
         copy.Click += (_, _) => CopyDetails();
         MoreMenu.Items.Add(copy);
@@ -709,6 +714,11 @@ public sealed partial class CategoryPage : Page, IRecordPage, IConfirmLeave
 
     private void CopyAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
     {
+        // In a text box, or with text selected, Ctrl+C copies the text as usual.
+        if (RecordPageParts.TextHasKeys(KeyboardFocus.Focused(XamlRoot)))
+        {
+            return;
+        }
         if (ViewModel.IsAvailable)
         {
             args.Handled = true;
@@ -727,11 +737,23 @@ public sealed partial class CategoryPage : Page, IRecordPage, IConfirmLeave
 
     private void Page_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        // Del deletes the category (with a confirmation), unless a text box has the focus.
-        if (e.Key == VirtualKey.Delete && !RecordPageParts.IsTextInput(e.OriginalSource))
+        // Del and Ctrl+D delete the category (with a confirmation), unless a text box has the focus.
+        if (RecordPageParts.IsDeleteKey(e.Key) && !RecordPageParts.IsTextInput(e.OriginalSource))
         {
             e.Handled = true;
             _ = DeleteWithConfirmationAsync();
+        }
+        // Ctrl+Z undoes the last unlink while its Undo bar shows, unless a text box has the focus.
+        else if (e.Key == VirtualKey.Z && KeyboardFocus.IsControlDown() && UnlinkInfoBar.IsOpen && !RecordPageParts.IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            Undo_Click(UnlinkInfoBar, new RoutedEventArgs());
+        }
+        // F2 edits the category, unless a text box has the focus.
+        else if (e.Key == VirtualKey.F2 && !RecordPageParts.IsTextInput(e.OriginalSource))
+        {
+            e.Handled = true;
+            Edit();
         }
         // Esc anywhere on the page clears the search.
         else if (e.Key == VirtualKey.Escape && SearchBox.Text.Length > 0)

@@ -170,7 +170,7 @@ Gnoseis is meant to stay open all day, so the Windows version is built around qu
 switching and seeing related information at a glance.
 
 - **Windows 11 title bar** with Back, the navigation pane toggle, and a search box that is always
-  there (Ctrl+F). Search suggests the best matching records as you type; Enter opens the search
+  there (Ctrl+E or F3). Search suggests the best matching records as you type; Enter opens the search
   page, from 3 characters. Results are ranked: an exact title first, then titles that start with
   the search, then a word that starts with it, then the rest, and the record with more links first
   within each. The top result is shown as the **best match**, with its links per type; the others
@@ -212,10 +212,11 @@ switching and seeing related information at a glance.
 - **Note page**, built around the text: a header with the title, the day and time, and the
   commands; the text in a readable column, with clickable web and e-mail links, and when it was
   created and changed under it. The records it's linked to sit in a side column, contacts first,
-  each type with a **+** to link one more. **Edit** (Ctrl+E) or a double-click on the text edits
-  the title, the text and the day in place (Ctrl+Enter saves, Esc cancels). The layout follows the
+  each type with a **+** to link one more. **Edit** (F2) or a double-click on the text edits
+  the title, the text and the day in place (Ctrl+Enter or Ctrl+S saves; Esc cancels, and asks first
+  when something changed). The layout follows the
   width of the record pane as on the contact page, with a compact header once the header scrolls
-  away. **More** has **New linked**, **Copy note text** (Ctrl+Shift+C) and **Delete**.
+  away. **More** has **New linked**, **Copy note text** (Ctrl+C) and **Delete**.
 - **Contact page**, built around the person: a header with the name, the job and company (the
   company opens its organization when it's linked, or offers **Link as organization**), and a chip
   per phone number and e-mail address that calls or writes (right-click to copy; the value is copied
@@ -227,9 +228,9 @@ switching and seeing related information at a glance.
   and from 1700 px a reading pane that shows the selected note in full (Up and Down move through the
   notes). Once the header scrolls away, a compact header keeps the name, the year chips and the
   commands in view; Home returns to the top. **More** has **New linked**, **Copy contact details**
-  (Ctrl+Shift+C) and **Delete**.
+  (Ctrl+C) and **Delete**.
 - **Unlink** from a linked record's context menu (right-click, Shift+F10 or the menu key). There's
-  no confirmation: a message offers **Undo** until you close it or leave the page. The same menu
+  no confirmation: a message offers **Undo** (Ctrl+Z) until you close it or leave the page. The same menu
   has **Open** and **Show in … list**.
 - **Linked records open beside the section**: a record opened from a record's page doesn't switch
   sections. The list column becomes **Opened records**, the trail of records opened from one another:
@@ -241,7 +242,7 @@ switching and seeing related information at a glance.
   to the record's own section. In a narrow window the trail is a breadcrumb above the record.
   Search, Home and the navigation pane still open a record in its own section.
 - **Editing happens in place** in the record pane, on one edit page for every type, with Save
-  (Ctrl+S) and Cancel (Esc); an existing note is edited on its own page. A record created with **New linked** shows which record it will be
+  (Ctrl+Enter or Ctrl+S) and Cancel (Esc); an existing note is edited on its own page. A record created with **New linked** shows which record it will be
   linked to. You're asked before unsaved changes are lost, including when you click another record.
 - **Linking** existing records uses a picker dialog with the same search, chips and best match as
   the search page, and multi-select. Records stay ticked through later searches and chips until
@@ -255,12 +256,15 @@ switching and seeing related information at a glance.
 - **Remembers where you were**: window size and position, whether it was maximized, the navigation
   pane and the last section, plus the selected record in each section while the app is open.
 - **Narrow windows** show one pane at a time; Back returns from a record to the list.
-- **Keyboard**: Ctrl+1 to Ctrl+6 switch sections, Ctrl+N creates a record, Ctrl+E edits, Ctrl+L
-  links, Del deletes, Alt+Left or the mouse back button goes back, and Alt+Right or the mouse forward
-  button goes forward along the trail of opened records. On a contact, organization or
-  item, Ctrl+Shift+N writes a note (on a category, in its Notes list) and Ctrl+Shift+C copies the
-  record's details; on a note, Ctrl+Shift+C copies the note text. Home scrolls a record page back to
-  the top. Settings lists every shortcut.
+- **Keyboard**, following Outlook, Office and Windows: Ctrl+1 to Ctrl+6 switch sections, Ctrl+E or
+  F3 searches everything, Ctrl+F finds on the current screen (the record page's search or filter box,
+  else the list's filter box), Ctrl+N creates a record, F2 edits, Ctrl+Enter or Ctrl+S saves, Ctrl+K
+  links, Del or Ctrl+D deletes, Ctrl+Z undoes an unlink, and F6 and Shift+F6 move between the search
+  box, the navigation pane, the list and the record. Alt+Left or the mouse back button goes back, and
+  Alt+Right or the mouse forward button goes forward along the trail of opened records. On a contact,
+  organization or item, Ctrl+Shift+N writes a note (on a category, in its Notes list). Outside a text
+  box, Ctrl+C copies the details of the record shown, or a note's text. Home scrolls a record page
+  back to the top. Settings lists every shortcut.
 - Fluent design with Mica, a light, dark or system theme, and screen-reader names and headings.
 
 | Android | Windows |
@@ -269,7 +273,7 @@ switching and seeing related information at a glance.
 | Separate list and details screens | List and record side by side |
 | Opening a linked record (a new screen on the back stack) | The record opens beside the section, in a trail of opened records in the list column; Back and Forward step along it |
 | Floating "Add" button | **New** button in the list header (Ctrl+N) |
-| Expandable FAB (link existing / new linked record) | **Link** (Ctrl+L) and **New linked** menu in the record's command bar (on a contact or a note, under **More**) |
+| Expandable FAB (link existing / new linked record) | **Link** (Ctrl+K) and **New linked** menu in the record's command bar (on a contact or a note, under **More**) |
 | Contact details screen (fields, then linked records) | Contact page: phone and e-mail chips in the header, the notes as a history with a note box above it, the other linked records in a side column |
 | New linked note from a contact | Note box on the contact page (or **Open full editor**) |
 | Note details screen (text, then linked records) | Note page: the text in a readable column, edited in place, the linked records in a side column |

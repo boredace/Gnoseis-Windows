@@ -38,6 +38,9 @@ public sealed partial class SearchPage : Page
 
     public RecordSearchModel? ViewModel { get; private set; }
 
+    /// <summary>Focuses the page's search box with its text selected.</summary>
+    public void FocusSearchBox() => Search.SelectSearchBox();
+
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);

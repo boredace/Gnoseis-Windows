@@ -85,7 +85,7 @@
     <Grid x:Name="Root">
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="N" Invoked="NoteAccelerator_Invoked" Modifiers="Control,Shift" />
-            <KeyboardAccelerator Key="C" Invoked="CopyAccelerator_Invoked" Modifiers="Control,Shift" />
+            <KeyboardAccelerator Key="C" Invoked="CopyAccelerator_Invoked" Modifiers="Control" />
         </Grid.KeyboardAccelerators>
         <!-- Header, chips, note box and history scroll together -->
         <ScrollViewer
@@ -132,20 +132,17 @@
                             Background="Transparent"
                             DefaultLabelPosition="Right"
                             OverflowButtonVisibility="Collapsed">
-                            <AppBarButton x:Name="EditButton" Click="Edit_Click" Label="Edit" ToolTipService.ToolTip="Edit (Ctrl+E)">
+                            <AppBarButton x:Name="EditButton" Click="Edit_Click" Label="Edit" ToolTipService.ToolTip="Edit (F2)">
                                 <AppBarButton.Icon>
                                     <FontIcon Glyph="&#xE70F;" />
                                 </AppBarButton.Icon>
-                                <AppBarButton.KeyboardAccelerators>
-                                    <KeyboardAccelerator Key="E" Modifiers="Control" />
-                                </AppBarButton.KeyboardAccelerators>
                             </AppBarButton>
-                            <AppBarButton x:Name="LinkButton" Click="Link_Click" Label="Link" ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                            <AppBarButton x:Name="LinkButton" Click="Link_Click" Label="Link" ToolTipService.ToolTip="Link existing records (Ctrl+K)">
                                 <AppBarButton.Icon>
                                     <FontIcon Glyph="&#xE71B;" />
                                 </AppBarButton.Icon>
                                 <AppBarButton.KeyboardAccelerators>
-                                    <KeyboardAccelerator Key="L" Modifiers="Control" />
+                                    <KeyboardAccelerator Key="K" Modifiers="Control" />
                                 </AppBarButton.KeyboardAccelerators>
                             </AppBarButton>
                             <AppBarButton
@@ -556,7 +553,7 @@
                     AutomationProperties.Name="Edit"
                     Click="Edit_Click"
                     LabelPosition="Collapsed"
-                    ToolTipService.ToolTip="Edit (Ctrl+E)">
+                    ToolTipService.ToolTip="Edit (F2)">
                     <AppBarButton.Icon>
                         <FontIcon Glyph="&#xE70F;" />
                     </AppBarButton.Icon>
@@ -566,7 +563,7 @@
                     AutomationProperties.Name="Link"
                     Click="Link_Click"
                     LabelPosition="Collapsed"
-                    ToolTipService.ToolTip="Link existing records (Ctrl+L)">
+                    ToolTipService.ToolTip="Link existing records (Ctrl+K)">
                     <AppBarButton.Icon>
                         <FontIcon Glyph="&#xE71B;" />
                     </AppBarButton.Icon>

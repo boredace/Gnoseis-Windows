@@ -93,6 +93,9 @@ public sealed partial class RecordSearchView : UserControl
         }
     }
 
+    /// <summary>Focuses the search box by keyboard with its text selected.</summary>
+    public void SelectSearchBox() => KeyboardFocus.FocusAndSelectAll(QueryBox);
+
     private static TextBox? FindTextBox(DependencyObject parent)
     {
         for (var i = 0; i < Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(parent); i++)

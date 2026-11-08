@@ -182,16 +182,86 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
 
     private async void RecordList_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.Delete && DetailFrame.Content is IRecordPage details)
+        if (RecordPageParts.IsDeleteKey(e.Key) && DetailFrame.Content is IRecordPage details)
         {
             e.Handled = true;
             await details.DeleteWithConfirmationAsync();
+        }
+        else if (e.Key == VirtualKey.F2 && DetailFrame.Content is IRecordPage shown)
+        {
+            e.Handled = true;
+            shown.Edit();
         }
         else if (e.Key == VirtualKey.Enter && DetailFrame.Content is IRecordPage)
         {
             e.Handled = true;
             DetailFrame.Focus(FocusState.Keyboard);
         }
+    }
+
+    /// <summary>
+    /// Find on this screen: focuses the record page's own search or filter box, or the list's filter
+    /// box, with its text selected. False when neither is showing, so the caller searches everything.
+    /// </summary>
+    public bool FocusFindBox()
+    {
+        var record = DetailFrame.Content as IRecordPage;
+        var recordBox = record != null && DetailFrame.Visibility == Visibility.Visible && record.IsFindBoxShowing;
+        var focusInRecord = KeyboardFocus.IsInside(KeyboardFocus.Focused(XamlRoot), DetailFrame);
+        var listFilter = ListPane.Visibility == Visibility.Visible && KeyboardFocus.IsShowing(FilterBox);
+
+        switch (FindOnScreen.Choose(focusInRecord, recordBox, listFilter))
+        {
+            case FindTarget.RecordPageBox:
+                record!.FocusFindBox();
+                return true;
+            case FindTarget.ListFilterBox:
+                KeyboardFocus.FocusAndSelectAll(FilterBox);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /// <summary>The pane the element is in: the list or trail column, or the record; null for neither.</summary>
+    public Pane? PaneOf(DependencyObject? element) =>
+        KeyboardFocus.IsInside(element, ListPane) || KeyboardFocus.IsInside(element, TrailPane) ? Pane.List
+        : KeyboardFocus.IsInside(element, DetailFrame) || KeyboardFocus.IsInside(element, TrailCrumbs) ? Pane.Record
+        : null;
+
+    /// <summary>The list, or the trail column in its place, is showing.</summary>
+    public bool IsListShowing => ListPane.Visibility == Visibility.Visible || TrailPane.Visibility == Visibility.Visible;
+
+    /// <summary>Focuses the selected row of the list or trail column, else its first row.</summary>
+    public bool FocusList()
+    {
+        var list = TrailPane.Visibility == Visibility.Visible ? TrailList : RecordList;
+        if (list.Visibility != Visibility.Visible)
+        {
+            return false;
+        }
+        if (list.SelectedItem is { } selected && list.ContainerFromItem(selected) is Control row)
+        {
+            return row.Focus(FocusState.Keyboard);
+        }
+        if (list.Items.Count > 0 && list.ContainerFromIndex(0) is Control first)
+        {
+            return first.Focus(FocusState.Keyboard);
+        }
+        return list.Focus(FocusState.Keyboard);
+    }
+
+    /// <summary>The first control of the record pane (the narrow window's trail bar first), when one is showing.</summary>
+    public Control? FirstInRecord()
+    {
+        foreach (var part in new FrameworkElement[] { TrailCrumbs, DetailFrame })
+        {
+            if (part.Visibility == Visibility.Visible && FocusManager.FindFirstFocusableElement(part) is Control control)
+            {
+                return control;
+            }
+        }
+        return null;
     }
 
     private async void NewButton_Click(object sender, RoutedEventArgs e) =>
