@@ -223,6 +223,47 @@ public sealed partial class SectionPage : Page, ISectionHost, IConfirmLeave
         }
     }
 
+    /// <summary>The pane the element is in: the list or trail column, or the record; null for neither.</summary>
+    public Pane? PaneOf(DependencyObject? element) =>
+        KeyboardFocus.IsInside(element, ListPane) || KeyboardFocus.IsInside(element, TrailPane) ? Pane.List
+        : KeyboardFocus.IsInside(element, DetailFrame) || KeyboardFocus.IsInside(element, TrailCrumbs) ? Pane.Record
+        : null;
+
+    /// <summary>The list, or the trail column in its place, is showing.</summary>
+    public bool IsListShowing => ListPane.Visibility == Visibility.Visible || TrailPane.Visibility == Visibility.Visible;
+
+    /// <summary>Focuses the selected row of the list or trail column, else its first row.</summary>
+    public bool FocusList()
+    {
+        var list = TrailPane.Visibility == Visibility.Visible ? TrailList : RecordList;
+        if (list.Visibility != Visibility.Visible)
+        {
+            return false;
+        }
+        if (list.SelectedItem is { } selected && list.ContainerFromItem(selected) is Control row)
+        {
+            return row.Focus(FocusState.Keyboard);
+        }
+        if (list.Items.Count > 0 && list.ContainerFromIndex(0) is Control first)
+        {
+            return first.Focus(FocusState.Keyboard);
+        }
+        return list.Focus(FocusState.Keyboard);
+    }
+
+    /// <summary>The first control of the record pane (the narrow window's trail bar first), when one is showing.</summary>
+    public Control? FirstInRecord()
+    {
+        foreach (var part in new FrameworkElement[] { TrailCrumbs, DetailFrame })
+        {
+            if (part.Visibility == Visibility.Visible && FocusManager.FindFirstFocusableElement(part) is Control control)
+            {
+                return control;
+            }
+        }
+        return null;
+    }
+
     private async void NewButton_Click(object sender, RoutedEventArgs e) =>
         await ShowEditorAsync(new EditRequest(Type));
 
