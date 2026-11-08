@@ -152,37 +152,43 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock Grid.Row="0" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+1 … Ctrl+6" />
                         <TextBlock Grid.Row="0" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Home, Notes, Contacts, Organizations, Categories, Items" />
-                        <TextBlock Grid.Row="1" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+F" />
+                        <TextBlock Grid.Row="1" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+E or F3" />
                         <TextBlock Grid.Row="1" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Search everything" />
-                        <TextBlock Grid.Row="2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+N" />
-                        <TextBlock Grid.Row="2" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="New record in the current section" />
-                        <TextBlock Grid.Row="3" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+E" />
-                        <TextBlock Grid.Row="3" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Edit the selected record (a note in place)" />
-                        <TextBlock Grid.Row="4" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+L" />
-                        <TextBlock Grid.Row="4" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Link existing records to the selected record" />
-                        <TextBlock Grid.Row="5" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Delete" />
-                        <TextBlock Grid.Row="5" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Delete the selected record (in a list, or on a record page outside a text box)" />
-                        <TextBlock Grid.Row="6" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+S / Esc" />
-                        <TextBlock Grid.Row="6" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Save / cancel while editing" />
-                        <TextBlock Grid.Row="7" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Enter" />
-                        <TextBlock Grid.Row="7" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Add the quick note on Home, save the note written on a record page, or save a note edited in place" />
-                        <TextBlock Grid.Row="8" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Shift+N" />
-                        <TextBlock Grid.Row="8" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Write a note about the contact, organization or item shown, or in the category shown" />
-                        <TextBlock Grid.Row="9" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Shift+C" />
-                        <TextBlock Grid.Row="9" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Copy the details of the contact, organization, category or item shown" />
-                        <TextBlock Grid.Row="10" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Shift+C" />
-                        <TextBlock Grid.Row="10" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Copy the text of the note shown" />
-                        <TextBlock Grid.Row="11" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Home" />
-                        <TextBlock Grid.Row="11" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Back to the top of a record page (outside a text box)" />
-                        <TextBlock Grid.Row="12" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Esc" />
-                        <TextBlock Grid.Row="12" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Clear a category's search, or show every note again after picking a person on an organization" />
+                        <TextBlock Grid.Row="2" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+F" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Find on this screen: the page's or the list's filter box" />
+                        <TextBlock Grid.Row="3" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+N" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="New record in the current section" />
+                        <TextBlock Grid.Row="4" Style="{StaticResource BodyStrongTextBlockStyle}" Text="F2" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Edit the selected record (a note in place)" />
+                        <TextBlock Grid.Row="5" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+K" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Link existing records to the selected record" />
+                        <TextBlock Grid.Row="6" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Delete or Ctrl+D" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Delete the selected record (in a list, or on a record page outside a text box)" />
+                        <TextBlock Grid.Row="7" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Enter or Ctrl+S / Esc" />
+                        <TextBlock Grid.Row="7" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Save / cancel while editing" />
+                        <TextBlock Grid.Row="8" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Enter" />
+                        <TextBlock Grid.Row="8" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Add the quick note on Home, or save the note written on a record page" />
+                        <TextBlock Grid.Row="9" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Shift+N" />
+                        <TextBlock Grid.Row="9" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Write a note about the contact, organization or item shown, or in the category shown" />
+                        <TextBlock Grid.Row="10" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+C" />
+                        <TextBlock Grid.Row="10" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Copy the details of the record shown, or a note's text (outside a text box)" />
+                        <TextBlock Grid.Row="11" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Ctrl+Z" />
+                        <TextBlock Grid.Row="11" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Undo an unlink" />
+                        <TextBlock Grid.Row="12" Style="{StaticResource BodyStrongTextBlockStyle}" Text="F6 / Shift+F6" />
+                        <TextBlock Grid.Row="12" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Move between the search box, navigation pane, list and record" />
                         <TextBlock Grid.Row="13" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Alt+Left" />
                         <TextBlock Grid.Row="13" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Back (along the trail of opened records first, then from the record to the list in a narrow window)" />
                         <TextBlock Grid.Row="14" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Alt+Right" />
                         <TextBlock Grid.Row="14" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Forward along the trail of opened records" />
+                        <TextBlock Grid.Row="15" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Home" />
+                        <TextBlock Grid.Row="15" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Back to the top of a record page (outside a text box)" />
+                        <TextBlock Grid.Row="16" Style="{StaticResource BodyStrongTextBlockStyle}" Text="Esc" />
+                        <TextBlock Grid.Row="16" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Style="{StaticResource BodyTextBlockStyle}" Text="Clear a category's search, or show every note again after picking a person on an organization" />
                     </Grid>
                 </Border>
 
