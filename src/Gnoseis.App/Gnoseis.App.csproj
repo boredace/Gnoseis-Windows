@@ -24,6 +24,47 @@
     <ApplicationIcon>Assets\Gnoseis.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <!-- A release build shows the plain version; the SDK would otherwise append +<full commit hash>. -->
+  <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <!--
+    A debug build says where it was built from, so it can't be mistaken for a release:
+    0.1.0-debug.12+a1b2c3d is 12 commits after the last release tag, at commit a1b2c3d (.dirty if there
+    were uncommitted changes). Without git or without a tag it is plain 0.1.0-debug.
+    Git can only run in a target, after the SDK has worked out Version from VersionPrefix and
+    VersionSuffix, so Version is worked out again here. The project itself never sets Version.
+  -->
+  <Target Name="StampDebugVersion" BeforeTargets="GetAssemblyVersion" Condition="'$(Configuration)' == 'Debug'">
+    <Exec
+      Command="git describe --tags --match &quot;v*&quot; --long --dirty"
+      WorkingDirectory="$(MSBuildProjectDirectory)"
+      ConsoleToMSBuild="true"
+      IgnoreExitCode="true"
+      ContinueOnError="true"
+      StandardOutputImportance="low"
+      StandardErrorImportance="low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_GitDescribe" />
+      <Output TaskParameter="ExitCode" PropertyName="_GitDescribeExitCode" />
+    </Exec>
+    <PropertyGroup>
+      <_DescribePattern>^.*-(\d+)-g([0-9a-f]+)(-dirty)?$</_DescribePattern>
+      <_DebugStamp>debug</_DebugStamp>
+      <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(_GitDescribeExitCode)' == '0'">
+      <_DebugStamp>debug.$([System.Text.RegularExpressions.Regex]::Replace($(_GitDescribe), $(_DescribePattern), '$1'))</_DebugStamp>
+      <SourceRevisionId>$([System.Text.RegularExpressions.Regex]::Replace($(_GitDescribe), $(_DescribePattern), '$2$3').Replace('-dirty', '.dirty'))</SourceRevisionId>
+      <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
+    </PropertyGroup>
+    <PropertyGroup>
+      <VersionSuffix Condition="'$(VersionSuffix)' != ''">$(VersionSuffix)-$(_DebugStamp)</VersionSuffix>
+      <VersionSuffix Condition="'$(VersionSuffix)' == ''">$(_DebugStamp)</VersionSuffix>
+      <Version>$(VersionPrefix)-$(VersionSuffix)</Version>
+    </PropertyGroup>
+  </Target>
+
   <!-- A self-contained WinUI app needs a Windows architecture; default to x64 for "Any CPU" builds. -->
   <PropertyGroup>
     <RuntimeIdentifier Condition="'$(Platform)' == 'x86'">win-x86</RuntimeIdentifier>

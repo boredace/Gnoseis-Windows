@@ -26,8 +26,9 @@ public sealed partial class SettingsPage : Page
             .OfType<ComboBoxItem>()
             .FirstOrDefault(i => (string)i.Tag == App.Settings.ElementTheme.ToString()) ?? ThemeComboBox.Items[0];
         DatabasePathText.Text = AppPaths.DatabaseFile;
-        var version = Assembly.GetExecutingAssembly().GetName().Version;
-        VersionText.Text = $"Gnoseis for Windows {version?.ToString(3)}";
+        var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        VersionText.Text = $"Gnoseis for Windows {version}";
+        DataFolderText.Text = $"Data folder: {AppPaths.DataFolder}";
         _initializing = false;
     }
 
