@@ -1,8 +1,8 @@
 # Gnoseis for Windows
 
 Gnoseis is a CRM application that can also be used as an all-purpose knowledge manager.
-It stores all data on the device. This is the Windows (WinUI 3) port of
-[Gnoseis for Android](../../Android/Gnoseis-Android), ported from the `tests` branch at commit `738b656`.
+It stores all data on the device. This is the Windows (WinUI 3) version, ported from
+[Gnoseis for Android](../../Android/Gnoseis-Android).
 
 The Windows app uses **the same SQLite database format** as the Android app. A `gnoseis_data` file
 or backup from Android can be used on Windows as long as it's schema version 3 or earlier (Android
@@ -10,7 +10,7 @@ or backup from Android can be used on Windows as long as it's schema version 3 o
 
 ## Features
 
-The Windows app does everything the Android app does:
+Gnoseis for Windows 0.1.0 offers what Gnoseis for Android 0.3.0 offers, with the newer search from Android 0.4.0:
 
 - Notes, contacts, organizations, categories and items: list, view, add, edit and delete.
 - Link any record to records of other types, either by picking existing records or by creating a
@@ -20,13 +20,43 @@ The Windows app does everything the Android app does:
   record from a search that finds no record with that name.
 - Back up the database to a file and restore it (Android: Settings › Import / Export).
 
+Only on Windows: the contact, note, organization, category and item pages, the linked record trail,
+and Outlook-style keyboard shortcuts (see [Windows user experience](#windows-user-experience)).
+
+## Installing
+
+Requires Windows 10 version 1809 (build 17763) or later, x64. Nothing else needs to be installed:
+.NET and the Windows App SDK are in the zip.
+
+1. Download `Gnoseis-v<version>-win-x64.zip` from the
+   [releases page](https://github.com/boredace/Gnoseis-Windows/releases).
+2. [Verify the download](RELEASING.md#verifying-a-download): compare its SHA-256 with the one in the
+   release notes, and check its build attestation.
+3. Unpack it anywhere and run `Gnoseis.exe`.
+
+Releases before 1.0 aren't code-signed, so Windows warns about them. SmartScreen shows "Windows
+protected your PC" the first time: select **More info**, then **Run anyway**. Where Smart App Control
+(Windows 11) is on, it blocks unsigned apps. The SHA-256 and the attestation are how to check that a
+download is genuine until then.
+
+**Updating:** unpack the new version over the old one or beside it. Your data isn't touched.
+
+**Uninstalling:** delete the folder. Data in `%LOCALAPPDATA%\Gnoseis` stays until you delete it too.
+
+**Files from Android:** Windows opens databases and backups with schema versions 1 to 3 (Android
+0.3.0 writes version 3), and upgrades older files to version 3. See
+[Supported schema versions](#supported-schema-versions).
+
+**No network:** the app makes no network connections: no update check and no telemetry. Web and
+e-mail links in your notes open your browser or mail app.
+
 ## Solution layout
 
 | Project | What it contains |
 |---|---|
 | `src/Gnoseis.Core` | .NET 10 class library: models, the Room-compatible SQLite data layer, repositories, backup/restore and validation. It has no UI code. |
 | `src/Gnoseis.App` | The WinUI 3 desktop app (.NET 10, Windows App SDK 2.5, unpackaged, self-contained `.exe`). |
-| `tests/Gnoseis.Core.Tests` | xUnit tests for the data layer, ported from the Android `tests` branch, plus database compatibility tests against the Room schema export. |
+| `tests/Gnoseis.Core.Tests` | xUnit tests for the data layer, ported from Gnoseis for Android, plus database compatibility tests against the Room schema export. |
 | `tools/Gnoseis.DemoData` | Console tool that creates a demo database (see [Demo database](#demo-database)). |
 
 ## Building and running
@@ -54,7 +84,7 @@ dotnet test tests/Gnoseis.Core.Tests
 ```
 
 The app is then at `src\Gnoseis.App\bin\x64\Debug\net10.0-windows10.0.19041.0\win-x64\Gnoseis.exe`.
-If it ever fails to start, the error is written to `%LOCALAPPDATA%\Gnoseis\crash.log`.
+If it ever fails to start, the error is written to `crash.log` in the [data folder](#where-the-data-is-stored).
 
 ## Where the data is stored
 
@@ -63,10 +93,16 @@ If it ever fails to start, the error is written to `%LOCALAPPDATA%\Gnoseis\crash
 %LOCALAPPDATA%\Gnoseis\settings.json     preferences, window position, recently opened records
 ```
 
-To keep the data somewhere else (for example for testing), set the environment variable
-`GNOSEIS_DATA_FOLDER` to a folder before starting the app.
+**Portable mode:** to keep the data next to the app (for example on a USB stick), create an empty file
+named `portable` (no extension) next to `Gnoseis.exe`. The database, `settings.json` and `crash.log`
+then go in a `data` folder beside it, created the first time the app starts. If that folder can't be
+written (for example under `Program Files`), the app says so instead of keeping the data somewhere
+else. The zip comes without this file.
 
-**Settings › Database file › Open folder** opens this folder.
+To keep the data somewhere else (for example for testing), set the environment variable
+`GNOSEIS_DATA_FOLDER` to a folder before starting the app. It takes priority over portable mode.
+
+**Settings › Database file › Open folder** opens the folder in use, and **Settings › About** shows it.
 
 ### Demo database
 

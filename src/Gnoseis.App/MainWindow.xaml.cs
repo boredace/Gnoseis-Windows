@@ -67,6 +67,12 @@ public sealed partial class MainWindow : Window
         NavView.IsEnabled = false;
         SearchBox.IsEnabled = false;
 
+        if (AppPaths.IsPortable && !await CanUsePortableFolderAsync())
+        {
+            Application.Current.Exit();
+            return;
+        }
+
         while (true)
         {
             try
@@ -102,6 +108,22 @@ public sealed partial class MainWindow : Window
         {
             Navigator.ResetToHome();
         }
+    }
+
+    /// <summary>In portable mode the data stays beside the app or nowhere: never silently somewhere else.</summary>
+    private static async Task<bool> CanUsePortableFolderAsync()
+    {
+        while (!DataLocation.CanWrite(AppPaths.DataFolder, out var error))
+        {
+            var message =
+                $"This copy of Gnoseis is portable, so it keeps its data in this folder, which can't be written to:\n\n{AppPaths.DataFolder}\n\n{error}\n\n" +
+                $"Move Gnoseis to a folder you can write to, or delete the file named \"{DataLocation.PortableMarkerName}\" next to Gnoseis.exe to keep the data in your user folder.";
+            if (!await Dialogs.ConfirmAsync("Can't write to the data folder", message, "Try again", "Quit"))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// <summary>Lets the user choose what to do when the database file cannot be opened. Nothing is deleted.</summary>
