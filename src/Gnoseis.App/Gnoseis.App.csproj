@@ -22,6 +22,8 @@
     <Company>Gnoseis.org</Company>
     <Copyright>Copyright (C) 2024 Gnoseis.org</Copyright>
     <ApplicationIcon>Assets\Gnoseis.ico</ApplicationIcon>
+    <!-- Program.cs is the entry point, so DLL loading is restricted before anything else runs. -->
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
 
   <!-- A release build shows the plain version; the SDK would otherwise append +<full commit hash>. -->

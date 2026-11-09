@@ -29,6 +29,7 @@ public sealed partial class SettingsPage : Page
         var version = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
         VersionText.Text = $"Gnoseis for Windows {version}";
         DataFolderText.Text = $"Data folder: {AppPaths.DataFolder}";
+        PortableModeText.Text = $"Portable mode: {(AppPaths.IsPortable ? "on" : "off")}";
         _initializing = false;
     }
 

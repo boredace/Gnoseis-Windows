@@ -11,27 +11,31 @@ using Gnoseis.Core.Data;
 namespace Gnoseis.App.Services;
 
 /// <summary>
-/// Where the app keeps its files. The database is "gnoseis_data" (same name as on Android) in:
+/// Where the app keeps its files. The database is "gnoseis_data" (same name as on Android) in the first of:
+///   the folder in GNOSEIS_DATA_FOLDER
+///   a data folder next to Gnoseis.exe        (portable mode: a file named "portable" next to Gnoseis.exe)
 ///   %LOCALAPPDATA%\Gnoseis\                  (unpackaged build, the default)
-///   the package LocalState folder            (if the app is ever packaged as MSIX)
+///   the package LocalState folder            (instead of the default, if the app is ever packaged as MSIX)
 /// </summary>
 public static class AppPaths
 {
-    public static string DataFolder { get; } = ResolveDataFolder();
+    private static readonly DataLocation Location = DataLocation.Resolve(
+        // For testing, or to keep the data somewhere else (e.g. a synced folder).
+        Environment.GetEnvironmentVariable("GNOSEIS_DATA_FOLDER"),
+        AppContext.BaseDirectory,
+        File.Exists(Path.Combine(AppContext.BaseDirectory, DataLocation.PortableMarkerName)),
+        DefaultDataFolder());
+
+    public static string DataFolder => Location.Folder;
+
+    public static bool IsPortable => Location.IsPortable;
 
     public static string DatabaseFile => Path.Combine(DataFolder, DatabaseSchema.FileName);
 
     public static string SettingsFile => Path.Combine(DataFolder, "settings.json");
 
-    private static string ResolveDataFolder()
+    private static string DefaultDataFolder()
     {
-        // For testing, or to keep the data somewhere else (e.g. a synced folder).
-        var overridden = Environment.GetEnvironmentVariable("GNOSEIS_DATA_FOLDER");
-        if (!string.IsNullOrWhiteSpace(overridden))
-        {
-            return Path.GetFullPath(overridden);
-        }
-
         try
         {
             // Only available when running with package identity.

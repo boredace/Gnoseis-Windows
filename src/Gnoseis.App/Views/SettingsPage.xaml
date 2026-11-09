@@ -213,6 +213,11 @@
                             IsTextSelectionEnabled="True"
                             Style="{StaticResource CaptionTextBlockStyle}"
                             TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Name="PortableModeText"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </StackPanel>
