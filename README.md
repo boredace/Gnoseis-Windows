@@ -8,6 +8,12 @@ The Windows app uses **the same SQLite database format** as the Android app. A `
 or backup from Android can be used on Windows as long as it's schema version 3 or earlier (Android
 0.3.0 writes version 3), and a Windows database or backup can be used on Android 0.3.0 or later. See [Supported schema versions](#supported-schema-versions).
 
+<p align="center">
+  <img src="docs/readme-screens.png" alt="Gnoseis for Windows in dark mode: the Home page with the most linked records, search results with a best match, a contact's linked records, and an organization's history" width="880">
+</p>
+
+More screenshots of the current release are in [screenshots](screenshots/).
+
 ## Features
 
 Gnoseis for Windows 0.1.0 offers what Gnoseis for Android 0.3.0 offers, with the newer search from Android 0.4.0:
@@ -332,3 +338,5 @@ Gnoseis is dual-licensed:
    [COMMERCIAL_LICENSE](COMMERCIAL_LICENSE).
 
 By contributing to this project, you agree to license your contributions under both licenses.
+
+The screenshots show fictional sample data.
