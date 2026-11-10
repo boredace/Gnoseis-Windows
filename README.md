@@ -2,7 +2,7 @@
 
 Gnoseis is a CRM application that can also be used as an all-purpose knowledge manager.
 It stores all data on the device. This is the Windows (WinUI 3) version, ported from
-[Gnoseis for Android](../../Android/Gnoseis-Android).
+[Gnoseis for Android](https://github.com/boredace/Gnoseis-Android).
 
 The Windows app uses **the same SQLite database format** as the Android app. A `gnoseis_data` file
 or backup from Android can be used on Windows as long as it's schema version 3 or earlier (Android
