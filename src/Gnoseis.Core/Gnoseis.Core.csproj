@@ -15,6 +15,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- EFF large word list (CC BY 3.0) for generated backup passphrases, unchanged from eff.org. -->
+    <EmbeddedResource Include="Backup\eff_large_wordlist.txt" LogicalName="Gnoseis.Core.Backup.eff_large_wordlist.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Gnoseis.Core.Tests" />
   </ItemGroup>
 
