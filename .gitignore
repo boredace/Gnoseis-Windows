@@ -27,3 +27,5 @@ coverage*/
 gnoseis_data
 gnoseis_data-*
 *.backup
+# except the encrypted backups shared with Gnoseis-Android's tests
+!tests/Gnoseis.Core.Tests/SharedBackups/*.backup
