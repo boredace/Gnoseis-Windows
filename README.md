@@ -24,7 +24,8 @@ Gnoseis for Windows 0.1.0 offers what Gnoseis for Android 0.3.0 offers, with the
 - All records linked to a record shown on its page, by type with counts, and unlinked with Undo.
 - Search across all record types, with ranked results, type filters and a best match, and create a
   record from a search that finds no record with that name.
-- Back up the database to a file and restore it (Android: Settings › Import / Export).
+- Back up the database to a file and restore it (Android: Settings › Import / Export), optionally
+  encrypted with a backup passphrase (see [Encrypted backups](#encrypted-backups)).
 
 Only on Windows: the contact, note, organization, category and item pages, the linked record trail,
 and Outlook-style keyboard shortcuts (see [Windows user experience](#windows-user-experience)).
@@ -97,6 +98,7 @@ If it ever fails to start, the error is written to `crash.log` in the [data fold
 ```
 %LOCALAPPDATA%\Gnoseis\gnoseis_data      the database (same file name as on Android)
 %LOCALAPPDATA%\Gnoseis\settings.json     preferences, window position, recently opened records
+%LOCALAPPDATA%\Gnoseis\backup-key.dat    the backup key, while backups are encrypted (see Encrypted backups)
 ```
 
 **Portable mode:** to keep the data next to the app (for example on a USB stick), create an empty file
@@ -150,6 +152,43 @@ Either:
 
 To go the other way, use **Settings › Back up database**. It writes a single self-contained file that
 the Android app can import.
+
+### Encrypted backups
+
+Backups can be encrypted with a backup passphrase. Turn on **Settings › Encrypt backups** and either
+use a generated passphrase of 20 words (recommended) or choose your own of at least 12 characters.
+Write the generated words down in the order of their numbers; the numbers aren't part of the
+passphrase. Line breaks and extra spaces don't matter when you type it back.
+
+While encryption is on:
+
+- **Settings › Back up database** and **Back up now** on Home encrypt every backup without asking for
+  the passphrase. The suggested file name is `gnoseis_data_<date>.encrypted.backup`.
+- **Settings › Back up without encryption** still makes a plain backup, after a warning: anyone who
+  gets that file can read all the data in it.
+
+**Settings › Restore database** asks for the passphrase of an encrypted backup, unless it was made
+with the passphrase set up on this PC. A wrong passphrase, or a damaged or cut-off file, is refused
+before anything is replaced. After a restore with a typed passphrase, the app offers to keep
+encrypting backups with it.
+
+**A lost passphrase can't be recovered.** Without it an encrypted backup can't be opened, and Gnoseis
+can't reset it. Keep it somewhere safe, away from the backups.
+
+How it works:
+
+- The backup is encrypted with AES-256-GCM, in chunks that are each checked when the file is read. The
+  key is derived from the passphrase with Argon2id.
+- The passphrase is never stored. The key derived from it is kept in `backup-key.dat` in the data
+  folder, protected with Windows DPAPI for the current Windows user, so backing up doesn't ask for
+  the passphrase. Another Windows user or PC can't open that file (in portable mode too, when the
+  folder is moved): there, Back up makes no backup until encryption is set up again in Settings, and
+  Back up without encryption still works.
+- Changing the passphrase applies to new backups; backups made before keep the passphrase they were
+  made with. Turning encryption off doesn't decrypt backups already made.
+- Encrypted backups have the same file format on Windows and Android, so either app can restore
+  them. The format is documented in the
+  [Gnoseis for Android repository](https://github.com/boredace/Gnoseis-Android).
 
 ### Supported schema versions
 
@@ -326,7 +365,7 @@ switching and seeing related information at a glance.
 | Snackbar with Undo after unlinking | Info bar with **Undo** at the bottom of the record page |
 | Link Records page | Link picker dialog |
 | Search page | Search box in the title bar, with suggestions and a results page |
-| Import / Export page | Settings page cards: theme, database location, back up, restore, shortcuts |
+| Import / Export page | Settings page cards: theme, database location, back up, backup encryption, restore, shortcuts |
 
 
 ## Licensing
@@ -338,5 +377,8 @@ Gnoseis is dual-licensed:
    [COMMERCIAL_LICENSE](COMMERCIAL_LICENSE).
 
 By contributing to this project, you agree to license your contributions under both licenses.
+
+Licences and attributions of third-party material in the app are in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md), which also ships in the zip.
 
 The screenshots show fictional sample data.

@@ -89,6 +89,8 @@
     <Manifest Include="$(ApplicationManifest)" />
     <Content Include="Assets\Gnoseis.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\TitleBarIcon.scale-*.png" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Licences of third-party material, shipped next to Gnoseis.exe. -->
+    <Content Include="..\..\THIRD_PARTY_NOTICES.md" Link="THIRD_PARTY_NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- The icon sources (Assets\source) are for regenerating the images, not for the app. -->
     <Content Remove="Assets\source\**" />
     <None Remove="Assets\source\**" />
