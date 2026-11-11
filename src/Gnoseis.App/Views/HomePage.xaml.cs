@@ -206,7 +206,21 @@ public sealed partial class HomePage : Page
     /// <summary>The same backup as Settings › Back up database; the reminder updates when it succeeds.</summary>
     private async void BackUpNow_Click(object sender, RoutedEventArgs e)
     {
-        var file = await BackupFiles.PickBackupFileAsync();
+        // Encryption on, but its key can't be opened on this PC: never a plain backup without the user knowing.
+        var state = App.BackupEncryption.State;
+        if (state == Core.Backup.BackupEncryptionState.KeyUnavailable)
+        {
+            if (await Dialogs.ConfirmAsync("Set up encryption again on this PC",
+                    "Backups are encrypted, but encryption was set up for another Windows user or PC, so no backup was made. " +
+                    "Set it up again in Settings, or use Back up without encryption there.",
+                    "Open Settings", defaultToPrimary: true))
+            {
+                await Navigator.ShowSettingsAsync();
+            }
+            return;
+        }
+
+        var file = await BackupFiles.PickBackupFileAsync(state == Core.Backup.BackupEncryptionState.On);
         if (file == null)
         {
             return;

@@ -14,13 +14,16 @@ namespace Gnoseis.App.Services;
 /// <summary>The file pickers of Back up and Restore (Settings, and Back up now on Home).</summary>
 public static class BackupFiles
 {
-    /// <summary>Asks where to save a backup; null if the user cancels.</summary>
-    public static async Task<StorageFile?> PickBackupFileAsync()
+    /// <summary>
+    /// Asks where to save a backup; null if the user cancels. An encrypted backup is suggested as
+    /// "gnoseis_data_&lt;date&gt;.encrypted.backup", still under the .backup type.
+    /// </summary>
+    public static async Task<StorageFile?> PickBackupFileAsync(bool encrypted)
     {
         var picker = new FileSavePicker
         {
             SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
-            SuggestedFileName = BackupRepository.DefaultBackupFileName(DateTime.Now),
+            SuggestedFileName = Core.Backup.BackupEncryption.SuggestedFileName(DateTime.Now, encrypted),
         };
         picker.FileTypeChoices.Add("Gnoseis backup", [BackupRepository.BackupFileExtension]);
         InitializeWithWindow(picker);

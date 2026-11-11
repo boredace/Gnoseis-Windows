@@ -200,6 +200,38 @@ public static class EncryptedBackupFormat
         }
     }
 
+    /// <summary>
+    /// Whether <paramref name="masterKey"/> opens the first chunk of the encrypted backup at
+    /// <paramref name="path"/>: a quick check of a typed passphrase before the whole file is decrypted.
+    /// False for a wrong key or a damaged first chunk (they can't be told apart).
+    /// </summary>
+    public static bool KeyOpens(string path, BackupMasterKey masterKey)
+    {
+        using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        var header = ReadHeader(input);
+        var fullChunk = header.ChunkSize + TagSize;
+        var chunk = new byte[fullChunk + 1];
+        var length = input.ReadAtLeast(chunk, chunk.Length, throwOnEndOfStream: false);
+        if (length <= TagSize)
+        {
+            return false;
+        }
+        var last = length <= fullChunk;
+        var chunkLength = Math.Min(length, fullChunk);
+        var plain = new byte[chunkLength - TagSize];
+        using var aes = CreateCipher(masterKey.Key, header);
+        Span<byte> nonce = stackalloc byte[NonceSize];
+        try
+        {
+            return TryDecrypt(aes, nonce, 0, last, chunk.AsSpan(0, chunkLength - TagSize),
+                chunk.AsSpan(chunkLength - TagSize, TagSize), plain, header.Bytes);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(plain);
+        }
+    }
+
     /// <summary>Decrypts a whole encrypted backup with a master key that fits its header.</summary>
     public static void Decrypt(Stream input, BackupMasterKey masterKey, Stream output) =>
         Decrypt(input, ReadHeader(input), masterKey, output);

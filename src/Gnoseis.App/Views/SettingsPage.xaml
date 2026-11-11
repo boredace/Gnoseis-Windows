@@ -99,10 +99,69 @@
                             <TextBlock
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="Save a copy of all your data to a file. The file can be restored here or in Gnoseis for Android. Backup files are not encrypted."
+                                Text="Save a copy of all your data to a file. The file can be restored here or in Gnoseis for Android."
                                 TextWrapping="Wrap" />
                         </StackPanel>
                         <Button x:Name="BackupButton" Grid.Column="2" VerticalAlignment="Center" Click="Backup_Click" Content="Back up…" />
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource CardStyle}">
+                    <StackPanel Spacing="12">
+                        <Grid Style="{StaticResource SettingsCardGridStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon VerticalAlignment="Center" Glyph="&#xE72E;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Encrypt backups" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="Backups are encrypted with AES-256 and can only be opened with the backup passphrase, here or in Gnoseis for Android. Uses no cryptography that quantum computers are known to break."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch
+                                x:Name="EncryptToggle"
+                                Grid.Column="2"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="Encrypt backups"
+                                Toggled="EncryptToggle_Toggled" />
+                        </Grid>
+                        <InfoBar
+                            x:Name="KeyUnavailableInfoBar"
+                            IsClosable="False"
+                            Message="Encryption was set up for another Windows user or PC, so Back up makes no backups here until it is set up again. Back up without encryption still works."
+                            Severity="Warning"
+                            Title="Set up encryption again on this PC" />
+                        <Button
+                            x:Name="ChangePassphraseButton"
+                            Margin="36,0,0,0"
+                            Click="ChangePassphrase_Click"
+                            Content="Change passphrase…" />
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="PlainBackupCard" Style="{StaticResource CardStyle}">
+                    <Grid Style="{StaticResource SettingsCardGridStyle}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon VerticalAlignment="Center" Glyph="&#xE785;" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Back up without encryption" />
+                            <TextBlock
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="Save a plain copy of all your data. Anyone who gets this file can read it."
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button x:Name="PlainBackupButton" Grid.Column="2" VerticalAlignment="Center" Click="PlainBackup_Click" Content="Back up…" />
                     </Grid>
                 </Border>
 
@@ -119,7 +178,7 @@
                             <TextBlock
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                 Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="Replace all data in Gnoseis with a backup file, or with a gnoseis_data file from Gnoseis for Android. The file is checked first, and a copy of your current data is kept in the database folder."
+                                Text="Replace all data in Gnoseis with a backup file, or with a gnoseis_data file from Gnoseis for Android. The file is checked first, and a copy of your current data is kept in the database folder. An encrypted backup asks for its passphrase when this device has no key for it."
                                 TextWrapping="Wrap" />
                         </StackPanel>
                         <Button x:Name="RestoreButton" Grid.Column="2" VerticalAlignment="Center" Click="Restore_Click" Content="Restore…" />

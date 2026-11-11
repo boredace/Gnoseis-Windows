@@ -46,6 +46,12 @@ public partial class App : Application
         set => _container = value;
     }
 
+    /// <summary>Whether backups are encrypted, and the stored key (DPAPI). Needs the database to be open.</summary>
+    public static Core.Backup.BackupEncryption BackupEncryption =>
+        _backupEncryption ??= new(Container.Backup, DpapiKeyProtector.StoredBackupKey);
+
+    private static Core.Backup.BackupEncryption? _backupEncryption;
+
     public static AppSettings Settings { get; private set; } = new();
 
     public static MainWindow? MainWindow { get; private set; }

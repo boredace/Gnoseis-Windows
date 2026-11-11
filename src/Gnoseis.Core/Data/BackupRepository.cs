@@ -162,44 +162,65 @@ public sealed class BackupRepository(GnoseisDatabase database)
     /// encrypted one (told apart by its first 8 bytes, never by its name) is decrypted with the key
     /// <paramref name="unlock"/> gives. The file itself is not changed.
     /// </summary>
+    /// <remarks>
+    /// <paramref name="unlock"/> is called on the caller's thread (the UI thread in the app, so it can show a
+    /// dialog); the file work runs on the thread pool.
+    /// </remarks>
     /// <exception cref="EncryptedBackupException">The encrypted file can't be opened (wrong passphrase, damage, newer version).</exception>
     /// <exception cref="OperationCanceledException">The file is encrypted and no key was given.</exception>
-    public static Task<StagedBackup> StageAsync(string sourcePath, BackupUnlocker? unlock) => Task.Run(async () =>
+    public static async Task<StagedBackup> StageAsync(string sourcePath, BackupUnlocker? unlock)
     {
-        if (!File.Exists(sourcePath))
+        // No ConfigureAwait(false) before unlock is called: it must run where the caller runs.
+        var header = await Task.Run(() => ReadEncryptionHeader(sourcePath));
+        if (header == null)
         {
-            throw new FileNotFoundException("The file does not exist.", sourcePath);
+            return await Task.Run(() =>
+            {
+                var stagingPath = StagePlain(sourcePath);
+                return new StagedBackup(stagingPath, InspectStagedOrDelete(stagingPath), null);
+            }).ConfigureAwait(false);
         }
 
-        if (!EncryptedBackupFormat.IsEncryptedFile(sourcePath))
-        {
-            var stagingPath = StagePlain(sourcePath);
-            return new StagedBackup(stagingPath, InspectStagedOrDelete(stagingPath), null);
-        }
-
-        using var input = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-        var header = EncryptedBackupFormat.ReadHeader(input);
-        using var key = unlock == null ? null : await unlock(header).ConfigureAwait(false);
+        using var key = unlock == null ? null : await unlock(header);
         if (key == null)
         {
             throw new OperationCanceledException("No key was given for the encrypted backup.");
         }
 
-        var path = NewStagingPath();
-        try
+        return await Task.Run(() =>
         {
-            using (var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+            var path = NewStagingPath();
+            try
             {
-                EncryptedBackupFormat.Decrypt(input, header, key, output);
+                using (var input = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                using (var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    EncryptedBackupFormat.Decrypt(input, key, output);
+                }
             }
-        }
-        catch
+            catch
+            {
+                DeleteStaged(path);
+                throw;
+            }
+            return new StagedBackup(path, InspectStagedOrDelete(path), header);
+        }).ConfigureAwait(false);
+    }
+
+    /// <summary>The header of an encrypted backup, or null for any other file (decided by its first 8 bytes).</summary>
+    private static EncryptedBackupHeader? ReadEncryptionHeader(string path)
+    {
+        if (!File.Exists(path))
         {
-            DeleteStaged(path);
-            throw;
+            throw new FileNotFoundException("The file does not exist.", path);
         }
-        return new StagedBackup(path, InspectStagedOrDelete(path), header);
-    });
+        if (!EncryptedBackupFormat.IsEncryptedFile(path))
+        {
+            return null;
+        }
+        using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return EncryptedBackupFormat.ReadHeader(input);
+    }
 
     /// <summary>
     /// Checks that a file is an intact Gnoseis database at a supported schema version (an older

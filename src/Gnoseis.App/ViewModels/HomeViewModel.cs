@@ -207,13 +207,16 @@ public sealed class HomeViewModel : PageViewModel
 
     public bool CanBackUp => !IsBackingUp;
 
-    /// <summary>Backs up to <paramref name="path"/> (as Settings › Back up database) and updates the reminder.</summary>
+    /// <summary>
+    /// Backs up to <paramref name="path"/> (as Settings › Back up database: encrypted while encryption is on)
+    /// and updates the reminder.
+    /// </summary>
     public async Task BackUpAsync(string path)
     {
         IsBackingUp = true;
         try
         {
-            await Data.Backup.ExportAsync(path);
+            await App.BackupEncryption.BackUpAsync(path);
             Backup = await Data.Home.GetBackupReminderAsync();
         }
         finally
