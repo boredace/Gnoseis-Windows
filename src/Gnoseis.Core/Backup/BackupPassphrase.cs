@@ -104,6 +104,19 @@ public static class BackupPassphrase
         return string.Join(' ', picked);
     }
 
+    /// <summary>Generated words are shown in rows of this many.</summary>
+    public const int GeneratedWordsPerRow = 4;
+
+    /// <summary>
+    /// The words of a generated passphrase as shown: each with its number, from 1, counted along the rows
+    /// (the first row is 1 to 4), since the order is part of the passphrase. The numbers are only shown;
+    /// the passphrase itself, and what Copy copies, is the words alone.
+    /// </summary>
+    public static IReadOnlyList<NumberedWord> NumberedWords(string generated) =>
+        generated.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Select((word, i) => new NumberedWord(i + 1, word, i / GeneratedWordsPerRow, i % GeneratedWordsPerRow))
+            .ToList();
+
     /// <summary>
     /// Unicode's 25 White_Space code points, as a fixed list: the platforms' own tests differ (Kotlin's
     /// leaves out U+0085 and adds U+001C-001F), and Gnoseis for Android uses this same list.
@@ -156,3 +169,6 @@ public static class BackupPassphrase
         return words;
     }
 }
+
+/// <summary>A generated word with its number (from 1) and its place in the rows of four.</summary>
+public readonly record struct NumberedWord(int Number, string Word, int Row, int Column);

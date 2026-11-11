@@ -204,6 +204,33 @@ public class BackupPassphraseTests
     }
 
     [Fact]
+    public void Generated_words_are_numbered_1_to_20_along_rows_of_four()
+    {
+        var generated = BackupPassphrase.Generate();
+
+        var numbered = BackupPassphrase.NumberedWords(generated);
+
+        Assert.Equal(Enumerable.Range(1, 20), numbered.Select(n => n.Number));
+        Assert.Equal(new NumberedWord(1, generated.Split(' ')[0], 0, 0), numbered[0]);
+        Assert.Equal((0, 3), (numbered[3].Row, numbered[3].Column));
+        Assert.Equal((1, 0), (numbered[4].Row, numbered[4].Column));
+        Assert.Equal((4, 3), (numbered[19].Row, numbered[19].Column));
+    }
+
+    [Fact]
+    public void The_copied_words_have_no_numbers_and_keep_their_order()
+    {
+        // Copy copies the generated passphrase itself; the numbers are only shown beside it.
+        var generated = BackupPassphrase.Generate();
+        var numbered = BackupPassphrase.NumberedWords(generated);
+
+        Assert.DoesNotContain(generated, char.IsDigit);
+        Assert.Equal(generated, string.Join(' ', numbered.OrderBy(n => n.Number).Select(n => n.Word)));
+        Assert.Equal(BackupPassphrase.ToKeyBytes(generated),
+            BackupPassphrase.ToKeyBytes(string.Join(' ', numbered.Select(n => n.Word))));
+    }
+
+    [Fact]
     public void Generated_passphrases_differ()
     {
         Assert.NotEqual(BackupPassphrase.Generate(), BackupPassphrase.Generate());

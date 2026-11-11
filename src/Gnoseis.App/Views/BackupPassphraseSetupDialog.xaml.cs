@@ -6,8 +6,11 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
+using System.Globalization;
 using Gnoseis.Core.Backup;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Windows.ApplicationModel.DataTransfer;
 
@@ -19,8 +22,6 @@ namespace Gnoseis.App.Views;
 /// </summary>
 public sealed partial class BackupPassphraseSetupDialog : ContentDialog
 {
-    private const int WordsPerRow = 4;
-
     private readonly bool _isChange;
     private string _generated = "";
     private bool _useAnywayConfirmed;
@@ -46,33 +47,47 @@ public sealed partial class BackupPassphraseSetupDialog : ContentDialog
 
     private string Chosen => UsesOwn ? OwnBox.Password : _generated;
 
+    /// <summary>
+    /// New words, each with its number counted along the rows, since the order is part of the passphrase.
+    /// The numbers are only shown: Copy and the check on the next step use the words alone.
+    /// </summary>
     private void ShowNewWords()
     {
         _generated = BackupPassphrase.Generate();
-        var words = _generated.Split(' ');
+        var numbered = BackupPassphrase.NumberedWords(_generated);
         WordsGrid.Children.Clear();
         WordsGrid.ColumnDefinitions.Clear();
         WordsGrid.RowDefinitions.Clear();
-        for (var c = 0; c < WordsPerRow; c++)
+        // Columns as wide as their longest word: the longest list words still fit at the dialog's minimum width.
+        for (var c = 0; c < BackupPassphrase.GeneratedWordsPerRow; c++)
         {
-            WordsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            WordsGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         }
-        for (var r = 0; r < words.Length / WordsPerRow; r++)
+        for (var r = 0; r <= numbered[^1].Row; r++)
         {
             WordsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         }
-        for (var i = 0; i < words.Length; i++)
+        // Added in number order, so screen readers and the reading order go 1 to 20.
+        foreach (var item in numbered)
         {
+            var number = new TextBlock
+            {
+                Text = item.Number.ToString(CultureInfo.InvariantCulture),
+                Style = (Style)Resources["WordNumberTextStyle"],
+            };
+            // Read with the word instead ("word 1, chevron").
+            AutomationProperties.SetAccessibilityView(number, AccessibilityView.Raw);
             var word = new TextBlock
             {
-                Text = words[i],
+                Text = item.Word,
                 Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
             };
-            Grid.SetRow(word, i / WordsPerRow);
-            Grid.SetColumn(word, i % WordsPerRow);
-            WordsGrid.Children.Add(word);
+            AutomationProperties.SetName(word, $"word {item.Number}, {item.Word}");
+            var cell = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { number, word } };
+            Grid.SetRow(cell, item.Row);
+            Grid.SetColumn(cell, item.Column);
+            WordsGrid.Children.Add(cell);
         }
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(WordsGrid, "Generated passphrase: " + _generated);
         CopiedText.Text = "";
     }
 
