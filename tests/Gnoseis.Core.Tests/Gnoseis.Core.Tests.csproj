@@ -26,6 +26,8 @@
     <None Include="RoomSchema\3.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- Encrypted backups shared with Gnoseis-Android's tests: each client restores the other's file. -->
     <None Include="SharedBackups\*.backup" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Key and passphrase test vectors shared with Gnoseis-Android, which holds the originals. -->
+    <None Include="SharedBackups\*.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- The app's record type colour resources, checked against the Core table. -->
     <None Include="..\..\src\Gnoseis.App\Resources\RecordTypeColors.xaml" Link="AppResources\RecordTypeColors.xaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

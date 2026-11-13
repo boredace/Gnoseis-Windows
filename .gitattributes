@@ -2,3 +2,5 @@
 *.backup binary
 # The EFF word list is kept exactly as published (LF line endings), so its SHA-256 can be checked.
 src/Gnoseis.Core/Backup/eff_large_wordlist.txt -text
+# Test files shared byte for byte with Gnoseis-Android: never convert line endings
+tests/Gnoseis.Core.Tests/SharedBackups/* -text
