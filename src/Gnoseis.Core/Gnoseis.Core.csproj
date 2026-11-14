@@ -9,7 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Argon2id for encrypted backups; only Argon2 is used from it. Pure managed code, MIT licence. -->
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- EFF large word list (CC BY 3.0) for generated backup passphrases, unchanged from eff.org. -->
+    <EmbeddedResource Include="Backup\eff_large_wordlist.txt" LogicalName="Gnoseis.Core.Backup.eff_large_wordlist.txt" />
   </ItemGroup>
 
   <ItemGroup>

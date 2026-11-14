@@ -77,6 +77,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
+    <!-- DPAPI for the stored backup key. Managed only; it calls Windows' own crypt32.dll. -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
   </ItemGroup>
 
   <ItemGroup>
@@ -87,6 +89,8 @@
     <Manifest Include="$(ApplicationManifest)" />
     <Content Include="Assets\Gnoseis.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\TitleBarIcon.scale-*.png" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Licences of third-party material, shipped next to Gnoseis.exe. -->
+    <Content Include="..\..\THIRD_PARTY_NOTICES.md" Link="THIRD_PARTY_NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
     <!-- The icon sources (Assets\source) are for regenerating the images, not for the app. -->
     <Content Remove="Assets\source\**" />
     <None Remove="Assets\source\**" />

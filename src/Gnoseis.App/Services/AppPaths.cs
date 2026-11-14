@@ -34,6 +34,9 @@ public static class AppPaths
 
     public static string SettingsFile => Path.Combine(DataFolder, "settings.json");
 
+    /// <summary>The backup master key, protected for the current Windows user (not in settings.json).</summary>
+    public static string BackupKeyFile => Path.Combine(DataFolder, Core.Backup.StoredBackupKey.FileName);
+
     private static string DefaultDataFolder()
     {
         try

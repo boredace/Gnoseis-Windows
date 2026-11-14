@@ -73,6 +73,9 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        // Plain copies left by a backup or restore that didn't finish.
+        await Task.Run(() => BackupRepository.DeleteTemporaryFiles(AppPaths.DataFolder));
+
         while (true)
         {
             try
