@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -8,7 +8,10 @@
 
 namespace Gnoseis.Core.Models;
 
-/// <summary>Short forms of stored text for rows and names.</summary>
+/// <summary>
+/// Short forms of stored text for rows and names, and the line breaks of the multi-line text
+/// fields (a note's text and the comments of a contact, organization, category and item).
+/// </summary>
 public static class RecordText
 {
     private static readonly char[] LineBreaks = ['\r', '\n'];
@@ -42,4 +45,32 @@ public static class RecordText
     /// <summary>A note's day as yyyy-MM-dd: its stored day (createDate), read in UTC, as the note list shows it.</summary>
     public static string NoteDay(Note note) =>
         EpochTime.ToUtcDate(note.CreateDate).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// The text with each line break as a line feed (LF), the way stored text keeps them: CRLF
+    /// becomes one LF, then any remaining CR becomes LF. Nothing else changes (no trimming; other
+    /// white space and Unicode line separators are kept). WinUI's text box hands back a CR for each
+    /// line break; Android draws a line break only at an LF.
+    /// </summary>
+    public static string NormalizeLineBreaks(string text) =>
+        text.Contains('\r') ? text.Replace("\r\n", "\n").Replace('\r', '\n') : text;
+
+    /// <summary>True when the two texts are the same once their line breaks are normalised; null counts as empty.</summary>
+    public static bool SameText(string? a, string? b) =>
+        NormalizeLineBreaks(a ?? "") == NormalizeLineBreaks(b ?? "");
+
+    /// <summary>
+    /// The value to save for an edited multi-line text: <paramref name="stored"/> as it is when the
+    /// edited text is the same once both are normalised (so an unchanged record isn't rewritten,
+    /// whatever line breaks it was stored with), otherwise the edited text with LF line breaks.
+    /// </summary>
+    public static string? Edited(string? stored, string edited) =>
+        SameText(stored, edited) ? stored : NormalizeLineBreaks(edited);
+
+    /// <summary>
+    /// As <see cref="Edited"/>, for an optional text: null when the edited text is blank (optional
+    /// columns are NULL, not "").
+    /// </summary>
+    public static string? EditedOrNull(string? stored, string edited) =>
+        string.IsNullOrWhiteSpace(edited) ? null : Edited(stored, edited);
 }

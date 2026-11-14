@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -112,13 +112,14 @@ public static class NotePage
     /// <summary>
     /// The note with an edited title, text and day, or null when nothing changed. A value equal to
     /// the stored one is kept as stored (an empty box doesn't turn a missing value into ""), and
-    /// a new day keeps the note's time of day.
+    /// a new day keeps the note's time of day. Text that differs only in its line breaks is equal;
+    /// changed text is saved with LF line breaks.
     /// </summary>
     public static Note? Edited(Note note, string title, string text, DateOnly day)
     {
         var (createDate, createDateTime) = NoteDates.ForEditedNote(note, day);
         var newTitle = title == (note.Title ?? "") ? note.Title : title;
-        var newText = text == (note.TextContents ?? "") ? note.TextContents : text;
+        var newText = RecordText.Edited(note.TextContents, text);
         if (newTitle == note.Title && newText == note.TextContents
             && createDate == note.CreateDate && createDateTime == note.CreateDateTime)
         {

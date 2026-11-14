@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -19,7 +19,7 @@ public sealed class CreateLinkedNoteUseCase(GnoseisDatabase database)
 {
     /// <summary>
     /// Saves a note with <paramref name="title"/> (null when blank, never taken from the text) and
-    /// <paramref name="text"/> as typed, dated <paramref name="day"/> at <paramref name="timeOfDay"/>,
+    /// <paramref name="text"/> as typed (its line breaks saved as LF), dated <paramref name="day"/> at <paramref name="timeOfDay"/>,
     /// linked to <paramref name="recordId"/>. Both rows are stamped with the current time.
     /// </summary>
     public async Task<Note> InvokeAsync(string recordId, RecordType recordType, string? title, string? text, DateOnly day, TimeSpan timeOfDay)
@@ -29,7 +29,7 @@ public sealed class CreateLinkedNoteUseCase(GnoseisDatabase database)
         {
             OwnerDbId = "db1",
             Title = string.IsNullOrWhiteSpace(title) ? null : title.Trim(),
-            TextContents = text,
+            TextContents = text == null ? null : RecordText.NormalizeLineBreaks(text),
             CreateDate = createDate,
             CreateDateTime = createDateTime,
         };

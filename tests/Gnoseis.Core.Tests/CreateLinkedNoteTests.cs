@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -51,6 +51,15 @@ public class CreateLinkedNoteTests : IDisposable
         Assert.InRange((long)TestDatabase.ScalarRaw(_test.FilePath, "SELECT createdAt FROM LinkedRecord;")!, before, after);
         Assert.Equal((long)RecordType.Contact, (long)TestDatabase.ScalarRaw(_test.FilePath, "SELECT record1TypeId FROM LinkedRecord;")!);
         Assert.Equal((long)RecordType.Note, (long)TestDatabase.ScalarRaw(_test.FilePath, "SELECT record2TypeId FROM LinkedRecord;")!);
+    }
+
+    [Fact]
+    public async Task Saves_line_breaks_as_line_feeds()
+    {
+        var note = await _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, null, "Called\rabout\r\nthe\r\rorder", new DateOnly(2026, 1, 1), TimeSpan.Zero);
+
+        Assert.Equal("Called\nabout\nthe\n\norder", note.TextContents);
+        Assert.Equal("Called\nabout\nthe\n\norder", (await _data.Notes.GetNoteAsync(note.Id))!.TextContents);
     }
 
     [Fact]

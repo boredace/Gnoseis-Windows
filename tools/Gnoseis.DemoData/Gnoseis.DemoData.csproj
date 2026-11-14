@@ -11,6 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The tests check the generated text. -->
+    <InternalsVisibleTo Include="Gnoseis.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Gnoseis.Core\Gnoseis.Core.csproj" />
   </ItemGroup>
 
