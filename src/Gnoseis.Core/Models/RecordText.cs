@@ -54,4 +54,23 @@ public static class RecordText
     /// </summary>
     public static string NormalizeLineBreaks(string text) =>
         text.Contains('\r') ? text.Replace("\r\n", "\n").Replace('\r', '\n') : text;
+
+    /// <summary>True when the two texts are the same once their line breaks are normalised; null counts as empty.</summary>
+    public static bool SameText(string? a, string? b) =>
+        NormalizeLineBreaks(a ?? "") == NormalizeLineBreaks(b ?? "");
+
+    /// <summary>
+    /// The value to save for an edited multi-line text: <paramref name="stored"/> as it is when the
+    /// edited text is the same once both are normalised (so an unchanged record isn't rewritten,
+    /// whatever line breaks it was stored with), otherwise the edited text with LF line breaks.
+    /// </summary>
+    public static string? Edited(string? stored, string edited) =>
+        SameText(stored, edited) ? stored : NormalizeLineBreaks(edited);
+
+    /// <summary>
+    /// As <see cref="Edited"/>, for an optional text: null when the edited text is blank (optional
+    /// columns are NULL, not "").
+    /// </summary>
+    public static string? EditedOrNull(string? stored, string edited) =>
+        string.IsNullOrWhiteSpace(edited) ? null : Edited(stored, edited);
 }

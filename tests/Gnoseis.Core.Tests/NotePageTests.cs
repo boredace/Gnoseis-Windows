@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -236,6 +236,46 @@ public class NotePageTests : IDisposable
 
         Assert.Null(NotePage.Edited(note, "Kick-off", "Agenda\nBudget", NoteDates.DisplayedDay(note)));
         Assert.Equal((100L, 200L), await _data.Notes.GetTimesAsync(note.Id));
+    }
+
+    [Theory]
+    [InlineData("Agenda\rBudget")]
+    [InlineData("Agenda\r\nBudget")]
+    [InlineData("Agenda\nBudget")]
+    public async Task Text_that_differs_only_in_its_line_breaks_is_no_change(string stored)
+    {
+        var note = await _data.Notes.AddNoteAsync(Meeting(text: stored));
+        TestDatabase.ExecuteRaw(_test.FilePath, "UPDATE Note SET createdAt = 100, updatedAt = 200;");
+
+        foreach (var text in new[] { "Agenda\rBudget", "Agenda\r\nBudget", "Agenda\nBudget" })
+        {
+            Assert.Null(NotePage.Edited(note, "Kick-off", text, NoteDates.DisplayedDay(note)));
+        }
+        Assert.Equal(stored, (await _data.Notes.GetNoteAsync(note.Id))!.TextContents);
+        Assert.Equal((100L, 200L), await _data.Notes.GetTimesAsync(note.Id));
+    }
+
+    [Theory]
+    [InlineData("Agenda\rBudget")]
+    [InlineData("Agenda\r\nBudget")]
+    [InlineData("Agenda\nBudget")]
+    public void Edited_text_comes_back_with_line_feeds(string stored)
+    {
+        var note = Meeting(text: stored);
+
+        var edited = NotePage.Edited(note, "Kick-off", "Agenda\rBudget\r\rRisks\r\nNext", NoteDates.DisplayedDay(note))!;
+
+        Assert.Equal("Agenda\nBudget\n\nRisks\nNext", edited.TextContents);
+    }
+
+    [Fact]
+    public void A_new_title_or_day_keeps_text_that_differs_only_in_its_line_breaks()
+    {
+        var note = Meeting(text: "Agenda\rBudget");
+
+        var edited = NotePage.Edited(note, "Kick-off 2", "Agenda\nBudget", new DateOnly(2026, 10, 16))!;
+
+        Assert.Equal("Agenda\rBudget", edited.TextContents);
     }
 
     [Fact]

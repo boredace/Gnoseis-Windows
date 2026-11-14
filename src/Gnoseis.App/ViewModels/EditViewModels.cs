@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -297,7 +297,7 @@ public sealed class NoteEditViewModel : EditViewModelBase
         {
             OwnerDbId = "db1",
             Title = NoteTitle.Value,
-            TextContents = Text.Value,
+            TextContents = RecordText.NormalizeLineBreaks(Text.Value),
             CreateDate = createDate,
             CreateDateTime = createDateTime,
         });
@@ -314,7 +314,8 @@ public sealed class NoteEditViewModel : EditViewModelBase
 
     protected override bool Validate() => NotePage.IsValid(NoteTitle.Value, Text.Value);
 
-    protected override string Snapshot() => $"{NoteTitle.Value}\u0001{Text.Value}\u0001{SelectedDay}";
+    // Line breaks normalised: the text box may hand back stored LF line breaks as CR.
+    protected override string Snapshot() => $"{NoteTitle.Value}\u0001{RecordText.NormalizeLineBreaks(Text.Value)}\u0001{SelectedDay}";
 }
 
 /// <summary>New / edit contact.</summary>
@@ -398,13 +399,14 @@ public sealed class ContactEditViewModel : EditViewModelBase
         EmailMobile = EmailMobile.ValueOrNull,
         EmailHome = EmailHome.ValueOrNull,
         EmailWork = EmailWork.ValueOrNull,
-        Comments = string.IsNullOrWhiteSpace(Comments.Value) ? null : Comments.Value,
+        Comments = RecordText.EditedOrNull(contact.Comments, Comments.Value),
     };
 
     // A contact only needs a last name (Android ContactEditViewModel).
     protected override bool Validate() => NameLast.Value.Trim().Length is >= 1 and <= TitleLength.Contact;
 
-    protected override string Snapshot() => string.Join("\u0001", AllFields.Select(f => f.Value));
+    // Line breaks normalised: the text box may hand back stored LF line breaks as CR.
+    protected override string Snapshot() => string.Join("\u0001", AllFields.Select(f => RecordText.NormalizeLineBreaks(f.Value)));
 }
 
 /// <summary>New / edit organization, category or item: a name and a description.</summary>
@@ -468,28 +470,31 @@ public sealed class NamedRecordEditViewModel : EditViewModelBase
     }
 
     private string NameValue => Name.Value.Trim();
-    private string? DescriptionValue => string.IsNullOrWhiteSpace(Description.Value) ? null : Description.Value;
+
+    /// <summary>The description to save: the stored one when unchanged apart from its line breaks, otherwise with LF line breaks.</summary>
+    private string? DescriptionValue(string? stored) => RecordText.EditedOrNull(stored, Description.Value);
 
     protected override async Task<string> InsertAsync() => Type switch
     {
         RecordType.Organization => (await Data.Organizations.AddOrganizationAsync(
-            new Organization { OwnerDbId = "db1", OrganizationName = NameValue, Comments = DescriptionValue })).Id,
+            new Organization { OwnerDbId = "db1", OrganizationName = NameValue, Comments = DescriptionValue(null) })).Id,
         RecordType.Category => (await Data.Categories.AddCategoryAsync(
-            new Category { OwnerDbId = "db1", CategoryName = NameValue, Comments = DescriptionValue })).Id,
+            new Category { OwnerDbId = "db1", CategoryName = NameValue, Comments = DescriptionValue(null) })).Id,
         _ => (await Data.Items.AddItemAsync(
-            new Item { OwnerDbId = "db1", ItemName = NameValue, Comments = DescriptionValue })).Id,
+            new Item { OwnerDbId = "db1", ItemName = NameValue, Comments = DescriptionValue(null) })).Id,
     };
 
     protected override Task UpdateAsync() => Type switch
     {
         RecordType.Organization => Data.Organizations.UpdateOrganizationAsync(
-            _organization! with { OrganizationName = NameValue, Comments = DescriptionValue }),
+            _organization! with { OrganizationName = NameValue, Comments = DescriptionValue(_organization.Comments) }),
         RecordType.Category => Data.Categories.UpdateCategoryAsync(
-            _category! with { CategoryName = NameValue, Comments = DescriptionValue }),
-        _ => Data.Items.UpdateItemAsync(_item! with { ItemName = NameValue, Comments = DescriptionValue }),
+            _category! with { CategoryName = NameValue, Comments = DescriptionValue(_category.Comments) }),
+        _ => Data.Items.UpdateItemAsync(_item! with { ItemName = NameValue, Comments = DescriptionValue(_item.Comments) }),
     };
 
     protected override bool Validate() => NameValue.Length > 0;
 
-    protected override string Snapshot() => $"{Name.Value}\u0001{Description.Value}";
+    // Line breaks normalised: the text box may hand back stored LF line breaks as CR.
+    protected override string Snapshot() => $"{Name.Value}\u0001{RecordText.NormalizeLineBreaks(Description.Value)}";
 }
