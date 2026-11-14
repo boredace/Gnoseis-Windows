@@ -196,6 +196,11 @@ public sealed partial class SettingsPage : Page
                     await Dialogs.ShowMessageAsync("This file can't be restored", ex.Message);
                     return;
                 }
+                catch (BackupFileUnreadableException)
+                {
+                    await Dialogs.ShowMessageAsync("This file can't be restored", BackupFileUnreadableException.Text);
+                    return;
+                }
 
                 using (staged)
                 {

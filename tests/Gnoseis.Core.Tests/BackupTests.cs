@@ -197,6 +197,97 @@ public class BackupTests : IDisposable
         Assert.Contains((await _data.Notes.GetNotesAsync()), n => n.Title == "Keep me");
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_file_that_is_not_a_database_says_so_plainly_and_keeps_the_data(bool binary)
+    {
+        // 100 bytes of text, or of anything else that isn't SQLite: no SQLite error text for the user.
+        await _data.Notes.AddNoteAsync(new Note { Title = "Keep me" });
+        var bytes = binary
+            ? Enumerable.Range(0, 100).Select(i => (byte)(i * 37 + 11)).ToArray()
+            : System.Text.Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("Not a backup, just some text. ", 4)))[..100];
+        var path = _test.PathFor("file.backup");
+        await File.WriteAllBytesAsync(path, bytes);
+        var before = LiveBytes();
+
+        var inspection = await BackupRepository.InspectAsync(path);
+        var e = await Assert.ThrowsAsync<DatabaseIncompatibleException>(() => _data.Backup.RestoreAsync(path));
+
+        Assert.False(inspection.IsValid);
+        Assert.Equal("This isn't a Gnoseis backup.", inspection.Problem);
+        Assert.Equal("This isn't a Gnoseis backup.", e.Message);
+        Assert.Equal(before, LiveBytes());
+        Assert.Equal(bytes, await File.ReadAllBytesAsync(path));
+    }
+
+    [Fact]
+    public async Task A_backup_locked_by_another_program_could_not_be_read_and_keeps_the_data()
+    {
+        await _data.Notes.AddNoteAsync(new Note { Title = "Keep me" });
+        var path = _test.PathFor("locked.backup");
+        await _data.Backup.ExportAsync(path);
+        var before = LiveBytes();
+
+        using (new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var inspection = await BackupRepository.InspectAsync(path);
+            var e = await Assert.ThrowsAsync<BackupFileUnreadableException>(() => _data.Backup.RestoreAsync(path));
+
+            Assert.False(inspection.IsValid);
+            Assert.Equal("The file couldn't be read.", inspection.Problem);
+            Assert.Equal("The file couldn't be read.", e.Message);
+        }
+        Assert.Equal(before, LiveBytes());
+    }
+
+    [Fact]
+    public async Task A_backup_without_read_access_could_not_be_read_and_keeps_the_data()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+        await _data.Notes.AddNoteAsync(new Note { Title = "Keep me" });
+        var path = _test.PathFor("denied.backup");
+        await _data.Backup.ExportAsync(path);
+        var before = LiveBytes();
+
+        var file = new FileInfo(path);
+        var security = file.GetAccessControl();
+        var denyRead = new System.Security.AccessControl.FileSystemAccessRule(
+            System.Security.Principal.WindowsIdentity.GetCurrent().User!,
+            System.Security.AccessControl.FileSystemRights.ReadData,
+            System.Security.AccessControl.AccessControlType.Deny);
+        security.AddAccessRule(denyRead);
+        file.SetAccessControl(security);
+        try
+        {
+            var inspection = await BackupRepository.InspectAsync(path);
+            var e = await Assert.ThrowsAsync<BackupFileUnreadableException>(() => _data.Backup.RestoreAsync(path));
+
+            Assert.Equal("The file couldn't be read.", inspection.Problem);
+            Assert.Equal("The file couldn't be read.", e.Message);
+            Assert.IsType<UnauthorizedAccessException>(e.InnerException);
+        }
+        finally
+        {
+            security.RemoveAccessRule(denyRead);
+            file.SetAccessControl(security);
+        }
+        Assert.Equal(before, LiveBytes());
+    }
+
+    private byte[] LiveBytes()
+    {
+        // Fold the -wal file in so the comparison covers all data.
+        TestDatabase.ExecuteRaw(_test.FilePath, "PRAGMA wal_checkpoint(TRUNCATE);");
+        using var stream = new FileStream(_test.FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var copy = new MemoryStream();
+        stream.CopyTo(copy);
+        return copy.ToArray();
+    }
+
     [Fact]
     public async Task Inspect_counts_the_records_in_a_file()
     {

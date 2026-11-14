@@ -189,6 +189,9 @@ public class SharedAndroidBackupTests : IDisposable
         var e = await Assert.ThrowsAsync<DatabaseIncompatibleException>(() => _data.Backup.RestoreAsync(path, Passphrase(AndroidPassphrase)));
 
         _output.WriteLine($"neither kind: {e.GetType().Name}: {e.Message}");
+        Assert.Equal("This isn't a Gnoseis backup.", inspection.Problem);
+        Assert.Equal("This isn't a Gnoseis backup.", e.Message);
+        Assert.DoesNotContain("SQLite", e.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(before, LiveBytes());
     }
 

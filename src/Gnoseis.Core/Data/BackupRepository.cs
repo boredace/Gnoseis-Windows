@@ -22,6 +22,18 @@ public sealed record DatabaseInspection(
     int ItemCount = 0)
 {
     public static DatabaseInspection Invalid(string problem) => new(false, problem);
+
+    /// <summary>The file isn't a database at all (a text file, a picture, ...).</summary>
+    public const string NotABackup = "This isn't a Gnoseis backup.";
+
+    /// <summary>SQLite can read the file but finds it damaged.</summary>
+    public const string Damaged = "The file is damaged.";
+}
+
+/// <summary>The backup file exists but can't be opened for reading (locked by another program, or access denied).</summary>
+public sealed class BackupFileUnreadableException(Exception inner) : IOException(Text, inner)
+{
+    public const string Text = "The file couldn't be read.";
 }
 
 /// <summary>
@@ -208,18 +220,26 @@ public sealed class BackupRepository(GnoseisDatabase database)
     }
 
     /// <summary>The header of an encrypted backup, or null for any other file (decided by its first 8 bytes).</summary>
+    /// <exception cref="BackupFileUnreadableException">The file is locked by another program, or access is denied.</exception>
     private static EncryptedBackupHeader? ReadEncryptionHeader(string path)
     {
         if (!File.Exists(path))
         {
             throw new FileNotFoundException("The file does not exist.", path);
         }
-        if (!EncryptedBackupFormat.IsEncryptedFile(path))
+        try
         {
-            return null;
+            if (!EncryptedBackupFormat.IsEncryptedFile(path))
+            {
+                return null;
+            }
+            using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return EncryptedBackupFormat.ReadHeader(input);
         }
-        using var input = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-        return EncryptedBackupFormat.ReadHeader(input);
+        catch (Exception e) when (e is UnauthorizedAccessException or IOException and not FileNotFoundException and not DirectoryNotFoundException)
+        {
+            throw new BackupFileUnreadableException(e);
+        }
     }
 
     /// <summary>
@@ -237,6 +257,10 @@ public sealed class BackupRepository(GnoseisDatabase database)
         catch (EncryptedBackupException e)
         {
             return DatabaseInspection.Invalid(e.Message);
+        }
+        catch (BackupFileUnreadableException)
+        {
+            return DatabaseInspection.Invalid(BackupFileUnreadableException.Text);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -374,7 +398,11 @@ public sealed class BackupRepository(GnoseisDatabase database)
         }
         catch (SqliteException e)
         {
-            return DatabaseInspection.Invalid($"The file is not a readable SQLite database ({e.Message}).");
+            // SQLite's own text ("SQLite Error 26: ...") means nothing to the user.
+            const int SqliteNotADatabase = 26;
+            return DatabaseInspection.Invalid(e.SqliteErrorCode == SqliteNotADatabase
+                ? DatabaseInspection.NotABackup
+                : DatabaseInspection.Damaged);
         }
     }
 
