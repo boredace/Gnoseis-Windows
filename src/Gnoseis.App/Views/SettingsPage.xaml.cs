@@ -193,12 +193,12 @@ public sealed partial class SettingsPage : Page
                 }
                 catch (EncryptedBackupException ex)
                 {
-                    await Dialogs.ShowMessageAsync("This file can't be restored", ex.Message);
+                    await Dialogs.ShowMessageAsync("This file can't be restored", DatabaseInspection.Refusal(ex.Message));
                     return;
                 }
                 catch (BackupFileUnreadableException)
                 {
-                    await Dialogs.ShowMessageAsync("This file can't be restored", BackupFileUnreadableException.Text);
+                    await Dialogs.ShowMessageAsync("This file can't be restored", DatabaseInspection.Refusal(BackupFileUnreadableException.Text));
                     return;
                 }
 
@@ -207,7 +207,7 @@ public sealed partial class SettingsPage : Page
                     var inspection = staged.Inspection;
                     if (!inspection.IsValid)
                     {
-                        await Dialogs.ShowMessageAsync("This file can't be restored", inspection.Problem ?? "The file is not a Gnoseis database.");
+                        await Dialogs.ShowMessageAsync("This file can't be restored", DatabaseInspection.Refusal(inspection.Problem ?? DatabaseInspection.NotABackup));
                         return;
                     }
 

@@ -28,6 +28,12 @@ public sealed record DatabaseInspection(
 
     /// <summary>SQLite can read the file but finds it damaged.</summary>
     public const string Damaged = "The file is damaged.";
+
+    /// <summary>Said under every reason a restore was refused: a refused restore never touches the live database.</summary>
+    public const string NothingChanged = "Your existing data wasn't changed.";
+
+    /// <summary>The text of a refused restore: the reason as one sentence, then <see cref="NothingChanged"/>.</summary>
+    public static string Refusal(string reason) => $"{reason.TrimEnd().TrimEnd('.')}.\n\n{NothingChanged}";
 }
 
 /// <summary>The backup file exists but can't be opened for reading (locked by another program, or access denied).</summary>

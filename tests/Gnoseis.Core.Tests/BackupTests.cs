@@ -6,6 +6,7 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
+using Gnoseis.Core.Backup;
 using Gnoseis.Core.Data;
 using Gnoseis.Core.Models;
 
@@ -219,6 +220,26 @@ public class BackupTests : IDisposable
         Assert.Equal("This isn't a Gnoseis backup.", e.Message);
         Assert.Equal(before, LiveBytes());
         Assert.Equal(bytes, await File.ReadAllBytesAsync(path));
+    }
+
+    /// <summary>Every reason a restore is refused with, and one written without a full stop.</summary>
+    public static TheoryData<string> RefusalReasons() => new(
+        new[] { DatabaseInspection.NotABackup, DatabaseInspection.Damaged, BackupFileUnreadableException.Text, "A reason without a full stop" }
+            .Concat(Enum.GetValues<EncryptedBackupProblem>().Select(EncryptedBackupException.MessageFor))
+            .Distinct());
+
+    [Theory]
+    [MemberData(nameof(RefusalReasons))]
+    public void A_refused_restore_says_the_existing_data_wasnt_changed(string reason)
+    {
+        var text = DatabaseInspection.Refusal(reason);
+
+        var parts = text.Split("\n\n");
+        Assert.Equal(2, parts.Length);
+        Assert.Equal(reason.TrimEnd('.'), parts[0].TrimEnd('.'));
+        Assert.EndsWith(".", parts[0]);
+        Assert.False(parts[0].EndsWith("..", StringComparison.Ordinal));
+        Assert.Equal("Your existing data wasn't changed.", parts[1]);
     }
 
     [Fact]
