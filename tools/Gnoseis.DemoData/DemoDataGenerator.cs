@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -68,6 +68,15 @@ internal sealed class ProjectInfo
     public string Name => Clip($"{Code} {Type.Name}", TitleLength.Category);
 
     private static string Clip(string s, int max) => s.Length <= max ? s : s[..max].TrimEnd();
+}
+
+internal static class TextLines
+{
+    /// <summary>
+    /// Appends <paramref name="line"/> and a line feed. Stored text keeps its line breaks as LF, as on
+    /// Android; <see cref="StringBuilder.AppendLine()"/> would add CRLF on Windows.
+    /// </summary>
+    public static StringBuilder AppendLf(this StringBuilder sb, string? line = null) => sb.Append(line).Append('\n');
 }
 
 internal sealed record GeneratedData(
@@ -380,39 +389,39 @@ internal sealed class DemoDataGenerator
         switch (org.Role)
         {
             case OrgRole.Client:
-                sb.AppendLine($"Client since {org.Since.Year} · {_rng.Pick(new[] { "Managed services contract", "Support retainer", "Time and materials", "Managed services contract" })}");
-                sb.AppendLine($"{org.Sector!.Name} · about {org.Employees} employees · {place}");
-                sb.AppendLine($"IT: {_rng.Pick(Licences.Models.Take(4).ToList())}, {_rng.Pick(org.Sector.Systems)}, {_rng.Pick(OperatingSystems.Take(3).ToList())} clients");
-                sb.AppendLine($"Billing: {_rng.Pick(new[] { "monthly", "monthly", "quarterly" })} invoice, {_rng.Pick(new[] { "net 14 days", "net 30 days", "direct debit" })}");
-                sb.AppendLine($"Response time: {_rng.Pick(new[] { "4 business hours", "next business day", "2 hours (critical)", "8 business hours" })}");
+                sb.AppendLf($"Client since {org.Since.Year} · {_rng.Pick(new[] { "Managed services contract", "Support retainer", "Time and materials", "Managed services contract" })}");
+                sb.AppendLf($"{org.Sector!.Name} · about {org.Employees} employees · {place}");
+                sb.AppendLf($"IT: {_rng.Pick(Licences.Models.Take(4).ToList())}, {_rng.Pick(org.Sector.Systems)}, {_rng.Pick(OperatingSystems.Take(3).ToList())} clients");
+                sb.AppendLf($"Billing: {_rng.Pick(new[] { "monthly", "monthly", "quarterly" })} invoice, {_rng.Pick(new[] { "net 14 days", "net 30 days", "direct debit" })}");
+                sb.AppendLf($"Response time: {_rng.Pick(new[] { "4 business hours", "next business day", "2 hours (critical)", "8 business hours" })}");
                 break;
             case OrgRole.FormerClient:
-                sb.AppendLine($"Former client ({org.Since.Year}–{org.Until!.Value.Year}). {_rng.Pick(new[] { "Moved to an in-house IT team.", "Company was acquired.", "Switched to a larger provider.", "Business closed.", "Moved to another region.", "Contract ended by mutual agreement." })}");
-                sb.AppendLine($"{org.Sector!.Name} · about {org.Employees} employees · {place}");
-                sb.AppendLine("Documentation handed over; admin access removed.");
+                sb.AppendLf($"Former client ({org.Since.Year}–{org.Until!.Value.Year}). {_rng.Pick(new[] { "Moved to an in-house IT team.", "Company was acquired.", "Switched to a larger provider.", "Business closed.", "Moved to another region.", "Contract ended by mutual agreement." })}");
+                sb.AppendLf($"{org.Sector!.Name} · about {org.Employees} employees · {place}");
+                sb.AppendLf("Documentation handed over; admin access removed.");
                 break;
             case OrgRole.Prospect:
-                sb.AppendLine($"Prospect since {Day(org.Since)}, via {_rng.Pick(Referrals)}.");
-                sb.AppendLine($"{org.Sector!.Name} · about {org.Employees} employees · {place}");
-                sb.AppendLine($"Interested in: {_rng.Pick(ProjectTypes).Name}.");
+                sb.AppendLf($"Prospect since {Day(org.Since)}, via {_rng.Pick(Referrals)}.");
+                sb.AppendLf($"{org.Sector!.Name} · about {org.Employees} employees · {place}");
+                sb.AppendLf($"Interested in: {_rng.Pick(ProjectTypes).Name}.");
                 break;
             case OrgRole.Vendor:
-                sb.AppendLine($"Supplier · customer number {_rng.Digits(6)} · {place}");
-                sb.AppendLine($"Partner level: {_rng.Pick(new[] { "Registered", "Silver", "Gold", "none" })}");
-                sb.AppendLine($"Payment: {_rng.Pick(new[] { "net 30 days", "credit card", "direct debit", "prepayment" })}");
-                sb.AppendLine($"Support portal login stored in the password manager.");
+                sb.AppendLf($"Supplier · customer number {_rng.Digits(6)} · {place}");
+                sb.AppendLf($"Partner level: {_rng.Pick(new[] { "Registered", "Silver", "Gold", "none" })}");
+                sb.AppendLf($"Payment: {_rng.Pick(new[] { "net 30 days", "credit card", "direct debit", "prepayment" })}");
+                sb.AppendLf($"Support portal login stored in the password manager.");
                 break;
             case OrgRole.Partner:
-                sb.AppendLine($"Partner / subcontractor · {place}");
-                sb.AppendLine($"Day rate: {Money(org, _rng.Between(55, 110) * 10)} · NDA signed {org.Since.Year}");
-                sb.AppendLine($"Good for: {string.Join(", ", _rng.PickDistinct(ProjectTypes, 2).Select(t => t.Name))}.");
+                sb.AppendLf($"Partner / subcontractor · {place}");
+                sb.AppendLf($"Day rate: {Money(org, _rng.Between(55, 110) * 10)} · NDA signed {org.Since.Year}");
+                sb.AppendLf($"Good for: {string.Join(", ", _rng.PickDistinct(ProjectTypes, 2).Select(t => t.Name))}.");
                 break;
             default:
-                sb.AppendLine($"Network / association · {place}");
-                sb.AppendLine(_rng.Pick(new[] { "Member since " + org.Since.Year + ".", "Attended events here.", "Good place to meet new clients.", "Annual fee paid by direct debit." }));
+                sb.AppendLf($"Network / association · {place}");
+                sb.AppendLf(_rng.Pick(new[] { "Member since " + org.Since.Year + ".", "Attended events here.", "Good place to meet new clients.", "Annual fee paid by direct debit." }));
                 break;
         }
-        sb.AppendLine($"Phone: {org.Phone}");
+        sb.AppendLf($"Phone: {org.Phone}");
         sb.Append($"Web: www.{org.Domain}");
         return sb.ToString();
     }
@@ -519,7 +528,7 @@ internal sealed class DemoDataGenerator
                 EmailMain = _rng.Chance(0.93) && workInMain ? workEmail : null,
                 EmailWork = _rng.Chance(0.93) && !workInMain ? workEmail : null,
                 EmailHome = _rng.Chance(0.08) ? $"{mailFirst}.{mailLast}{_rng.Between(1, 99)}@{_rng.Pick(PersonalMailDomains)}" : null,
-                Comments = remarks.Count > 0 ? string.Join(Environment.NewLine, remarks) : null,
+                Comments = remarks.Count > 0 ? string.Join("\n", remarks) : null,
             };
         }
 
@@ -606,76 +615,76 @@ internal sealed class DemoDataGenerator
             case "LIC":
                 var seats = Math.Max(1, owner == null ? 1 : (int)(owner.Employees * (0.3 + _rng.Double() * 0.8)));
                 var annual = _rng.Chance(0.6);
-                sb.AppendLine($"Licence: {model}");
-                sb.AppendLine($"Owner: {ownerLabel}");
-                sb.AppendLine($"Seats: {seats} · Billing: {(annual ? "annual" : "monthly")} · {money(_rng.Between(3, 45))} per seat/month");
-                sb.AppendLine($"Start: {Iso(purchased)} · Next renewal: {Iso(NextAnniversary(purchased, annual ? 12 : 1))}");
-                sb.AppendLine($"Bought via: {vendor?.Name ?? "Direct from the manufacturer"}");
+                sb.AppendLf($"Licence: {model}");
+                sb.AppendLf($"Owner: {ownerLabel}");
+                sb.AppendLf($"Seats: {seats} · Billing: {(annual ? "annual" : "monthly")} · {money(_rng.Between(3, 45))} per seat/month");
+                sb.AppendLf($"Start: {Iso(purchased)} · Next renewal: {Iso(NextAnniversary(purchased, annual ? 12 : 1))}");
+                sb.AppendLf($"Bought via: {vendor?.Name ?? "Direct from the manufacturer"}");
                 if (model.Contains("365") || model.Contains("Exchange") || model.Contains("Defender"))
                 {
-                    sb.AppendLine($"Tenant: {(owner?.Domain.Split('.')[0] ?? "lab")}.onmicrosoft.com");
+                    sb.AppendLf($"Tenant: {(owner?.Domain.Split('.')[0] ?? "lab")}.onmicrosoft.com");
                 }
                 break;
 
             case "SVC":
-                sb.AppendLine($"Service: {model}");
-                sb.AppendLine($"Client: {ownerLabel}");
-                sb.AppendLine($"Contract start: {Iso(purchased)} · Term: {_rng.Pick(new[] { "12 months", "24 months", "36 months", "monthly, 3 months notice" })}");
-                sb.AppendLine($"Monthly fee: {money(_rng.Between(4, 120) * 10)}");
-                sb.AppendLine($"Includes: {_rng.Pick(new[] { "monitoring, patching, monthly report", "setup, daily checks, restore tests twice a year", "remote support Mon–Fri 8–17", "licence management and user changes" })}");
+                sb.AppendLf($"Service: {model}");
+                sb.AppendLf($"Client: {ownerLabel}");
+                sb.AppendLf($"Contract start: {Iso(purchased)} · Term: {_rng.Pick(new[] { "12 months", "24 months", "36 months", "monthly, 3 months notice" })}");
+                sb.AppendLf($"Monthly fee: {money(_rng.Between(4, 120) * 10)}");
+                sb.AppendLf($"Includes: {_rng.Pick(new[] { "monitoring, patching, monthly report", "setup, daily checks, restore tests twice a year", "remote support Mon–Fri 8–17", "licence management and user changes" })}");
                 break;
 
             case "DOM":
-                sb.AppendLine($"Domain: {model}");
-                sb.AppendLine($"Registrar: {_rng.Pick(Registrars)} · Registered: {Iso(purchased)} · Expires: {Iso(NextAnniversary(purchased, 12))}");
-                sb.AppendLine($"DNS hosted at: {_rng.Pick(new[] { "Cloudflare", "registrar", "Azure DNS", "hosting provider" })}");
-                sb.AppendLine($"MX: {_rng.Pick(new[] { "Microsoft 365", "Microsoft 365 via email security gateway", "Google Workspace", "hosting provider" })}");
-                sb.AppendLine($"SPF: ok · DKIM: {_rng.Pick(new[] { "ok", "ok", "missing" })} · DMARC: {_rng.Pick(new[] { "p=reject", "p=quarantine", "p=none", "missing" })}");
-                sb.AppendLine($"Auto-renew: {(_rng.Chance(0.8) ? "on" : "OFF — check before expiry")}");
+                sb.AppendLf($"Domain: {model}");
+                sb.AppendLf($"Registrar: {_rng.Pick(Registrars)} · Registered: {Iso(purchased)} · Expires: {Iso(NextAnniversary(purchased, 12))}");
+                sb.AppendLf($"DNS hosted at: {_rng.Pick(new[] { "Cloudflare", "registrar", "Azure DNS", "hosting provider" })}");
+                sb.AppendLf($"MX: {_rng.Pick(new[] { "Microsoft 365", "Microsoft 365 via email security gateway", "Google Workspace", "hosting provider" })}");
+                sb.AppendLf($"SPF: ok · DKIM: {_rng.Pick(new[] { "ok", "ok", "missing" })} · DMARC: {_rng.Pick(new[] { "p=reject", "p=quarantine", "p=none", "missing" })}");
+                sb.AppendLf($"Auto-renew: {(_rng.Chance(0.8) ? "on" : "OFF — check before expiry")}");
                 break;
 
             case "CRT":
-                sb.AppendLine($"Certificate: *.{model}");
-                sb.AppendLine($"Issuer: {_rng.Pick(new[] { "Let's Encrypt", "Sectigo", "DigiCert", "GlobalSign" })}");
-                sb.AppendLine($"Valid until: {Iso(_today.AddDays(_rng.Between(-20, 380)))}");
-                sb.AppendLine($"Installed on: {_rng.Pick(new[] { "web server, RD gateway", "firewall SSL-VPN", "Exchange, RD gateway", "reverse proxy" })}");
-                sb.AppendLine($"Renewal: {(_rng.Chance(0.6) ? "automatic (ACME)" : "manual — reminder in calendar")}");
+                sb.AppendLf($"Certificate: *.{model}");
+                sb.AppendLf($"Issuer: {_rng.Pick(new[] { "Let's Encrypt", "Sectigo", "DigiCert", "GlobalSign" })}");
+                sb.AppendLf($"Valid until: {Iso(_today.AddDays(_rng.Between(-20, 380)))}");
+                sb.AppendLf($"Installed on: {_rng.Pick(new[] { "web server, RD gateway", "firewall SSL-VPN", "Exchange, RD gateway", "reverse proxy" })}");
+                sb.AppendLf($"Renewal: {(_rng.Chance(0.6) ? "automatic (ACME)" : "manual — reminder in calendar")}");
                 break;
 
             default:
                 var warrantyYears = _rng.Pick(new[] { 1, 3, 3, 5 });
                 var warrantyEnd = purchased.AddYears(warrantyYears);
-                sb.AppendLine($"{kind.Kind}: {model}");
-                sb.AppendLine($"Owner: {ownerLabel}");
-                sb.AppendLine($"Serial number: {_rng.Letters(2)}{_rng.Digits(2)}{_rng.Letters(1)}{_rng.Digits(5)}");
-                sb.AppendLine($"Purchased: {Iso(purchased)}{(vendor != null ? $" from {vendor.Name}" : "")}, {money(PriceOf(kind))}");
-                sb.AppendLine($"Warranty until: {Iso(warrantyEnd)}{(warrantyEnd < _today ? " (expired)" : "")}");
+                sb.AppendLf($"{kind.Kind}: {model}");
+                sb.AppendLf($"Owner: {ownerLabel}");
+                sb.AppendLf($"Serial number: {_rng.Letters(2)}{_rng.Digits(2)}{_rng.Letters(1)}{_rng.Digits(5)}");
+                sb.AppendLf($"Purchased: {Iso(purchased)}{(vendor != null ? $" from {vendor.Name}" : "")}, {money(PriceOf(kind))}");
+                sb.AppendLf($"Warranty until: {Iso(warrantyEnd)}{(warrantyEnd < _today ? " (expired)" : "")}");
                 if (kind.Prefix is "NB" or "PC")
                 {
-                    sb.AppendLine($"OS: {_rng.Pick(model.StartsWith("Mac") || model.StartsWith("iMac") ? OperatingSystems.Skip(3).Take(2).ToList() : OperatingSystems.Take(3).ToList())}");
-                    sb.AppendLine($"Encryption: {(_rng.Chance(0.85) ? "BitLocker / FileVault on, key escrowed" : "not encrypted — to do")}");
+                    sb.AppendLf($"OS: {_rng.Pick(model.StartsWith("Mac") || model.StartsWith("iMac") ? OperatingSystems.Skip(3).Take(2).ToList() : OperatingSystems.Take(3).ToList())}");
+                    sb.AppendLf($"Encryption: {(_rng.Chance(0.85) ? "BitLocker / FileVault on, key escrowed" : "not encrypted — to do")}");
                 }
                 else if (kind.Prefix is "SRV")
                 {
-                    sb.AppendLine($"OS: {_rng.Pick(OperatingSystems.Skip(5).ToList())} · Roles: {_rng.Pick(new[] { "Hyper-V host", "DC, file, print", "ERP database", "RDS host", "backup server" })}");
-                    sb.AppendLine($"IP: {owner?.Subnet ?? "192.168"}.{_rng.Between(2, 20)}");
-                    sb.AppendLine($"iDRAC/iLO: {owner?.Subnet ?? "192.168"}.{_rng.Between(21, 30)}");
+                    sb.AppendLf($"OS: {_rng.Pick(OperatingSystems.Skip(5).ToList())} · Roles: {_rng.Pick(new[] { "Hyper-V host", "DC, file, print", "ERP database", "RDS host", "backup server" })}");
+                    sb.AppendLf($"IP: {owner?.Subnet ?? "192.168"}.{_rng.Between(2, 20)}");
+                    sb.AppendLf($"iDRAC/iLO: {owner?.Subnet ?? "192.168"}.{_rng.Between(21, 30)}");
                 }
                 else if (kind.Prefix is "FW" or "SW" or "AP" or "RT" or "NAS" or "PRN" or "UPS")
                 {
-                    sb.AppendLine($"IP: {owner?.Subnet ?? "192.168"}.{_rng.Between(1, 60)} · Firmware: {_rng.Between(1, 9)}.{_rng.Between(0, 9)}.{_rng.Between(0, 20)}");
+                    sb.AppendLf($"IP: {owner?.Subnet ?? "192.168"}.{_rng.Between(1, 60)} · Firmware: {_rng.Between(1, 9)}.{_rng.Between(0, 9)}.{_rng.Between(0, 20)}");
                 }
                 if (kind.Prefix is not ("NB" or "PC" or "MOB" or "TEL"))
                 {
-                    sb.AppendLine($"Location: {_rng.Pick(Locations)}");
+                    sb.AppendLf($"Location: {_rng.Pick(Locations)}");
                 }
                 if (assigned != null)
                 {
-                    sb.AppendLine($"Assigned to: {assigned.FullName}");
+                    sb.AppendLf($"Assigned to: {assigned.FullName}");
                 }
                 if (kind.Prefix is "SRV" or "FW" or "SW" or "NAS" or "RT" or "AP")
                 {
-                    sb.AppendLine($"Admin credentials: password manager, entry \"{owner?.Code ?? "LAB"} {kind.Prefix}-{number:D2}\"");
+                    sb.AppendLf($"Admin credentials: password manager, entry \"{owner?.Code ?? "LAB"} {kind.Prefix}-{number:D2}\"");
                 }
                 break;
         }
@@ -756,22 +765,22 @@ internal sealed class DemoDataGenerator
         foreach (var p in _projects)
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"Client: {p.Org.Name}");
-            sb.AppendLine($"Status: {p.Status}");
-            sb.AppendLine($"Start: {Iso(p.Start)} · {(p.Status == "Completed" ? "Finished" : "Planned end")}: {Iso(p.End)}");
-            sb.AppendLine($"Budget: {Money(p.Org, RoundTo(p.Hours * p.Rate, 50))} ({p.Pricing}, {p.Hours} h)");
+            sb.AppendLf($"Client: {p.Org.Name}");
+            sb.AppendLf($"Status: {p.Status}");
+            sb.AppendLf($"Start: {Iso(p.Start)} · {(p.Status == "Completed" ? "Finished" : "Planned end")}: {Iso(p.End)}");
+            sb.AppendLf($"Budget: {Money(p.Org, RoundTo(p.Hours * p.Rate, 50))} ({p.Pricing}, {p.Hours} h)");
             if (p.Lead != null)
             {
-                sb.AppendLine($"Client lead: {p.Lead.WithTitle}");
+                sb.AppendLf($"Client lead: {p.Lead.WithTitle}");
             }
-            sb.AppendLine("Scope:");
+            sb.AppendLf("Scope:");
             foreach (var line in p.Type.Scope)
             {
-                sb.AppendLine($"- {line}");
+                sb.AppendLf($"- {line}");
             }
             if (p.Status == "Cancelled")
             {
-                sb.AppendLine($"Cancelled: {_rng.Pick(new[] { "budget frozen", "client chose another solution", "merged into a larger project", "postponed indefinitely" })}.");
+                sb.AppendLf($"Cancelled: {_rng.Pick(new[] { "budget frozen", "client chose another solution", "merged into a larger project", "postponed indefinitely" })}.");
             }
 
             p.Record = new Category { Id = _rng.Guid(), OwnerDbId = OwnerDbId, CategoryName = p.Name, Comments = sb.ToString().TrimEnd() };
@@ -865,21 +874,21 @@ internal sealed class DemoDataGenerator
         var inbound = _rng.Chance(0.7);
 
         var sb = new StringBuilder();
-        sb.AppendLine($"{(inbound ? "Call from" : "Called")} {contact.WithTitle}, {Sentence(org.Name)} {Clock(time)}, {_rng.Pick(new[] { 5, 10, 10, 15, 20, 30, 45 })} min.");
-        sb.AppendLine();
-        sb.AppendLine($"Problem: {issue.Title}.");
+        sb.AppendLf($"{(inbound ? "Call from" : "Called")} {contact.WithTitle}, {Sentence(org.Name)} {Clock(time)}, {_rng.Pick(new[] { 5, 10, 10, 15, 20, 30, 45 })} min.");
+        sb.AppendLf();
+        sb.AppendLf($"Problem: {issue.Title}.");
         if (item != null)
         {
-            sb.AppendLine($"Device: {item.Record.ItemName}");
+            sb.AppendLf($"Device: {item.Record.ItemName}");
         }
-        sb.AppendLine($"Cause: {_rng.Pick(issue.Findings)}");
-        sb.AppendLine($"Done: {_rng.Pick(issue.Fixes)}");
+        sb.AppendLf($"Cause: {_rng.Pick(issue.Findings)}");
+        sb.AppendLf($"Done: {_rng.Pick(issue.Fixes)}");
         if (_rng.Chance(0.35))
         {
-            sb.AppendLine();
-            sb.AppendLine($"Follow-up: {_rng.Pick(FollowUps)} by {Day(day.AddDays(_rng.Between(1, 10)))}.");
+            sb.AppendLf();
+            sb.AppendLf($"Follow-up: {_rng.Pick(FollowUps)} by {Day(day.AddDays(_rng.Between(1, 10)))}.");
         }
-        sb.AppendLine();
+        sb.AppendLf();
         sb.Append($"Time: {_rng.Pick(new[] { "0.25", "0.25", "0.5", "0.5", "0.75", "1" })} h · {Billing(org)}");
 
         var note = AddNote(Fit(TitleLength.Note,
@@ -904,15 +913,15 @@ internal sealed class DemoDataGenerator
         var steps = new[] { 0, _rng.Between(5, 30), _rng.Between(35, 90), _rng.Between(95, 240) };
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Ticket {ticket} · Priority {priority}");
-        sb.AppendLine($"Reported by {contact.FullName} via {_rng.Pick(new[] { "phone", "e-mail", "support portal", "Teams" })}.");
-        sb.AppendLine($"Affected: {item?.Record.ItemName ?? _rng.Pick(new[] { "one user", "several users", "the whole office" })}");
-        sb.AppendLine();
-        sb.AppendLine($"{Clock(time + TimeSpan.FromMinutes(steps[0]))}  Ticket opened: {issue.Title}.");
-        sb.AppendLine($"{Clock(time + TimeSpan.FromMinutes(steps[1]))}  {_rng.Pick(new[] { "Remote session started.", "Checked monitoring and logs.", "Called the user back." })}");
-        sb.AppendLine($"{Clock(time + TimeSpan.FromMinutes(steps[2]))}  Cause: {_rng.Pick(issue.Findings)}");
-        sb.AppendLine($"{Clock(time + TimeSpan.FromMinutes(steps[3]))}  {_rng.Pick(issue.Fixes)} {_rng.Pick(new[] { "User confirmed, ticket closed.", "Monitoring again, closed.", "Left open until tomorrow to check." })}");
-        sb.AppendLine();
+        sb.AppendLf($"Ticket {ticket} · Priority {priority}");
+        sb.AppendLf($"Reported by {contact.FullName} via {_rng.Pick(new[] { "phone", "e-mail", "support portal", "Teams" })}.");
+        sb.AppendLf($"Affected: {item?.Record.ItemName ?? _rng.Pick(new[] { "one user", "several users", "the whole office" })}");
+        sb.AppendLf();
+        sb.AppendLf($"{Clock(time + TimeSpan.FromMinutes(steps[0]))}  Ticket opened: {issue.Title}.");
+        sb.AppendLf($"{Clock(time + TimeSpan.FromMinutes(steps[1]))}  {_rng.Pick(new[] { "Remote session started.", "Checked monitoring and logs.", "Called the user back." })}");
+        sb.AppendLf($"{Clock(time + TimeSpan.FromMinutes(steps[2]))}  Cause: {_rng.Pick(issue.Findings)}");
+        sb.AppendLf($"{Clock(time + TimeSpan.FromMinutes(steps[3]))}  {_rng.Pick(issue.Fixes)} {_rng.Pick(new[] { "User confirmed, ticket closed.", "Monitoring again, closed.", "Left open until tomorrow to check." })}");
+        sb.AppendLf();
         sb.Append($"Time spent: {Math.Ceiling(steps[3] / 15.0) / 4:0.##} h · {Billing(org)}");
 
         var note = AddNote(Fit(TitleLength.Note,
@@ -936,24 +945,24 @@ internal sealed class DemoDataGenerator
         var onsite = _rng.Chance(0.5);
 
         var sb = new StringBuilder();
-        sb.AppendLine($"{(onsite ? $"Onsite at {org.Name}, {org.City.Name}" : _rng.Pick(new[] { "Teams meeting", "Zoom call", "Video call" }))}, {Clock(time)}–{Clock(time + TimeSpan.FromMinutes(_rng.Pick(new[] { 30, 45, 60, 90, 120 })))}");
-        sb.AppendLine($"Attendees: {string.Join(", ", attendees.Select(a => a.WithTitle))}, me");
-        sb.AppendLine();
-        sb.AppendLine("Discussed:");
+        sb.AppendLf($"{(onsite ? $"Onsite at {org.Name}, {org.City.Name}" : _rng.Pick(new[] { "Teams meeting", "Zoom call", "Video call" }))}, {Clock(time)}–{Clock(time + TimeSpan.FromMinutes(_rng.Pick(new[] { 30, 45, 60, 90, 120 })))}");
+        sb.AppendLf($"Attendees: {string.Join(", ", attendees.Select(a => a.WithTitle))}, me");
+        sb.AppendLf();
+        sb.AppendLf("Discussed:");
         foreach (var point in _rng.PickDistinct(topic.Points, _rng.Between(2, topic.Points.Length)))
         {
-            sb.AppendLine($"- {point}");
+            sb.AppendLf($"- {point}");
         }
         if (org.Sector != null && _rng.Chance(0.4))
         {
-            sb.AppendLine($"- Also talked about the {_rng.Pick(org.Sector.Systems)}.");
+            sb.AppendLf($"- Also talked about the {_rng.Pick(org.Sector.Systems)}.");
         }
-        sb.AppendLine();
-        sb.AppendLine("Next steps:");
+        sb.AppendLf();
+        sb.AppendLf("Next steps:");
         foreach (var action in _rng.PickDistinct(topic.Actions, _rng.Between(1, topic.Actions.Length)))
         {
             var owner = _rng.Chance(0.7) ? "me" : _rng.Pick(attendees).First;
-            sb.AppendLine($"- [{(day.AddDays(14) < _today ? "x" : " ")}] {action} ({owner}, by {Day(day.AddDays(_rng.Between(3, 21)))})");
+            sb.AppendLf($"- [{(day.AddDays(14) < _today ? "x" : " ")}] {action} ({owner}, by {Day(day.AddDays(_rng.Between(3, 21)))})");
         }
 
         var note = AddNote(Fit(TitleLength.Note,
@@ -984,18 +993,18 @@ internal sealed class DemoDataGenerator
         var firewall = infra.FirstOrDefault(i => i.Kind.Prefix == "FW");
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Maintenance window {Clock(time)}–{Clock(time + TimeSpan.FromMinutes(_rng.Pick(new[] { 60, 90, 120 })))} (remote).");
-        sb.AppendLine();
-        sb.AppendLine($"- Windows updates: {servers} server(s) and {clients} clients, {_rng.Between(0, 3)} reboot(s) pending");
-        sb.AppendLine($"- Backup: {jobs - failed} of {jobs} jobs successful{(failed > 0 ? " — failed job re-run, OK now" : "")}");
+        sb.AppendLf($"Maintenance window {Clock(time)}–{Clock(time + TimeSpan.FromMinutes(_rng.Pick(new[] { 60, 90, 120 })))} (remote).");
+        sb.AppendLf();
+        sb.AppendLf($"- Windows updates: {servers} server(s) and {clients} clients, {_rng.Between(0, 3)} reboot(s) pending");
+        sb.AppendLf($"- Backup: {jobs - failed} of {jobs} jobs successful{(failed > 0 ? " — failed job re-run, OK now" : "")}");
         if (firewall != null)
         {
-            sb.AppendLine($"- Firewall {firewall.Record.ItemName.Split(' ')[0]}: {(_rng.Chance(0.7) ? "firmware up to date" : "firmware update available, planned for next window")}");
+            sb.AppendLf($"- Firewall {firewall.Record.ItemName.Split(' ')[0]}: {(_rng.Chance(0.7) ? "firmware up to date" : "firmware update available, planned for next window")}");
         }
-        sb.AppendLine($"- Disk space: C: {_rng.Between(18, 70)} % free, D: {_rng.Between(8, 60)} % free");
-        sb.AppendLine($"- Endpoint protection: {clients} devices protected, {(_rng.Chance(0.85) ? "no detections" : "1 detection quarantined")}");
-        sb.AppendLine($"- Event logs checked{(_rng.Chance(0.8) ? ", no critical errors" : "; recurring warning from the RAID controller, keep an eye on it")}.");
-        sb.AppendLine();
+        sb.AppendLf($"- Disk space: C: {_rng.Between(18, 70)} % free, D: {_rng.Between(8, 60)} % free");
+        sb.AppendLf($"- Endpoint protection: {clients} devices protected, {(_rng.Chance(0.85) ? "no detections" : "1 detection quarantined")}");
+        sb.AppendLf($"- Event logs checked{(_rng.Chance(0.8) ? ", no critical errors" : "; recurring warning from the RAID controller, keep an eye on it")}.");
+        sb.AppendLf();
         sb.Append(failed > 0 || _rng.Chance(0.2) ? "Result: action needed, see above." : "Result: all OK.");
 
         var note = AddNote(Fit(TitleLength.Note,
@@ -1028,21 +1037,21 @@ internal sealed class DemoDataGenerator
         var hours = _rng.Between(2, 16);
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Project: {project.Name} ({org.Name})");
-        sb.AppendLine($"Phase: {phase} · Progress: {progress} %");
-        sb.AppendLine();
-        sb.AppendLine("Done:");
+        sb.AppendLf($"Project: {project.Name} ({org.Name})");
+        sb.AppendLf($"Phase: {phase} · Progress: {progress} %");
+        sb.AppendLf();
+        sb.AppendLf("Done:");
         foreach (var line in _rng.PickDistinct(project.Type.Scope, _rng.Between(1, 2)))
         {
-            sb.AppendLine($"- {line}: {_rng.Pick(new[] { "finished", "mostly done", "started", "tested", "documented" })}");
+            sb.AppendLf($"- {line}: {_rng.Pick(new[] { "finished", "mostly done", "started", "tested", "documented" })}");
         }
-        sb.AppendLine();
-        sb.AppendLine("Open points:");
+        sb.AppendLf();
+        sb.AppendLf("Open points:");
         foreach (var point in _rng.PickDistinct(OpenPoints, _rng.Between(1, 2)))
         {
-            sb.AppendLine($"- {point}");
+            sb.AppendLf($"- {point}");
         }
-        sb.AppendLine();
+        sb.AppendLf();
         sb.Append($"Hours this week: {hours} h (budget {project.Hours} h, {project.Pricing})");
 
         var note = AddNote(Fit(TitleLength.Note,
@@ -1092,20 +1101,20 @@ internal sealed class DemoDataGenerator
         };
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Quote Q-{day.Year}-{NumberToken} for {org.Name}");
+        sb.AppendLf($"Quote Q-{day.Year}-{NumberToken} for {org.Name}");
         if (project.Lead != null)
         {
-            sb.AppendLine($"Attn: {project.Lead.WithTitle}");
+            sb.AppendLf($"Attn: {project.Lead.WithTitle}");
         }
-        sb.AppendLine($"Subject: {project.Type.Name} ({project.Code})");
-        sb.AppendLine();
+        sb.AppendLf($"Subject: {project.Type.Name} ({project.Code})");
+        sb.AppendLf();
         for (var i = 0; i < lines.Count; i++)
         {
-            sb.AppendLine($"{i + 1}. {lines[i].Text} = {Money(org, lines[i].Amount)}");
+            sb.AppendLf($"{i + 1}. {lines[i].Text} = {Money(org, lines[i].Amount)}");
         }
-        sb.AppendLine($"Total (net): {Money(org, lines.Sum(l => l.Amount))}");
-        sb.AppendLine();
-        sb.AppendLine($"Valid for 30 days. {_rng.Pick(new[] { "50 % on order, 50 % on completion.", "Invoiced monthly by effort.", "Payable on completion." })}");
+        sb.AppendLf($"Total (net): {Money(org, lines.Sum(l => l.Amount))}");
+        sb.AppendLf();
+        sb.AppendLf($"Valid for 30 days. {_rng.Pick(new[] { "50 % on order, 50 % on completion.", "Invoiced monthly by effort.", "Payable on completion." })}");
         sb.Append($"Status: {status}");
 
         var note = AddNote(Fit(TitleLength.Note,
@@ -1136,23 +1145,23 @@ internal sealed class DemoDataGenerator
             (t.Contains("Finance") || t.Contains("Account") || t.Contains("CFO") || t.Contains("Controller") || t.Contains("Office")));
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Invoice INV-{day.Year}-{NumberToken} to {org.Name}");
-        sb.AppendLine($"Period: {period.ToString("MMMM yyyy", Inv)}");
-        sb.AppendLine();
-        sb.AppendLine($"- Managed services / retainer: {Money(org, retainer)}");
+        sb.AppendLf($"Invoice INV-{day.Year}-{NumberToken} to {org.Name}");
+        sb.AppendLf($"Period: {period.ToString("MMMM yyyy", Inv)}");
+        sb.AppendLf();
+        sb.AppendLf($"- Managed services / retainer: {Money(org, retainer)}");
         if (extraHours > 0)
         {
-            sb.AppendLine($"- Additional support: {extraHours} h × {Money(org, rate)} = {Money(org, extraHours * rate)}");
+            sb.AppendLf($"- Additional support: {extraHours} h × {Money(org, rate)} = {Money(org, extraHours * rate)}");
         }
         if (_rng.Chance(0.25) && org.Items.Count > 0)
         {
             var item = _rng.Pick(org.Items);
             var price = PriceOf(item.Kind);
             total += price;
-            sb.AppendLine($"- Hardware / licences: {item.Model} = {Money(org, price)}");
+            sb.AppendLf($"- Hardware / licences: {item.Model} = {Money(org, price)}");
         }
-        sb.AppendLine($"Total (net): {Money(org, total)}, plus VAT");
-        sb.AppendLine($"Due: {Day(due)}");
+        sb.AppendLf($"Total (net): {Money(org, total)}, plus VAT");
+        sb.AppendLf($"Due: {Day(due)}");
         sb.Append($"Status: {(due < _today ? _rng.Double() switch
         {
             < 0.88 => $"Paid on {Day(Min(due.AddDays(_rng.Between(-10, 12)), _today))}",
@@ -1194,13 +1203,13 @@ internal sealed class DemoDataGenerator
             foreach (var product in article.Products)
             {
                 var sb = new StringBuilder();
-                sb.AppendLine($"Applies to: {product}");
-                sb.AppendLine();
+                sb.AppendLf($"Applies to: {product}");
+                sb.AppendLf();
                 for (var i = 0; i < article.Steps.Length; i++)
                 {
-                    sb.AppendLine($"{i + 1}. {article.Steps[i]}");
+                    sb.AppendLf($"{i + 1}. {article.Steps[i]}");
                 }
-                sb.AppendLine();
+                sb.AppendLf();
                 sb.Append($"Tip: {_rng.Pick(Tips)}");
                 pool.Add((Clip("How-to: " + article.Title.Replace("{p}", product), TitleLength.Note), sb.ToString(),
                     $"{article.Area}: {article.Topic}"));
@@ -1209,16 +1218,16 @@ internal sealed class DemoDataGenerator
         foreach (var issue in Issues)
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Seen at several clients. Causes so far:");
+            sb.AppendLf("Seen at several clients. Causes so far:");
             foreach (var finding in issue.Findings)
             {
-                sb.AppendLine($"- {finding}");
+                sb.AppendLf($"- {finding}");
             }
-            sb.AppendLine();
-            sb.AppendLine("What worked:");
+            sb.AppendLf();
+            sb.AppendLf("What worked:");
             foreach (var fix in issue.Fixes)
             {
-                sb.AppendLine($"- {fix}");
+                sb.AppendLf($"- {fix}");
             }
             pool.Add((Clip($"Lessons learned: {issue.Title}", TitleLength.Note), sb.ToString().TrimEnd(), $"{issue.Area}: {issue.Topic}"));
         }
@@ -1227,7 +1236,7 @@ internal sealed class DemoDataGenerator
             var sb = new StringBuilder();
             foreach (var line in type.Scope.Concat(ChecklistBasics))
             {
-                sb.AppendLine($"- [ ] {line}");
+                sb.AppendLf($"- [ ] {line}");
             }
             pool.Add((Clip($"Checklist: {type.Name}", TitleLength.Note), sb.ToString().TrimEnd(), $"{type.Area}: {type.Topic}"));
         }
@@ -1242,22 +1251,22 @@ internal sealed class DemoDataGenerator
         var wants = _rng.PickDistinct(ProjectTypes, 2);
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Lead from {_rng.Pick(Referrals)}.");
-        sb.AppendLine($"Contact: {contact.WithTitle}");
-        sb.AppendLine($"{org.Name} · {org.Sector?.Name} · about {org.Employees} employees · {org.City.Name}");
-        sb.AppendLine();
-        sb.AppendLine("Current situation:");
-        sb.AppendLine($"- IT is looked after by {_rng.Pick(new[] { "an employee in their spare time", "another IT provider", "a family member", "nobody in particular", "the software vendor" })}.");
+        sb.AppendLf($"Lead from {_rng.Pick(Referrals)}.");
+        sb.AppendLf($"Contact: {contact.WithTitle}");
+        sb.AppendLf($"{org.Name} · {org.Sector?.Name} · about {org.Employees} employees · {org.City.Name}");
+        sb.AppendLf();
+        sb.AppendLf("Current situation:");
+        sb.AppendLf($"- IT is looked after by {_rng.Pick(new[] { "an employee in their spare time", "another IT provider", "a family member", "nobody in particular", "the software vendor" })}.");
         if (org.Sector != null)
         {
-            sb.AppendLine($"- Uses {_rng.Pick(org.Sector.Systems)}.");
+            sb.AppendLf($"- Uses {_rng.Pick(org.Sector.Systems)}.");
         }
         foreach (var pain in _rng.PickDistinct(PainPoints, 2))
         {
-            sb.AppendLine($"- {pain}");
+            sb.AppendLf($"- {pain}");
         }
-        sb.AppendLine();
-        sb.AppendLine($"Interested in: {wants[0].Name}, {wants[1].Name}");
+        sb.AppendLf();
+        sb.AppendLf($"Interested in: {wants[0].Name}, {wants[1].Name}");
         sb.Append($"Next step: {_rng.Pick(new[] { $"send a quote by {Day(day.AddDays(5))}", $"onsite assessment on {Day(day.AddDays(_rng.Between(3, 20)))}", "call again next quarter", "send references and price list" })}");
 
         var note = AddNote(Fit(TitleLength.Note,
@@ -1293,7 +1302,7 @@ internal sealed class DemoDataGenerator
         };
 
         var note = AddNote(Fit(TitleLength.Note, $"{org.Short}: {subject}", $"{subject} – {org.Short}"),
-            $"{subject} with {contact.FullName} ({org.Name}), {day.ToString("d MMM", Inv)}.{Environment.NewLine}{Environment.NewLine}{body}",
+            $"{subject} with {contact.FullName} ({org.Name}), {day.ToString("d MMM", Inv)}.\n\n{body}",
             day, WorkTime());
         LinkNote(note, org, contact);
         LinkNote(note, item, 0.7);
@@ -1309,9 +1318,9 @@ internal sealed class DemoDataGenerator
         var days = _rng.Between(1, 6);
 
         var sb = new StringBuilder();
-        sb.AppendLine($"Asked {contact.FullName} ({partner.Name}) to support {project.Name} at {Sentence(project.Org.Name)}");
-        sb.AppendLine($"Effort: {days} day(s) at {Money(partner, _rng.Between(55, 110) * 10)} per day.");
-        sb.AppendLine($"Dates: {Day(day.AddDays(_rng.Between(3, 10)))} onwards.");
+        sb.AppendLf($"Asked {contact.FullName} ({partner.Name}) to support {project.Name} at {Sentence(project.Org.Name)}");
+        sb.AppendLf($"Effort: {days} day(s) at {Money(partner, _rng.Between(55, 110) * 10)} per day.");
+        sb.AppendLf($"Dates: {Day(day.AddDays(_rng.Between(3, 10)))} onwards.");
         sb.Append($"Needs: {_rng.Pick(new[] { "VPN access and a guest account", "a site contact and parking", "the network plan", "admin access for the duration of the job" })}. NDA on file.");
 
         var note = AddNote(Fit(TitleLength.Note,

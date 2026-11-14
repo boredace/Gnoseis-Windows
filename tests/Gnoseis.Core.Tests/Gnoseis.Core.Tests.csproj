@@ -34,6 +34,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Gnoseis.Core\Gnoseis.Core.csproj" />
+    <!-- The demo database generator: its text is checked for LF line breaks. -->
+    <ProjectReference Include="..\..\tools\Gnoseis.DemoData\Gnoseis.DemoData.csproj" />
   </ItemGroup>
 
 </Project>
