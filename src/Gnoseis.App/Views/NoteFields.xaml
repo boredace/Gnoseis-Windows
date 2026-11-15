@@ -10,10 +10,16 @@
     <StackPanel Margin="0,16,0,0" Spacing="16">
         <controls:FormTextBox x:Name="TitleBox" Field="{x:Bind ViewModel.NoteTitle}" PlaceholderText="Optional" />
         <controls:FormTextBox x:Name="TextBox" Field="{x:Bind ViewModel.Text}" Kind="Multiline" />
-        <CalendarDatePicker
-            Date="{x:Bind ViewModel.Date, Mode=TwoWay}"
-            Header="Day"
-            IsTodayHighlighted="True" />
+        <StackPanel Orientation="Horizontal" Spacing="12">
+            <CalendarDatePicker
+                Date="{x:Bind ViewModel.Date, Mode=TwoWay}"
+                Header="Day"
+                IsTodayHighlighted="True" />
+            <TimePicker
+                ClockIdentifier="{x:Bind helpers:SystemClock.Identifier}"
+                Header="Time"
+                Time="{x:Bind ViewModel.Time, Mode=TwoWay}" />
+        </StackPanel>
         <TextBlock
             Style="{StaticResource SecondaryTextStyle}"
             Text="A note needs a title or some text."

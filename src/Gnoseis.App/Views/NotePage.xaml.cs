@@ -391,17 +391,19 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
     private void ShowEditDay()
     {
         EditDayText.Text = Gnoseis.Core.Domain.ContactPage.DayAndTimeText(_editDay, _editTime, DateOnly.FromDateTime(DateTime.Now));
-        AutomationProperties.SetName(EditDayButton, $"Day: {EditDayText.Text}");
+        AutomationProperties.SetName(EditDayButton, $"Day and time: {EditDayText.Text}");
     }
 
     private void EditDayFlyout_Opening(object? sender, object e)
     {
         _updatingDatePicker = true;
         EditDatePicker.Date = new DateTimeOffset(_editDay.ToDateTime(TimeOnly.MinValue));
+        EditTimePicker.ClockIdentifier = SystemClock.Identifier;
+        EditTimePicker.Time = _editTime;
         _updatingDatePicker = false;
     }
 
-    /// <summary>Only the day can be changed; the note keeps its time of day.</summary>
+    /// <summary>A new day keeps the time shown.</summary>
     private void EditDatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
     {
         if (_updatingDatePicker || args.NewDate is not { } date)
@@ -410,7 +412,17 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         }
         _editDay = DateOnly.FromDateTime(date.Date);
         ShowEditDay();
-        EditDayFlyout.Hide();
+    }
+
+    /// <summary>A new time keeps the day shown.</summary>
+    private void EditTimePicker_TimeChanged(object? sender, TimePickerValueChangedEventArgs e)
+    {
+        if (_updatingDatePicker)
+        {
+            return;
+        }
+        _editTime = new TimeSpan(e.NewTime.Hours, e.NewTime.Minutes, 0);
+        ShowEditDay();
     }
 
     private void NoteText_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
