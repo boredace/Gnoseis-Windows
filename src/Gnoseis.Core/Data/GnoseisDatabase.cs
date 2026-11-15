@@ -121,7 +121,7 @@ public sealed class GnoseisDatabase
 
         if (IsEmpty(connection))
         {
-            CreateSchema(connection);
+            CreateSchema(connection, TimeZone);
         }
         else
         {
@@ -163,7 +163,7 @@ public sealed class GnoseisDatabase
         return userVersion == 0 && tableCount == 0;
     }
 
-    private static void CreateSchema(SqliteConnection connection)
+    private static void CreateSchema(SqliteConnection connection, TimeZoneInfo timeZone)
     {
         using var transaction = connection.BeginTransaction();
         foreach (var statement in DatabaseSchema.CreateStatements)
@@ -179,7 +179,7 @@ public sealed class GnoseisDatabase
             insert.CommandText =
                 "INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate, createdAt, updatedAt) " +
                 "VALUES ($id, $ownerDbId, $title, $textContents, $createDateTime, $createDate, $now, $now);";
-            var (createDate, createDateTime) = Domain.NoteDates.ForNewNote(DateOnly.FromDateTime(DateTime.Now), DateTime.Now.TimeOfDay);
+            var (createDate, createDateTime) = Domain.NoteDates.ForNow(DateTimeOffset.UtcNow, timeZone);
             var note = new Note
             {
                 OwnerDbId = "yyy",

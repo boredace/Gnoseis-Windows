@@ -19,12 +19,15 @@ public sealed class CreateLinkedNoteUseCase(GnoseisDatabase database)
 {
     /// <summary>
     /// Saves a note with <paramref name="title"/> (null when blank, never taken from the text) and
-    /// <paramref name="text"/> as typed (its line breaks saved as LF), dated <paramref name="day"/> at <paramref name="timeOfDay"/>,
-    /// linked to <paramref name="recordId"/>. Both rows are stamped with the current time.
+    /// <paramref name="text"/> as typed (its line breaks saved as LF), linked to <paramref name="recordId"/>.
+    /// The note is dated the moment of saving when neither <paramref name="day"/> nor <paramref name="time"/>
+    /// was picked (both null), otherwise at the picked local day and time in the device's time zone.
+    /// Both rows are stamped with the current time.
     /// </summary>
-    public async Task<Note> InvokeAsync(string recordId, RecordType recordType, string? title, string? text, DateOnly day, TimeSpan timeOfDay)
+    public async Task<Note> InvokeAsync(string recordId, RecordType recordType, string? title, string? text,
+        DateOnly? day = null, TimeOnly? time = null, DateTimeOffset? now = null)
     {
-        var (createDate, createDateTime) = NoteDates.ForNewNote(day, timeOfDay);
+        var (createDate, createDateTime) = NoteDates.ForNewNote(day, time, now ?? DateTimeOffset.UtcNow, database.TimeZone);
         var note = new Note
         {
             OwnerDbId = "db1",

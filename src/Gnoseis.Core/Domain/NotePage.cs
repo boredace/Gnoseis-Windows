@@ -110,14 +110,15 @@ public static class NotePage
     public static bool IsValid(string title, string text) => title.Length > 0 || text.Length > 0;
 
     /// <summary>
-    /// The note with an edited title, text and day, or null when nothing changed. A value equal to
-    /// the stored one is kept as stored (an empty box doesn't turn a missing value into ""), and
-    /// a new day keeps the note's time of day. Text that differs only in its line breaks is equal;
-    /// changed text is saved with LF line breaks.
+    /// The note with an edited title, text, day and time, or null when nothing changed. A value equal to
+    /// the stored one is kept as stored (an empty box doesn't turn a missing value into ""). A day and
+    /// time equal to the ones shown in <paramref name="zone"/> keep both date columns exactly; otherwise
+    /// they follow <see cref="NoteDates.ForEditedNote"/>. Text that differs only in its line breaks is
+    /// equal; changed text is saved with LF line breaks.
     /// </summary>
-    public static Note? Edited(Note note, string title, string text, DateOnly day)
+    public static Note? Edited(Note note, string title, string text, DateOnly? day, TimeOnly? time = null, TimeZoneInfo? zone = null)
     {
-        var (createDate, createDateTime) = NoteDates.ForEditedNote(note, day);
+        var (createDate, createDateTime) = NoteDates.ForEditedNote(note, day, time, zone ?? TimeZoneInfo.Local);
         var newTitle = title == (note.Title ?? "") ? note.Title : title;
         var newText = RecordText.Edited(note.TextContents, text);
         if (newTitle == note.Title && newText == note.TextContents

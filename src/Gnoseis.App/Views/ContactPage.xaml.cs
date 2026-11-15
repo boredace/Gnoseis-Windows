@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -1184,14 +1184,10 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         NoteSaveButton.IsEnabled = false;
         try
         {
-            if (!_noteDatePicked && _noteBoxCollapsed)
-            {
-                var now = DateTime.Now;
-                _noteDay = DateOnly.FromDateTime(now);
-                _noteTime = new TimeSpan(now.Hour, now.Minute, 0);
-            }
+            // A day and time nobody picked: the moment of saving.
             var note = await App.Container.CreateLinkedNote.InvokeAsync(
-                Record.Id, RecordType.Contact, NoteTitleBox.Text, NoteTextBox.Text, _noteDay, _noteTime);
+                Record.Id, RecordType.Contact, NoteTitleBox.Text, NoteTextBox.Text,
+                _noteDatePicked ? _noteDay : null, _noteDatePicked ? TimeOnly.FromTimeSpan(_noteTime) : null);
             _selectAfterLoad = note.Id;
             _keepCollapsed = true;
             CollapseNoteBox(clear: true);

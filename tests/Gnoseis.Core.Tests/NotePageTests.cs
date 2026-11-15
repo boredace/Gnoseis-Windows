@@ -37,6 +37,9 @@ public class NotePageTests : IDisposable
         CreateDateTime = EpochTime.UtcMidnight(new DateOnly(2026, 10, 15)) + (long)new TimeSpan(9, 30, 0).TotalMilliseconds,
     };
 
+    /// <summary>The zone the edits here are made in; the note page shows these notes in it too.</summary>
+    private static readonly TimeZoneInfo Zone = TimeZoneInfo.Utc;
+
     private static long Utc(int year, int month, int day, int hour, int minute, int second = 0) =>
         new DateTimeOffset(year, month, day, hour, minute, second, TimeSpan.Zero).ToUnixTimeMilliseconds();
 
@@ -184,14 +187,14 @@ public class NotePageTests : IDisposable
     public void Nothing_changed_gives_no_edit()
     {
         var note = Meeting(title: null, text: "Agenda");
-        Assert.Null(NotePage.Edited(note, "", "Agenda", NoteDates.DisplayedDay(note)));
+        Assert.Null(NotePage.Edited(note, "", "Agenda", NoteDates.ShownDay(note.CreateDateTime, Zone), zone: Zone));
     }
 
     [Fact]
     public void An_unchanged_empty_value_stays_as_stored()
     {
         var note = Meeting(title: null, text: "Agenda");
-        var edited = NotePage.Edited(note, "", "Agenda, budget", NoteDates.DisplayedDay(note));
+        var edited = NotePage.Edited(note, "", "Agenda, budget", NoteDates.ShownDay(note.CreateDateTime, Zone), zone: Zone);
 
         Assert.NotNull(edited);
         Assert.Null(edited.Title);
@@ -203,7 +206,7 @@ public class NotePageTests : IDisposable
     public void A_new_day_keeps_the_time_of_day()
     {
         var note = Meeting();
-        var edited = NotePage.Edited(note, "Kick-off", "Agenda\nBudget", new DateOnly(2026, 10, 20))!;
+        var edited = NotePage.Edited(note, "Kick-off", "Agenda\nBudget", new DateOnly(2026, 10, 20), zone: Zone)!;
 
         Assert.Equal(EpochTime.UtcMidnight(new DateOnly(2026, 10, 20)), edited.CreateDate);
         Assert.Equal("Tue 20 Oct 2026, 09:30", NotePage.DayAndTimeLine(edited, Invariant));
@@ -216,7 +219,7 @@ public class NotePageTests : IDisposable
         TestDatabase.ExecuteRaw(_test.FilePath, "UPDATE Note SET createdAt = 100, updatedAt = 200;");
         var before = EpochTime.UtcNowMillis();
 
-        var edited = NotePage.Edited(note, "Kick-off", "Agenda\nBudget\nRisks", new DateOnly(2026, 10, 16))!;
+        var edited = NotePage.Edited(note, "Kick-off", "Agenda\nBudget\nRisks", new DateOnly(2026, 10, 16), zone: Zone)!;
         await _data.Notes.UpdateNoteAsync(edited);
 
         var saved = (await _data.Notes.GetNoteAsync(note.Id))!;
@@ -234,7 +237,7 @@ public class NotePageTests : IDisposable
         var note = await _data.Notes.AddNoteAsync(Meeting());
         TestDatabase.ExecuteRaw(_test.FilePath, "UPDATE Note SET createdAt = 100, updatedAt = 200;");
 
-        Assert.Null(NotePage.Edited(note, "Kick-off", "Agenda\nBudget", NoteDates.DisplayedDay(note)));
+        Assert.Null(NotePage.Edited(note, "Kick-off", "Agenda\nBudget", NoteDates.ShownDay(note.CreateDateTime, Zone), zone: Zone));
         Assert.Equal((100L, 200L), await _data.Notes.GetTimesAsync(note.Id));
     }
 
@@ -249,7 +252,7 @@ public class NotePageTests : IDisposable
 
         foreach (var text in new[] { "Agenda\rBudget", "Agenda\r\nBudget", "Agenda\nBudget" })
         {
-            Assert.Null(NotePage.Edited(note, "Kick-off", text, NoteDates.DisplayedDay(note)));
+            Assert.Null(NotePage.Edited(note, "Kick-off", text, NoteDates.ShownDay(note.CreateDateTime, Zone), zone: Zone));
         }
         Assert.Equal(stored, (await _data.Notes.GetNoteAsync(note.Id))!.TextContents);
         Assert.Equal((100L, 200L), await _data.Notes.GetTimesAsync(note.Id));
@@ -263,7 +266,7 @@ public class NotePageTests : IDisposable
     {
         var note = Meeting(text: stored);
 
-        var edited = NotePage.Edited(note, "Kick-off", "Agenda\rBudget\r\rRisks\r\nNext", NoteDates.DisplayedDay(note))!;
+        var edited = NotePage.Edited(note, "Kick-off", "Agenda\rBudget\r\rRisks\r\nNext", NoteDates.ShownDay(note.CreateDateTime, Zone), zone: Zone)!;
 
         Assert.Equal("Agenda\nBudget\n\nRisks\nNext", edited.TextContents);
     }
@@ -273,7 +276,7 @@ public class NotePageTests : IDisposable
     {
         var note = Meeting(text: "Agenda\rBudget");
 
-        var edited = NotePage.Edited(note, "Kick-off 2", "Agenda\nBudget", new DateOnly(2026, 10, 16))!;
+        var edited = NotePage.Edited(note, "Kick-off 2", "Agenda\nBudget", new DateOnly(2026, 10, 16), zone: Zone)!;
 
         Assert.Equal("Agenda\rBudget", edited.TextContents);
     }

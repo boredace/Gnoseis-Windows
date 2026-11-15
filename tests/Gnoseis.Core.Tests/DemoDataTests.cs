@@ -29,4 +29,19 @@ public class DemoDataTests
         Assert.Contains(texts, t => t.Contains('\n'));
         Assert.DoesNotContain(texts, t => t.Contains('\r'));
     }
+
+    [Fact]
+    public void Generated_notes_are_dated_by_the_rule_in_Toronto()
+    {
+        var toronto = TimeZoneInfo.FindSystemTimeZoneById("America/Toronto");
+        var data = new DemoDataGenerator(300, 42, new DateOnly(2026, 11, 14)).Generate();
+
+        Assert.NotEmpty(data.Notes);
+        foreach (var note in data.Notes)
+        {
+            var local = Domain.NoteDates.Shown(note.CreateDateTime, toronto);
+            Assert.Equal(Domain.NoteDates.StartOfDay(DateOnly.FromDateTime(local), toronto), note.CreateDate);
+            Assert.Equal(0, local.Second);
+        }
+    }
 }

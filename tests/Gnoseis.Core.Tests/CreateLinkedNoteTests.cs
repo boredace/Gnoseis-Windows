@@ -32,7 +32,7 @@ public class CreateLinkedNoteTests : IDisposable
     {
         var contact = await _data.Contacts.AddContactAsync(new Contact { NameLast = "Bakker" });
         var day = new DateOnly(2026, 5, 26);
-        var time = new TimeSpan(15, 40, 0);
+        var time = new TimeOnly(15, 40);
         var before = EpochTime.UtcNowMillis();
 
         var note = await _data.CreateLinkedNote.InvokeAsync(contact.Id, RecordType.Contact, "  ", "Called about\nthe order", day, time);
@@ -41,7 +41,7 @@ public class CreateLinkedNoteTests : IDisposable
         Assert.NotNull(stored);
         Assert.Null(stored.Title);
         Assert.Equal("Called about\nthe order", stored.TextContents);
-        Assert.Equal(NoteDates.ForNewNote(day, time), (stored.CreateDate, stored.CreateDateTime));
+        Assert.Equal(NoteDates.ToStored(day, time, _data.Database.TimeZone), (stored.CreateDate, stored.CreateDateTime));
         var linked = await _data.LinkedRecords.GetRecordIdsLinkedToRecordIdAsync(contact.Id);
         Assert.Equal([note.Id], linked);
 
@@ -56,7 +56,7 @@ public class CreateLinkedNoteTests : IDisposable
     [Fact]
     public async Task Saves_line_breaks_as_line_feeds()
     {
-        var note = await _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, null, "Called\rabout\r\nthe\r\rorder", new DateOnly(2026, 1, 1), TimeSpan.Zero);
+        var note = await _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, null, "Called\rabout\r\nthe\r\rorder", new DateOnly(2026, 1, 1), TimeOnly.MinValue);
 
         Assert.Equal("Called\nabout\nthe\n\norder", note.TextContents);
         Assert.Equal("Called\nabout\nthe\n\norder", (await _data.Notes.GetNoteAsync(note.Id))!.TextContents);
@@ -65,8 +65,8 @@ public class CreateLinkedNoteTests : IDisposable
     [Fact]
     public async Task Keeps_a_title_and_never_derives_one_from_the_text()
     {
-        var withTitle = await _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, " Visit ", "", new DateOnly(2026, 1, 1), TimeSpan.Zero);
-        var withoutTitle = await _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, null, "Text only", new DateOnly(2026, 1, 1), TimeSpan.Zero);
+        var withTitle = await _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, " Visit ", "", new DateOnly(2026, 1, 1), TimeOnly.MinValue);
+        var withoutTitle = await _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, null, "Text only", new DateOnly(2026, 1, 1), TimeOnly.MinValue);
 
         Assert.Equal("Visit", (await _data.Notes.GetNoteAsync(withTitle.Id))!.Title);
         Assert.Null((await _data.Notes.GetNoteAsync(withoutTitle.Id))!.Title);
@@ -81,7 +81,7 @@ public class CreateLinkedNoteTests : IDisposable
         var linksBefore = Count("LinkedRecord");
 
         await Assert.ThrowsAnyAsync<Exception>(() =>
-            _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, "Title", "Text", new DateOnly(2026, 1, 1), TimeSpan.Zero));
+            _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, "Title", "Text", new DateOnly(2026, 1, 1), TimeOnly.MinValue));
 
         Assert.Equal(notesBefore, Count("Note"));
         Assert.Equal(linksBefore, Count("LinkedRecord"));
@@ -93,9 +93,34 @@ public class CreateLinkedNoteTests : IDisposable
         var changed = new List<RecordType>();
         _data.Database.DataChanged += (_, e) => changed.AddRange(e.Types);
 
-        await _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, null, "Text", new DateOnly(2026, 1, 1), TimeSpan.Zero);
+        await _data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, null, "Text", new DateOnly(2026, 1, 1), TimeOnly.MinValue);
 
         Assert.Contains(RecordType.Note, changed);
         Assert.Contains(RecordType.LinkedRecord, changed);
+    }
+
+    [Fact]
+    public async Task A_quick_note_whose_day_and_time_nobody_picked_is_the_moment_of_saving()
+    {
+        using var test = new TestDatabase();
+        var data = test.Open(NoteDatesTests.Zone("Asia/Tokyo"));
+        var now = new DateTimeOffset(2026, 11, 13, 23, 15, 42, 123, TimeSpan.Zero); // 14 Nov 08:15:42 in Tokyo
+
+        var note = await data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, null, "Text", now: now);
+
+        var stored = (await data.Notes.GetNoteAsync(note.Id))!;
+        Assert.Equal((1794582000000, now.ToUnixTimeMilliseconds()), (stored.CreateDate, stored.CreateDateTime));
+    }
+
+    [Fact]
+    public async Task A_quick_note_with_a_picked_day_and_time_is_stored_by_the_rule()
+    {
+        using var test = new TestDatabase();
+        var data = test.Open(NoteDatesTests.Zone("America/Toronto"));
+
+        var note = await data.CreateLinkedNote.InvokeAsync("c", RecordType.Contact, null, "Text", new DateOnly(2026, 3, 8), new TimeOnly(2, 30));
+
+        var stored = (await data.Notes.GetNoteAsync(note.Id))!;
+        Assert.Equal((1772946000000, 1772955000000), (stored.CreateDate, stored.CreateDateTime));
     }
 }

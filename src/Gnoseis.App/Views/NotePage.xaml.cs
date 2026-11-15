@@ -272,15 +272,18 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
     private bool _editing;
     private bool _saving;
     private DateOnly _editDay;
+    private TimeSpan _editTime;
     private bool _updatingDatePicker;
 
     // The values the editor started with, to tell whether anything changed.
     private string _originalTitle = "";
     private string _originalText = "";
     private DateOnly _originalDay;
+    private TimeSpan _originalTime;
 
     private bool IsDirty =>
-        _editing && (TitleBox.Text != _originalTitle || !RecordText.SameText(EditTextBox.Text, _originalText) || _editDay != _originalDay);
+        _editing && (TitleBox.Text != _originalTitle || !RecordText.SameText(EditTextBox.Text, _originalText)
+            || _editDay != _originalDay || _editTime != _originalTime);
 
     private bool IsEditValid => Gnoseis.Core.Domain.NotePage.IsValid(TitleBox.Text, EditTextBox.Text);
 
@@ -305,10 +308,13 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
             _editing = true;
             _originalTitle = note.Title ?? "";
             _originalText = note.TextContents ?? "";
-            _originalDay = NoteDates.DisplayedDay(note);
+            var shown = NoteDates.Shown(note.CreateDateTime, App.Container.Database.TimeZone);
+            _originalDay = DateOnly.FromDateTime(shown);
+            _originalTime = new TimeSpan(shown.Hour, shown.Minute, 0);
             TitleBox.Text = _originalTitle;
             EditTextBox.Text = _originalText;
             _editDay = _originalDay;
+            _editTime = _originalTime;
             ShowEditDay();
             TitleText.Visibility = Visibility.Collapsed;
             TitleBox.Visibility = Visibility.Visible;
@@ -384,8 +390,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
 
     private void ShowEditDay()
     {
-        var time = ViewModel.Note is { } note ? Gnoseis.Core.Domain.NotePage.TimeOfDay(note) : TimeSpan.Zero;
-        EditDayText.Text = Gnoseis.Core.Domain.ContactPage.DayAndTimeText(_editDay, new TimeSpan(time.Hours, time.Minutes, 0), DateOnly.FromDateTime(DateTime.Now));
+        EditDayText.Text = Gnoseis.Core.Domain.ContactPage.DayAndTimeText(_editDay, _editTime, DateOnly.FromDateTime(DateTime.Now));
         AutomationProperties.SetName(EditDayButton, $"Day: {EditDayText.Text}");
     }
 
@@ -447,7 +452,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         UpdateEditState();
         try
         {
-            await ViewModel.SaveAsync(TitleBox.Text, EditTextBox.Text, _editDay);
+            await ViewModel.SaveAsync(TitleBox.Text, EditTextBox.Text, _editDay, TimeOnly.FromTimeSpan(_editTime));
             await ViewModel.LoadAsync();
             StopEditing();
             return true;
