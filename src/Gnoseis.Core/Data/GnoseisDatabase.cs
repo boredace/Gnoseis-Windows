@@ -106,6 +106,12 @@ public sealed class GnoseisDatabase
     internal void NotifyChanged(params RecordType[] types) =>
         DataChanged?.Invoke(this, new DataChangedEventArgs(types));
 
+    /// <summary>
+    /// Windows' time zone changed: every page reloads, so note days and times show in the new zone
+    /// (raised as a replaced database, which every page already reloads for).
+    /// </summary>
+    public void NotifyTimeZoneChanged() => NotifyReplaced();
+
     internal void NotifyReplaced() =>
         DataChanged?.Invoke(this, new DataChangedEventArgs(RecordTypeExtensions.UserTypes, databaseReplaced: true));
 

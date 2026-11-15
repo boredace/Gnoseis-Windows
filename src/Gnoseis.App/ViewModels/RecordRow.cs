@@ -1,12 +1,13 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
 using System.Globalization;
+using Gnoseis.Core.Domain;
 
 namespace Gnoseis.App.ViewModels;
 
@@ -104,12 +105,18 @@ public static class RecordRows
         ShowIcon = true,
     };
 
-    /// <summary>Notes grouped by day, newest first: "Today", "Yesterday", weekday, then the date.</summary>
+    /// <summary>
+    /// Notes grouped by their local day (Windows' time zone), newest first: "Today", "Yesterday",
+    /// weekday, then the date. Within a day by time, newest first.
+    /// </summary>
     public static List<RecordGroup> GroupNotes(IEnumerable<Note> notes) =>
         notes
-            .GroupBy(n => EpochTime.ToUtcDate(n.CreateDate))
+            .GroupBy(n => NoteDates.ShownDay(n.CreateDateTime, TimeZoneInfo.Local))
             .OrderByDescending(g => g.Key)
-            .Select(g => new RecordGroup(DayHeader(g.Key), g.OrderByDescending(n => n.CreateDateTime).Select(n => FromNote(n))))
+            .Select(g => new RecordGroup(DayHeader(g.Key), g
+                .OrderByDescending(n => n.CreateDateTime)
+                .ThenBy(n => n.Id, StringComparer.Ordinal)
+                .Select(n => FromNote(n))))
             .ToList();
 
     /// <summary>Rows grouped by the first letter of their title, keeping the list order.</summary>
@@ -141,15 +148,16 @@ public static class RecordRows
         return lines.Length == 0 ? ("Untitled note", "") : (Truncate(lines[0], 80), lines.Length > 1 ? Preview(lines[1], 200) : "");
     }
 
+    /// <summary>The note's day and time in Windows' time zone.</summary>
     public static string FormatNoteDate(Note note)
     {
-        // Android shows note timestamps in UTC; do the same so both apps show the same date and time.
-        var utc = EpochTime.ToUtc(note.CreateDateTime).UtcDateTime;
-        return $"{utc.ToString("D", CultureInfo.CurrentCulture)}, {utc.ToString("t", CultureInfo.CurrentCulture)}";
+        var local = NoteDates.Shown(note.CreateDateTime, TimeZoneInfo.Local);
+        return $"{local.ToString("D", CultureInfo.CurrentCulture)}, {local.ToString("t", CultureInfo.CurrentCulture)}";
     }
 
+    /// <summary>The note's time in Windows' time zone.</summary>
     public static string FormatNoteTime(Note note) =>
-        EpochTime.ToUtc(note.CreateDateTime).UtcDateTime.ToString("t", CultureInfo.CurrentCulture);
+        NoteDates.Shown(note.CreateDateTime, TimeZoneInfo.Local).ToString("t", CultureInfo.CurrentCulture);
 
     private static string FirstLetter(string title)
     {

@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -269,7 +269,7 @@ public class SearchLogicTests
     [Fact]
     public void Context_lines_per_type()
     {
-        Assert.Equal("2026-10-28 · 6 links", SearchLogic.ContextLine(new SearchResult("n", 1, "N", 6, NoteDate: 1_793_145_600_000)));
+        Assert.Equal("2026-10-28 · 6 links", SearchLogic.ContextLine(new SearchResult("n", 1, "N", 6, NoteDateTime: 1_793_145_600_000), TimeZoneInfo.Utc));
         Assert.Equal("No links", SearchLogic.ContextLine(new SearchResult("n", 1, "N")));
         Assert.Equal("Head of operations, Harbour Labs · 9 links",
             SearchLogic.ContextLine(new SearchResult("c", 2, "C", 9, JobTitle: "Head of operations", Company: " Harbour Labs ")));

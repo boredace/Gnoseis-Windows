@@ -136,27 +136,4 @@ public static class NoteDates
 
     /// <summary>The time with seconds and milliseconds zero (what the time pickers set).</summary>
     public static TimeOnly WholeMinutes(TimeOnly time) => new(time.Hour, time.Minute);
-
-    // Schema version 3 rule, still used by the save and show paths until they move to the rule above.
-
-    public static (long CreateDate, long CreateDateTime) ForNewNote(DateOnly day, TimeSpan timeOfDay)
-    {
-        var createDate = EpochTime.UtcMidnight(day);
-        return (createDate, createDate + (long)timeOfDay.TotalMilliseconds);
-    }
-
-    public static (long CreateDate, long CreateDateTime) ForEditedNote(Note note, DateOnly pickedDay)
-    {
-        var currentDay = DisplayedDay(note);
-        if (pickedDay == currentDay)
-        {
-            return (note.CreateDate, note.CreateDateTime);
-        }
-
-        var timeOfDay = note.CreateDateTime - EpochTime.UtcMidnight(currentDay);
-        var createDate = EpochTime.UtcMidnight(pickedDay);
-        return (createDate, createDate + timeOfDay);
-    }
-
-    public static DateOnly DisplayedDay(Note note) => EpochTime.ToUtcDate(note.CreateDateTime);
 }

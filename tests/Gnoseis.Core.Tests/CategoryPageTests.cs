@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -67,8 +67,8 @@ public class CategoryPageTests
         Id = id,
         Title = title,
         Text = text,
-        CreateDate = EpochTime.UtcMidnight(day),
-        CreateDateTime = EpochTime.UtcMidnight(day),
+        CreateDate = LocalNoteTimes.Start(day),
+        CreateDateTime = LocalNoteTimes.Start(day),
         Links = links,
     };
 

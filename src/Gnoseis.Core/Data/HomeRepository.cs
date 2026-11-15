@@ -1,11 +1,12 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
+using Gnoseis.Core.Domain;
 using Gnoseis.Core.Models;
 using Microsoft.Data.Sqlite;
 
@@ -25,7 +26,6 @@ public sealed class HomeRepository(GnoseisDatabase database) : RepositoryBase(da
     /// <summary>Days in the "Notes, last 14 days" chart.</summary>
     public const int ChartDays = 14;
 
-    private const long DayMillis = 86_400_000;
 
     /// <summary>
     /// The number of links of each record: every LinkedRecord row counts once at each end, and a
@@ -116,23 +116,25 @@ public sealed class HomeRepository(GnoseisDatabase database) : RepositoryBase(da
         });
 
     /// <summary>
-    /// Notes per note day for the <see cref="ChartDays"/> days ending <paramref name="today"/>,
-    /// oldest first, with zero for days without notes. Days are UTC calendar days of createDate,
-    /// as the note list groups notes.
+    /// Notes per local day for the <see cref="ChartDays"/> days ending <paramref name="today"/>,
+    /// oldest first, with zero for days without notes. Days are the local days of createDateTime in
+    /// the device's time zone, as the note list groups notes. They're counted here, not in SQL: a
+    /// fixed offset would be wrong across a daylight saving change.
     /// </summary>
     public async Task<List<DayCount>> GetNotesPerDayAsync(DateOnly today)
     {
+        var zone = Database.TimeZone;
         var first = today.AddDays(-(ChartDays - 1));
         var counts = (await QueryAsync(
-            "SELECT createDate / $day AS day, COUNT(*) FROM Note " +
-            "WHERE createDate >= $from AND createDate < $to GROUP BY day;",
-            r => (Day: r.GetInt64(0), Count: r.GetInt32(1)),
-            ("$day", DayMillis), ("$from", EpochTime.UtcMidnight(first)), ("$to", EpochTime.UtcMidnight(today.AddDays(1))))
+            "SELECT createDateTime FROM Note WHERE createDateTime >= $from AND createDateTime < $to;",
+            r => r.GetInt64(0),
+            ("$from", NoteDates.StartOfDay(first, zone)), ("$to", NoteDates.StartOfDay(today.AddDays(1), zone)))
             .ConfigureAwait(false))
-            .ToDictionary(c => c.Day, c => c.Count);
+            .GroupBy(t => NoteDates.ShownDay(t, zone))
+            .ToDictionary(g => g.Key, g => g.Count());
         return Enumerable.Range(0, ChartDays)
             .Select(i => first.AddDays(i))
-            .Select(d => new DayCount(d, counts.GetValueOrDefault(EpochTime.UtcMidnight(d) / DayMillis)))
+            .Select(d => new DayCount(d, counts.GetValueOrDefault(d)))
             .ToList();
     }
 

@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -47,7 +47,7 @@ public class HomeRepositoryTests : IDisposable
     private void Note(string id, DateOnly day, int minute = 0, string? title = null, string? text = null) =>
         Raw($"INSERT INTO Note (id, ownerDbId, title, textContents, createDate, createDateTime) VALUES ('{id}', 'db1', " +
             $"{(title == null ? "NULL" : $"'{title}'")}, {(text == null ? "NULL" : $"'{text}'")}, " +
-            $"{EpochTime.UtcMidnight(day)}, {EpochTime.UtcMidnight(day) + minute * 60_000L});");
+            $"{LocalNoteTimes.Start(day)}, {LocalNoteTimes.At(day, minute)});");
 
     private void Link(string id1, RecordType type1, string id2, RecordType type2, long? createdAt = null) =>
         Raw($"INSERT INTO LinkedRecord (id, ownerDbId, record1Id, record2Id, record1TypeId, record2TypeId, createdAt) VALUES " +

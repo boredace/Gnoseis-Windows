@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -277,12 +277,10 @@ public static class ContactHistory
 
     private static readonly char[] LineBreaks = ['\r', '\n'];
 
-    /// <summary>Newest first: by createDate, then createDateTime, then title.</summary>
+    /// <summary>Newest first: by createDateTime, then id.</summary>
     public static IReadOnlyList<HistoryNote> Order(IEnumerable<HistoryNote> notes) =>
         notes
-            .OrderByDescending(n => n.CreateDate)
-            .ThenByDescending(n => n.CreateDateTime)
-            .ThenBy(n => RowTitle(n), StringComparer.CurrentCultureIgnoreCase)
+            .OrderByDescending(n => n.CreateDateTime)
             .ThenBy(n => n.Id, StringComparer.Ordinal)
             .ToList();
 
@@ -292,8 +290,9 @@ public static class ContactHistory
     /// <summary>True from 13 notes: month headers and (over more than one year) year chips.</summary>
     public static bool IsGrouped(int noteCount) => noteCount >= GroupingThreshold;
 
-    /// <summary>The note's day (its createDate, read in UTC, as the note list shows it).</summary>
-    public static DateOnly Day(HistoryNote note) => EpochTime.ToUtcDate(note.CreateDate);
+    /// <summary>The note's local day: its createDateTime in <paramref name="zone"/> (Windows' when null), as the note list shows it.</summary>
+    public static DateOnly Day(HistoryNote note, TimeZoneInfo? zone = null) =>
+        NoteDates.ShownDay(note.CreateDateTime, zone ?? TimeZoneInfo.Local);
 
     private static string[] Lines(string text) =>
         text.Split(LineBreaks, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -330,16 +329,16 @@ public static class ContactHistory
     public static string MonthText(DateOnly day, CultureInfo? culture = null) =>
         day.ToString("MMM yyyy", culture ?? CultureInfo.CurrentCulture);
 
-    /// <summary>The note's time of day, when it has one (createDateTime after its day's midnight).</summary>
-    public static TimeSpan? TimeOfDay(HistoryNote note) =>
-        note.CreateDateTime == note.CreateDate ? null : EpochTime.ToUtc(note.CreateDateTime).UtcDateTime.TimeOfDay;
+    /// <summary>The note's local time of day in <paramref name="zone"/> (Windows' when null). Every note has one, 00:00 included.</summary>
+    public static TimeSpan TimeOfDay(HistoryNote note, TimeZoneInfo? zone = null) =>
+        NoteDates.ShownTimeOfDay(note.CreateDateTime, zone ?? TimeZoneInfo.Local);
 
-    /// <summary>The reading pane's caption: "Note · Tue 26 May 2026, 15:00", the time only when the note has one.</summary>
-    public static string ReadingCaption(HistoryNote note, CultureInfo? culture = null)
+    /// <summary>The reading pane's caption: "Note · Tue 26 May 2026, 15:00".</summary>
+    public static string ReadingCaption(HistoryNote note, CultureInfo? culture = null, TimeZoneInfo? zone = null)
     {
         culture ??= CultureInfo.CurrentCulture;
-        var text = $"Note · {Day(note).ToString("ddd d MMM yyyy", culture)}";
-        return TimeOfDay(note) is { } time ? $"{text}, {new DateTime(1, 1, 1).Add(time).ToString("HH:mm", culture)}" : text;
+        var shown = NoteDates.Shown(note.CreateDateTime, zone ?? TimeZoneInfo.Local);
+        return $"Note · {shown.ToString("ddd d MMM yyyy", culture)}, {shown.ToString("HH:mm", culture)}";
     }
 
     /// <summary>Whether the note's title or text contains <paramref name="filter"/>, ignoring case. A blank filter matches all.</summary>

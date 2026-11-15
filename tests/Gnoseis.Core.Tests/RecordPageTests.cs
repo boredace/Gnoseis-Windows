@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -97,8 +97,8 @@ public class RecordPageTests : IDisposable
     {
         var contact = await _data.Contacts.AddContactAsync(new Contact { NameFirst = " Maria ", NameLast = "Lindqvist " });
         var lastOnly = await _data.Contacts.AddContactAsync(new Contact { NameLast = "Holm" });
-        var titled = await _data.Notes.AddNoteAsync(new Note { Title = "Quote", CreateDate = EpochTime.UtcMidnight(new DateOnly(2026, 11, 3)) });
-        var untitled = await _data.Notes.AddNoteAsync(new Note { Title = "  ", TextContents = "Text", CreateDate = EpochTime.UtcMidnight(new DateOnly(2026, 10, 28)) });
+        var titled = await _data.Notes.AddNoteAsync(new Note { Title = "Quote", CreateDate = LocalNoteTimes.Start(new DateOnly(2026, 11, 3)), CreateDateTime = LocalNoteTimes.Start(new DateOnly(2026, 11, 3)) });
+        var untitled = await _data.Notes.AddNoteAsync(new Note { Title = "  ", TextContents = "Text", CreateDate = LocalNoteTimes.Start(new DateOnly(2026, 10, 28)), CreateDateTime = LocalNoteTimes.Start(new DateOnly(2026, 10, 28)) });
         var blank = await _data.Organizations.AddOrganizationAsync(new Organization { OrganizationName = " " });
         var item = await _data.Items.AddItemAsync(new Item { ItemName = "Oak flooring" });
 
@@ -182,8 +182,8 @@ public class RecordPageTests : IDisposable
         Note NoteOn(string title, int day, int hour) => new()
         {
             Title = title,
-            CreateDate = EpochTime.UtcMidnight(new DateOnly(2026, 10, day)),
-            CreateDateTime = EpochTime.UtcMidnight(new DateOnly(2026, 10, day)) + hour * 3_600_000L,
+            CreateDate = LocalNoteTimes.Start(new DateOnly(2026, 10, day)),
+            CreateDateTime = LocalNoteTimes.At(new DateOnly(2026, 10, day), hour * 60),
         };
         foreach (var note in new[] { NoteOn("old", 1, 9), NoteOn("late", 20, 15), NoteOn("early", 20, 8), NoteOn("newest", 28, 10), NoteOn("middle", 10, 12) })
         {

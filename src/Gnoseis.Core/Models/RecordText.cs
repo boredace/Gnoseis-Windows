@@ -42,9 +42,13 @@ public static class RecordText
         : !string.IsNullOrWhiteSpace(contact.EmailMain) ? contact.EmailMain.Trim()
         : "";
 
-    /// <summary>A note's day as yyyy-MM-dd: its stored day (createDate), read in UTC, as the note list shows it.</summary>
-    public static string NoteDay(Note note) =>
-        EpochTime.ToUtcDate(note.CreateDate).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+    /// <summary>
+    /// A note's day as yyyy-MM-dd: the local day of its createDateTime in <paramref name="zone"/> (Windows'
+    /// when null), as the note list shows it.
+    /// </summary>
+    public static string NoteDay(Note note, TimeZoneInfo? zone = null) =>
+        Domain.NoteDates.ShownDay(note.CreateDateTime, zone ?? TimeZoneInfo.Local)
+            .ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
 
     /// <summary>
     /// The text with each line break as a line feed (LF), the way stored text keeps them: CRLF

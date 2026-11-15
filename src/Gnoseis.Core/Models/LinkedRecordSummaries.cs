@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -47,9 +47,7 @@ public sealed record LinkedRecordSummary
     /// <summary>UTC epoch ms of the link to the record shown; null for links made before schema v3.</summary>
     public long? LinkedAt { get; init; }
 
-    /// <summary>A note's day (createDate) and time (createDateTime); 0 for other types.</summary>
-    public long NoteDate { get; init; }
-
+    /// <summary>A note's UTC instant (createDateTime, epoch ms); 0 for other types. Shown in the device's time zone.</summary>
     public long NoteDateTime { get; init; }
 
     /// <summary>What the type's list sorts by: a contact's last and first name, or the name.</summary>
@@ -98,7 +96,7 @@ public sealed class LinkedRecordSet
     public LinkedTypeGroup? Find(RecordType type) => Groups.FirstOrDefault(g => g.Type == type);
 
     /// <summary>
-    /// The type's list: notes newest first (by day, then time), contacts by last and first name,
+    /// The type's list: notes newest first (by createDateTime), contacts by last and first name,
     /// the other types by name.
     /// </summary>
     private static List<LinkedRecordSummary> SortForList(RecordType type, IEnumerable<LinkedRecordSummary> records) =>
@@ -107,7 +105,7 @@ public sealed class LinkedRecordSet
             : records.OrderBy(r => r.SortName, NameComparer).ThenBy(r => r.Id, StringComparer.Ordinal).ToList();
 
     /// <summary>
-    /// The 3 latest: notes by note day, then time, newest first; other types by when they were
+    /// The 3 latest: notes by createDateTime, newest first; other types by when they were
     /// linked, newest first, then the undated links (made before v3) by name.
     /// </summary>
     private static List<LinkedRecordSummary> Latest(RecordType type, IEnumerable<LinkedRecordSummary> records) =>
@@ -123,8 +121,7 @@ public sealed class LinkedRecordSet
 
     private static IOrderedEnumerable<LinkedRecordSummary> NotesNewestFirst(IEnumerable<LinkedRecordSummary> notes) =>
         notes
-            .OrderByDescending(n => n.NoteDate)
-            .ThenByDescending(n => n.NoteDateTime)
+            .OrderByDescending(n => n.NoteDateTime)
             .ThenBy(n => n.Id, StringComparer.Ordinal);
 }
 
