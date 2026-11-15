@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -52,7 +52,7 @@ public class DatabaseCompatibilityTests
         using var test = new TestDatabase();
         test.Open();
 
-        Assert.Equal(3L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
+        Assert.Equal(4L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
         Assert.Equal(DatabaseSchema.RoomIdentityHash, TestDatabase.ScalarRaw(test.FilePath, "SELECT identity_hash FROM room_master_table WHERE id = 42;"));
     }
 
@@ -77,7 +77,7 @@ public class DatabaseCompatibilityTests
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
-    public void A_version_1_or_2_file_opens_as_version_3_with_empty_times(int version)
+    public void A_version_1_or_2_file_opens_as_version_4_with_empty_times(int version)
     {
         using var test = new TestDatabase();
         CreateAndroidStyleDatabase(test.FilePath, version);
@@ -89,7 +89,7 @@ public class DatabaseCompatibilityTests
 
         test.Open();
 
-        Assert.Equal(3L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
+        Assert.Equal(4L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
         Assert.Equal(DatabaseSchema.RoomIdentityHash, TestDatabase.ScalarRaw(test.FilePath, "SELECT identity_hash FROM room_master_table WHERE id = 42;"));
         AssertColumnsMatchRoomSchema(test.FilePath);
         foreach (var table in new[] { "Note", "Contact", "Organization", "Category", "Item" })
@@ -101,7 +101,7 @@ public class DatabaseCompatibilityTests
         Assert.Equal(0L, TestDatabase.ScalarRaw(test.FilePath, "SELECT count(*) FROM Settings;"));
 
         // The file as it was before the migration is kept next to it.
-        var copy = Assert.Single(Directory.GetFiles(test.Folder, "gnoseis_data.before-v3-*.backup"));
+        var copy = Assert.Single(Directory.GetFiles(test.Folder, "gnoseis_data.before-v4-*.backup"));
         Assert.Equal((long)version, TestDatabase.ScalarRaw(copy, "PRAGMA user_version;"));
     }
 
@@ -214,7 +214,7 @@ public class DatabaseCompatibilityTests
         // Android known bug 5: a version mismatch silently deleted all data.
         using var test = new TestDatabase();
         CreateAndroidStyleDatabase(test.FilePath);
-        TestDatabase.ExecuteRaw(test.FilePath, "PRAGMA user_version = 4;");
+        TestDatabase.ExecuteRaw(test.FilePath, "PRAGMA user_version = 5;");
 
         var error = Assert.Throws<DatabaseIncompatibleException>(() => GnoseisDatabase.Open(test.FilePath));
 
@@ -223,14 +223,14 @@ public class DatabaseCompatibilityTests
     }
 
     [Fact]
-    public async Task Migrates_a_version_1_file_to_version_3_and_keeps_a_copy()
+    public async Task Migrates_a_version_1_file_to_version_4_and_keeps_a_copy()
     {
         using var test = new TestDatabase();
         CreateVersion1DatabaseWithDuplicateLinks(test.FilePath);
 
         var data = test.Open();
 
-        Assert.Equal(3L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
+        Assert.Equal(4L, TestDatabase.ScalarRaw(test.FilePath, "PRAGMA user_version;"));
         Assert.Equal(DatabaseSchema.RoomIdentityHash, TestDatabase.ScalarRaw(test.FilePath, "SELECT identity_hash FROM room_master_table WHERE id = 42;"));
         // Duplicates in both directions are removed; the first link of each pair is kept.
         Assert.Equal("l1,l4", TestDatabase.ScalarRaw(test.FilePath, "SELECT group_concat(id, ',') FROM (SELECT id FROM LinkedRecord ORDER BY id);"));
@@ -242,14 +242,14 @@ public class DatabaseCompatibilityTests
         Assert.Single(await data.Notes.GetNotesAsync());
 
         // The file as it was before the migration is kept next to it.
-        var copy = Assert.Single(Directory.GetFiles(test.Folder, "gnoseis_data.before-v3-*.backup"));
+        var copy = Assert.Single(Directory.GetFiles(test.Folder, "gnoseis_data.before-v4-*.backup"));
         Assert.Equal(1L, TestDatabase.ScalarRaw(copy, "PRAGMA user_version;"));
         Assert.Equal(4L, TestDatabase.ScalarRaw(copy, "SELECT count(*) FROM LinkedRecord;"));
         Assert.Equal(1L, TestDatabase.ScalarRaw(copy, "SELECT count(*) FROM sqlite_master WHERE name = 'index_extra';"));
     }
 
     [Fact]
-    public void Opening_a_version_3_file_makes_no_copy()
+    public void Opening_a_version_4_file_makes_no_copy()
     {
         using var test = new TestDatabase();
         CreateAndroidStyleDatabase(test.FilePath);
@@ -306,8 +306,8 @@ public class DatabaseCompatibilityTests
 
     /// <summary>
     /// A database the way Room creates it on Android: WAL mode, android_metadata table, Room tables.
-    /// Schema version 3 by default, as written by Android 0.3.0 and later. The tables come from the
-    /// Room schema export of that version (versions 1 and 2 have the same tables).
+    /// Schema version 4 by default, as written by Android 0.4.0 and later. The tables come from the
+    /// Room schema export of that version (versions 1 and 2 have the same tables, and so do 3 and 4).
     /// </summary>
     internal static void CreateAndroidStyleDatabase(string path, int version = DatabaseSchema.Version)
     {

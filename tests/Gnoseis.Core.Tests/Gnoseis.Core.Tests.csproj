@@ -24,6 +24,7 @@
     <None Include="RoomSchema\1.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="RoomSchema\2.json" CopyToOutputDirectory="PreserveNewest" />
     <None Include="RoomSchema\3.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="RoomSchema\4.json" CopyToOutputDirectory="PreserveNewest" />
     <!-- Encrypted backups shared with Gnoseis-Android's tests: each client restores the other's file. -->
     <None Include="SharedBackups\*.backup" CopyToOutputDirectory="PreserveNewest" />
     <!-- Key and passphrase test vectors shared with Gnoseis-Android, which holds the originals. -->

@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -10,14 +10,14 @@ namespace Gnoseis.Core.Data;
 
 /// <summary>
 /// The database schema, copied from the Android Room schema export
-/// (Gnoseis-Android/app/schemas/org.gnoseis.data.database.GnoseisDatabase/3.json).
+/// (Gnoseis-Android/app/schemas/org.gnoseis.data.database.GnoseisDatabase/4.json).
 /// A database created by this app can be opened by the Android app and vice versa, as long as
 /// <see cref="Version"/> and <see cref="RoomIdentityHash"/> match what Room expects.
 /// </summary>
 public static class DatabaseSchema
 {
     /// <summary>Room database version, stored in PRAGMA user_version.</summary>
-    public const int Version = 3;
+    public const int Version = 4;
 
     /// <summary>
     /// The oldest version this app opens. Older supported versions are migrated to
@@ -25,7 +25,10 @@ public static class DatabaseSchema
     /// </summary>
     public const int OldestSupportedVersion = 1;
 
-    /// <summary>Room identity hash of <see cref="Version"/>, stored in room_master_table.</summary>
+    /// <summary>
+    /// Room identity hash of versions 3 and <see cref="Version"/>, stored in room_master_table. Version 4
+    /// changed only data (note times in UTC), so it shares version 3's tables and hash.
+    /// </summary>
     public const string RoomIdentityHash = "d4a4ee67bfc185f77bdb2d64f54028c7";
 
     /// <summary>
@@ -79,7 +82,7 @@ public static class DatabaseSchema
     internal static IReadOnlyDictionary<string, string[]> RequiredColumnsFor(long version) =>
         version >= 3 ? RequiredColumns : Version2RequiredColumns;
 
-    /// <summary>Columns of version 3 (<see cref="Version"/>).</summary>
+    /// <summary>Columns of versions 3 and 4 (<see cref="Version"/>).</summary>
     internal static readonly IReadOnlyDictionary<string, string[]> RequiredColumns = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
     {
         ["Category"] = ["id", "ownerDbId", "parentId", "categoryName", "comments", "createdAt", "updatedAt"],
