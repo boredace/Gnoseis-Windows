@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -272,19 +272,19 @@ public static partial class SearchLogic
         _ => $"{count} links",
     };
 
-    /// <summary>A note's day (createDate, read in UTC) as yyyy-MM-dd.</summary>
-    public static string NoteDayText(long noteDate) =>
-        EpochTime.ToUtcDate(noteDate).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    /// <summary>A note's local day (its createDateTime in <paramref name="zone"/>, Windows' when null) as yyyy-MM-dd.</summary>
+    public static string NoteDayText(long noteDateTime, TimeZoneInfo? zone = null) =>
+        NoteDates.ShownDay(noteDateTime, zone ?? TimeZoneInfo.Local).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     /// <summary>
     /// The line under a result's title: a note's day, a contact's job title and company (whichever are
     /// set, joined by ", "), then its links.
     /// </summary>
-    public static string ContextLine(SearchResult result)
+    public static string ContextLine(SearchResult result, TimeZoneInfo? zone = null)
     {
         var details = result.RecordType switch
         {
-            RecordType.Note => result.NoteDate is { } day ? NoteDayText(day) : null,
+            RecordType.Note => result.NoteDateTime is { } time ? NoteDayText(time, zone) : null,
             RecordType.Contact => string.Join(", ", new[] { result.JobTitle, result.Company }
                 .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim())),
             _ => null,
@@ -300,8 +300,8 @@ public static partial class SearchLogic
     public static string RelativeTime(long time, long now, TimeZoneInfo zone)
     {
         var minutes = (long)Math.Floor((now - time) / 60_000.0);
-        var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(EpochTime.ToUtc(time), zone).DateTime);
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(EpochTime.ToUtc(now), zone).DateTime);
+        var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(time), zone).DateTime);
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(now), zone).DateTime);
         var days = today.DayNumber - day.DayNumber;
         return minutes switch
         {

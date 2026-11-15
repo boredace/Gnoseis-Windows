@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -244,19 +244,19 @@ public class ContactPageTests : IDisposable
         Id = id,
         Title = title,
         Text = text,
-        CreateDate = EpochTime.UtcMidnight(day),
-        CreateDateTime = EpochTime.UtcMidnight(day) + minutes * 60_000L,
+        CreateDate = LocalNoteTimes.Start(day),
+        CreateDateTime = LocalNoteTimes.At(day, minutes),
     };
 
     [Fact]
-    public void History_is_newest_first_by_day_then_time_then_title()
+    public void History_is_newest_first_by_time_then_id()
     {
         var day = new DateOnly(2026, 5, 26);
         var notes = new[]
         {
             Note("old", day.AddDays(-1), 900),
-            Note("b", day, 60, "Beta"),
-            Note("a", day, 60, "alpha"),
+            Note("b", day, 60, "alpha"),
+            Note("a", day, 60, "Beta"),
             Note("late", day, 120),
         };
 
@@ -332,12 +332,13 @@ public class ContactPageTests : IDisposable
     }
 
     [Fact]
-    public void Reading_caption_shows_the_time_only_when_the_note_has_one()
+    public void Reading_caption_always_shows_the_time_00_00_included()
     {
         var day = new DateOnly(2026, 5, 26);
 
         Assert.Equal("Note · Tue 26 May 2026, 15:00", ContactHistory.ReadingCaption(Note("1", day, 900), Invariant));
-        Assert.Equal("Note · Tue 26 May 2026", ContactHistory.ReadingCaption(Note("1", day), Invariant));
+        Assert.Equal("Note · Tue 26 May 2026, 00:00", ContactHistory.ReadingCaption(Note("1", day), Invariant));
+        Assert.Equal(TimeSpan.Zero, ContactHistory.TimeOfDay(Note("1", day)));
     }
 
     [Fact]

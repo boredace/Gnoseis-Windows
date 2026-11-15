@@ -1,12 +1,13 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
 using System.Globalization;
+using Gnoseis.Core.Domain;
 
 namespace Gnoseis.App.ViewModels;
 
@@ -87,7 +88,7 @@ public sealed class LinkedRow
     /// <summary>The name used in messages ("Unlinked …"): as "Will be linked to" names a record.</summary>
     public string DisplayName => Record.Name.Length > 0
         ? Record.Name
-        : Type == RecordType.Note && Record.NoteDate != 0 ? NoteDay.Format(Record.NoteDate) : Type.DisplayName();
+        : Type == RecordType.Note && Record.NoteDateTime != 0 ? NoteDay.Format(Record.NoteDateTime) : Type.DisplayName();
 
     /// <summary>The name of a Link button beside the row: "Link Paint colours to records".</summary>
     public string LinkActionName => $"Link {DisplayName} to records";
@@ -100,14 +101,14 @@ public sealed class LinkedRow
     public RecordRef ToRef() => new(Type, Id);
 }
 
-/// <summary>A note's day as the linked lists show it.</summary>
+/// <summary>A note's day as the linked lists show it: its createDateTime's day in Windows' time zone.</summary>
 public static class NoteDay
 {
-    public static DateOnly Of(long createDate) => EpochTime.ToUtcDate(createDate);
+    public static DateOnly Of(long createDateTime) => NoteDates.ShownDay(createDateTime, TimeZoneInfo.Local);
 
-    public static string Format(long createDate) => Of(createDate).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    public static string Format(long createDateTime) => Of(createDateTime).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    public static string Weekday(long createDate) => Of(createDate).ToString("ddd", CultureInfo.CurrentCulture);
+    public static string Weekday(long createDateTime) => Of(createDateTime).ToString("ddd", CultureInfo.CurrentCulture);
 }
 
 /// <summary>
@@ -124,10 +125,10 @@ public sealed class LinkedCard(IReadOnlyList<LinkedRow> rows, string dayHeader =
     /// <summary>Notes of one day, in the order given (newest first), one card per day.</summary>
     public static List<LinkedCard> ByDay(IEnumerable<LinkedRecordSummary> notes, bool showsLinkCount = true) =>
         notes
-            .GroupBy(n => NoteDay.Of(n.NoteDate))
+            .GroupBy(n => NoteDay.Of(n.NoteDateTime))
             .Select(g => new LinkedCard(
                 g.Select(n => new LinkedRow(n, showsLinkCount)).ToList(),
-                NoteDay.Format(g.First().NoteDate),
-                NoteDay.Weekday(g.First().NoteDate)))
+                NoteDay.Format(g.First().NoteDateTime),
+                NoteDay.Weekday(g.First().NoteDateTime)))
             .ToList();
 }

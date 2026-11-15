@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -26,12 +26,12 @@ public sealed class SearchRepository(GnoseisDatabase database) : RepositoryBase(
 
     /// <summary>
     /// Each type's records as search results, without link counts. Columns: id, title, type id,
-    /// note day, job title, company, updatedAt.
+    /// note time (createDateTime), job title, company, updatedAt.
     /// </summary>
     private static readonly IReadOnlyDictionary<RecordType, string> RecordsSql = new Dictionary<RecordType, string>
     {
         [RecordType.Note] =
-            "SELECT id, COALESCE(NULLIF(title, ''), substr(textContents, 1, 200)), 1, createDate, NULL, NULL, updatedAt FROM Note " +
+            "SELECT id, COALESCE(NULLIF(title, ''), substr(textContents, 1, 200)), 1, createDateTime, NULL, NULL, updatedAt FROM Note " +
             "WHERE (NULLIF(title, '') IS NOT NULL OR NULLIF(textContents, '') IS NOT NULL)",
         [RecordType.Contact] =
             "SELECT id, nameLast || COALESCE(', ' || NULLIF(nameFirst, ''), ''), 2, NULL, jobTitle, company, updatedAt FROM Contact WHERE 1",
@@ -148,7 +148,7 @@ public sealed class SearchRepository(GnoseisDatabase database) : RepositoryBase(
         r.GetString(0),
         r.GetInt32(2),
         FirstLine(r.IsDBNull(1) ? "" : r.GetString(1)),
-        NoteDate: r.IsDBNull(3) ? null : r.GetInt64(3),
+        NoteDateTime: r.IsDBNull(3) ? null : r.GetInt64(3),
         JobTitle: r.IsDBNull(4) ? null : r.GetString(4),
         Company: r.IsDBNull(5) ? null : r.GetString(5),
         UpdatedAt: r.IsDBNull(6) ? null : r.GetInt64(6));

@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -18,11 +18,15 @@ public sealed record Note
     public string? Title { get; init; }
     public string? TextContents { get; init; }
 
-    /// <summary>Epoch milliseconds (UTC).</summary>
+    /// <summary>The note's UTC instant, epoch milliseconds; by default the moment it was made.</summary>
     public long CreateDateTime { get; init; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-    /// <summary>Epoch milliseconds of the day the note belongs to. Used to group the note list.</summary>
-    public long CreateDate { get; init; } = EpochTime.LocalMidnightNow();
+    /// <summary>
+    /// The UTC instant 00:00 of the note's local day began, epoch milliseconds; by default today's, in
+    /// Windows' time zone. Nothing reads it to show, group or sort notes (see NoteDates).
+    /// </summary>
+    public long CreateDate { get; init; } =
+        Domain.NoteDates.StartOfDay(DateOnly.FromDateTime(DateTime.Now), TimeZoneInfo.Local);
 
     public static string NewId() => Guid.NewGuid().ToString();
 }
@@ -98,7 +102,7 @@ public sealed record LinkedRecordTypeCount(int RecordTypeId, int Count)
 /// start of its text) and the stored data its row shows.
 /// </summary>
 /// <param name="LinkCount">Distinct records linked to it, in either direction.</param>
-/// <param name="NoteDate">A note's day (createDate, epoch ms); null for other types.</param>
+/// <param name="NoteDateTime">A note's UTC instant (createDateTime, epoch ms); null for other types.</param>
 /// <param name="JobTitle">A contact's job title; null for other types.</param>
 /// <param name="Company">A contact's company; null for other types.</param>
 /// <param name="UpdatedAt">When the record was last changed (UTC epoch ms); null before schema v3.</param>
@@ -107,7 +111,7 @@ public sealed record SearchResult(
     int RecordTypeId,
     string RecordTitle,
     int LinkCount = 0,
-    long? NoteDate = null,
+    long? NoteDateTime = null,
     string? JobTitle = null,
     string? Company = null,
     long? UpdatedAt = null)

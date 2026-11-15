@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -76,41 +76,5 @@ public class ValidationTests
         var result = ValidatePhone.Execute(input);
         Assert.Equal(expectedSuccess, result.Successful);
         Assert.Equal(expectedMessage, result.ErrorMessage);
-    }
-}
-
-public class NoteDatesTests
-{
-    [Fact]
-    public void A_new_note_is_stored_on_the_UTC_midnight_of_the_picked_day()
-    {
-        var (createDate, createDateTime) = NoteDates.ForNewNote(new DateOnly(2024, 3, 15), new TimeSpan(14, 30, 0));
-
-        Assert.Equal(new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(), createDate);
-        Assert.Equal(new DateTimeOffset(2024, 3, 15, 14, 30, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(), createDateTime);
-    }
-
-    [Fact]
-    public void Editing_a_note_keeps_its_dates_when_the_day_is_unchanged()
-    {
-        // Android known bug 9: every edit overwrote createDate with the full timestamp.
-        var note = new Note { CreateDateTime = 1_700_000_123_456L, CreateDate = 1_699_920_000_000L };
-
-        var (createDate, createDateTime) = NoteDates.ForEditedNote(note, NoteDates.DisplayedDay(note));
-
-        Assert.Equal(note.CreateDate, createDate);
-        Assert.Equal(note.CreateDateTime, createDateTime);
-    }
-
-    [Fact]
-    public void Moving_a_note_to_another_day_keeps_its_time_of_day()
-    {
-        var written = new DateTimeOffset(2024, 3, 15, 9, 45, 0, TimeSpan.Zero);
-        var note = new Note { CreateDateTime = written.ToUnixTimeMilliseconds(), CreateDate = EpochTime.UtcMidnight(new DateOnly(2024, 3, 15)) };
-
-        var (createDate, createDateTime) = NoteDates.ForEditedNote(note, new DateOnly(2024, 1, 2));
-
-        Assert.Equal(EpochTime.UtcMidnight(new DateOnly(2024, 1, 2)), createDate);
-        Assert.Equal(new DateTimeOffset(2024, 1, 2, 9, 45, 0, TimeSpan.Zero).ToUnixTimeMilliseconds(), createDateTime);
     }
 }

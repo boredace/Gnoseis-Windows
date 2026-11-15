@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -32,10 +32,14 @@ public sealed class DatabaseIncompatibleException(string message) : Exception(me
 public sealed class GnoseisDatabase
 {
     private readonly string _connectionString;
+    private readonly TimeZoneInfo? _timeZone;
 
-    public GnoseisDatabase(string filePath)
+    /// <param name="filePath">The database file.</param>
+    /// <param name="timeZone">The time zone note times are converted in; null (the app) for Windows' setting, read each time.</param>
+    public GnoseisDatabase(string filePath, TimeZoneInfo? timeZone = null)
     {
         FilePath = Path.GetFullPath(filePath);
+        _timeZone = timeZone;
         _connectionString = new SqliteConnectionStringBuilder
         {
             DataSource = FilePath,
@@ -46,6 +50,12 @@ public sealed class GnoseisDatabase
 
     public string FilePath { get; }
 
+    /// <summary>
+    /// The device's time zone, which note times are shown, grouped and converted in: Windows' setting
+    /// (<see cref="TimeZoneInfo.Local"/>), read each time, unless a fixed zone was given (tests).
+    /// </summary>
+    public TimeZoneInfo TimeZone => _timeZone ?? TimeZoneInfo.Local;
+
     public event EventHandler<DataChangedEventArgs>? DataChanged;
 
     /// <summary>
@@ -53,9 +63,9 @@ public sealed class GnoseisDatabase
     /// expected schema raises <see cref="DatabaseIncompatibleException"/> and is left as it is.
     /// A file at an older supported schema version is first copied next to itself, then migrated.
     /// </summary>
-    public static GnoseisDatabase Open(string filePath)
+    public static GnoseisDatabase Open(string filePath, TimeZoneInfo? timeZone = null)
     {
-        var database = new GnoseisDatabase(filePath);
+        var database = new GnoseisDatabase(filePath, timeZone);
         database.Initialize();
         return database;
     }
@@ -96,6 +106,12 @@ public sealed class GnoseisDatabase
     internal void NotifyChanged(params RecordType[] types) =>
         DataChanged?.Invoke(this, new DataChangedEventArgs(types));
 
+    /// <summary>
+    /// Windows' time zone changed: every page reloads, so note days and times show in the new zone
+    /// (raised as a replaced database, which every page already reloads for).
+    /// </summary>
+    public void NotifyTimeZoneChanged() => NotifyReplaced();
+
     internal void NotifyReplaced() =>
         DataChanged?.Invoke(this, new DataChangedEventArgs(RecordTypeExtensions.UserTypes, databaseReplaced: true));
 
@@ -111,7 +127,7 @@ public sealed class GnoseisDatabase
 
         if (IsEmpty(connection))
         {
-            CreateSchema(connection);
+            CreateSchema(connection, TimeZone);
         }
         else
         {
@@ -135,7 +151,7 @@ public sealed class GnoseisDatabase
                     connection.BackupDatabase(safetyCopy);
                     Execute(safetyCopy, "PRAGMA journal_mode=DELETE;");
                 }
-                Migrate(connection);
+                Migrate(connection, TimeZone);
             }
         }
 
@@ -153,7 +169,7 @@ public sealed class GnoseisDatabase
         return userVersion == 0 && tableCount == 0;
     }
 
-    private static void CreateSchema(SqliteConnection connection)
+    private static void CreateSchema(SqliteConnection connection, TimeZoneInfo timeZone)
     {
         using var transaction = connection.BeginTransaction();
         foreach (var statement in DatabaseSchema.CreateStatements)
@@ -169,7 +185,7 @@ public sealed class GnoseisDatabase
             insert.CommandText =
                 "INSERT INTO Note (id, ownerDbId, title, textContents, createDateTime, createDate, createdAt, updatedAt) " +
                 "VALUES ($id, $ownerDbId, $title, $textContents, $createDateTime, $createDate, $now, $now);";
-            var (createDate, createDateTime) = Domain.NoteDates.ForNewNote(DateOnly.FromDateTime(DateTime.Now), DateTime.Now.TimeOfDay);
+            var (createDate, createDateTime) = Domain.NoteDates.ForNow(DateTimeOffset.UtcNow, timeZone);
             var note = new Note
             {
                 OwnerDbId = "yyy",
@@ -197,9 +213,10 @@ public sealed class GnoseisDatabase
 
     /// <summary>
     /// Brings a file that passed <see cref="FindSchemaProblem"/> up to <see cref="DatabaseSchema.Version"/>,
-    /// in one transaction. The same steps as the Android Room migrations.
+    /// in one transaction. The same steps as the Android Room migrations. Note times are converted in
+    /// <paramref name="timeZone"/>, the zone of the PC that upgrades the file.
     /// </summary>
-    internal static void Migrate(SqliteConnection connection)
+    internal static void Migrate(SqliteConnection connection, TimeZoneInfo timeZone)
     {
         using var transaction = connection.BeginTransaction();
         var version = UserVersion(connection, transaction);
@@ -244,6 +261,41 @@ public sealed class GnoseisDatabase
             Execute(connection, "ALTER TABLE `LinkedRecord` ADD COLUMN `createdAt` INTEGER;", transaction);
             Execute(connection, DatabaseSchema.SettingsCreateStatement, transaction);
             version = 3;
+        }
+
+        if (version == 3)
+        {
+            // 3 -> 4: data only. A note's createDateTime held the local clock time it was written, stored
+            // as if it were UTC. It becomes the note's UTC instant in this PC's time zone, and createDate
+            // the start of its local day. Every other column stays as it is.
+            var notes = new List<(string Id, long CreateDateTime)>();
+            using (var query = connection.CreateCommand())
+            {
+                query.Transaction = transaction;
+                query.CommandText = "SELECT id, createDateTime FROM Note;";
+                using var reader = query.ExecuteReader();
+                while (reader.Read())
+                {
+                    notes.Add((reader.GetString(0), reader.GetInt64(1)));
+                }
+            }
+            using (var update = connection.CreateCommand())
+            {
+                update.Transaction = transaction;
+                update.CommandText = "UPDATE Note SET createDateTime = $createDateTime, createDate = $createDate WHERE id = $id;";
+                var id = update.Parameters.Add("$id", SqliteType.Text);
+                var createDateTime = update.Parameters.Add("$createDateTime", SqliteType.Integer);
+                var createDate = update.Parameters.Add("$createDate", SqliteType.Integer);
+                foreach (var note in notes)
+                {
+                    var converted = Domain.NoteDates.UpgradeFromV3(note.CreateDateTime, timeZone);
+                    id.Value = note.Id;
+                    createDateTime.Value = converted.CreateDateTime;
+                    createDate.Value = converted.CreateDate;
+                    update.ExecuteNonQuery();
+                }
+            }
+            version = 4;
         }
 
         // Room writes the new identity hash itself after its migrations; do the same.

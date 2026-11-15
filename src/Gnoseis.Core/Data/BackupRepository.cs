@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -305,7 +305,8 @@ public sealed class BackupRepository(GnoseisDatabase database)
         await Task.Run(() =>
         {
             // Fold any -wal content into the staged file so it is a single self-contained file,
-            // and bring an older supported schema version (1 or 2) up to date on the staged copy,
+            // and bring an older supported schema version (1 to 3) up to date on the staged copy (note
+            // times are converted in this PC's time zone),
             // so the live file is only ever replaced by a current one. The source file is not
             // changed. Nothing is stamped: the restored file keeps the times and Settings rows
             // the backup holds.
@@ -314,7 +315,7 @@ public sealed class BackupRepository(GnoseisDatabase database)
                 GnoseisDatabase.Execute(connection, "PRAGMA journal_mode=DELETE;");
                 if (Convert.ToInt64(GnoseisDatabase.Scalar(connection, "PRAGMA user_version;")) < DatabaseSchema.Version)
                 {
-                    GnoseisDatabase.Migrate(connection);
+                    GnoseisDatabase.Migrate(connection, database.TimeZone);
                 }
             }
 

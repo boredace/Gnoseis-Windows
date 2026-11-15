@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -77,7 +77,7 @@ public class SearchDataTests : IDisposable
     [Fact]
     public async Task Results_carry_note_day_job_title_company_and_updated_at()
     {
-        var note = await _data.Notes.AddNoteAsync(new Note { Title = "Kickoff", CreateDate = 1_761_609_600_000 });
+        var note = await _data.Notes.AddNoteAsync(new Note { Title = "Kickoff", CreateDateTime = 1_761_609_600_000 });
         var contact = await _data.Contacts.AddContactAsync(new Contact
         {
             NameLast = "Harbour", NameFirst = "Ellen", JobTitle = "Head of operations", Company = "Harbour Labs",
@@ -87,7 +87,7 @@ public class SearchDataTests : IDisposable
         SetUpdatedAt("Note", note.Id, null);
 
         var noteResult = await Find(note.Id);
-        Assert.Equal(1_761_609_600_000, noteResult.NoteDate);
+        Assert.Equal(1_761_609_600_000, noteResult.NoteDateTime);
         Assert.Null(noteResult.UpdatedAt);
         Assert.Null(noteResult.JobTitle);
 
@@ -95,7 +95,7 @@ public class SearchDataTests : IDisposable
         Assert.Equal("Harbour, Ellen", contactResult.RecordTitle);
         Assert.Equal("Head of operations", contactResult.JobTitle);
         Assert.Equal("Harbour Labs", contactResult.Company);
-        Assert.Null(contactResult.NoteDate);
+        Assert.Null(contactResult.NoteDateTime);
         Assert.NotNull(contactResult.UpdatedAt);
 
         var organizationResult = await Find(organization.Id);

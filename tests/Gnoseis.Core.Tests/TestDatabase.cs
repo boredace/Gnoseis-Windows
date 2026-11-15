@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -24,7 +24,8 @@ public sealed class TestDatabase : IDisposable
     public string Folder { get; }
     public string FilePath { get; }
 
-    public AppContainer Open() => new(GnoseisDatabase.Open(FilePath));
+    /// <summary>Opens the database; note times in <paramref name="timeZone"/>, or Windows' zone when null.</summary>
+    public AppContainer Open(TimeZoneInfo? timeZone = null) => new(GnoseisDatabase.Open(FilePath, timeZone));
 
     public string PathFor(string fileName) => Path.Combine(Folder, fileName);
 

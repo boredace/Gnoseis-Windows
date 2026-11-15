@@ -32,16 +32,16 @@ public static class NotePage
     public static (string Text, bool IsPlaceholder) Title(Note note) =>
         string.IsNullOrWhiteSpace(note.Title) ? (UntitledText, true) : (note.Title.Trim(), false);
 
-    /// <summary>The note's time of day, as the note lists show it.</summary>
-    public static TimeSpan TimeOfDay(Note note) => EpochTime.ToUtc(note.CreateDateTime).UtcDateTime.TimeOfDay;
+    /// <summary>The note's time of day in <paramref name="zone"/> (Windows' when null), as the note lists show it.</summary>
+    public static TimeSpan TimeOfDay(Note note, TimeZoneInfo? zone = null) =>
+        NoteDates.ShownTimeOfDay(note.CreateDateTime, zone ?? TimeZoneInfo.Local);
 
-    /// <summary>The line under the title: "Thu 15 Oct 2026, 09:30".</summary>
-    public static string DayAndTimeLine(Note note, CultureInfo? culture = null)
+    /// <summary>The line under the title, in <paramref name="zone"/> (Windows' when null): "Thu 15 Oct 2026, 09:30".</summary>
+    public static string DayAndTimeLine(Note note, CultureInfo? culture = null, TimeZoneInfo? zone = null)
     {
         culture ??= CultureInfo.CurrentCulture;
-        var day = NoteDates.DisplayedDay(note).ToString("ddd d MMM yyyy", culture);
-        var time = new DateTime(1, 1, 1).Add(TimeOfDay(note)).ToString("HH:mm", culture);
-        return $"{day}, {time}";
+        var shown = NoteDates.Shown(note.CreateDateTime, zone ?? TimeZoneInfo.Local);
+        return $"{shown.ToString("ddd d MMM yyyy", culture)}, {shown.ToString("HH:mm", culture)}";
     }
 
     /// <summary>
@@ -75,7 +75,7 @@ public static class NotePage
     /// Copy note text: the title (left out when there's none), the day and time line, an empty
     /// line, then the text as stored.
     /// </summary>
-    public static string CopyText(Note note, CultureInfo? culture = null)
+    public static string CopyText(Note note, CultureInfo? culture = null, TimeZoneInfo? zone = null)
     {
         var lines = new List<string>();
         var (title, isPlaceholder) = Title(note);
@@ -83,7 +83,7 @@ public static class NotePage
         {
             lines.Add(title);
         }
-        lines.Add(DayAndTimeLine(note, culture));
+        lines.Add(DayAndTimeLine(note, culture, zone));
         lines.Add("");
         lines.Add(note.TextContents ?? "");
         return string.Join(Environment.NewLine, lines);
@@ -102,22 +102,23 @@ public static class NotePage
         : note.FirstLine.Length > 0 ? note.FirstLine
         : LinkedNoteDay(note);
 
-    /// <summary>A linked note's day: "15 Oct 2026".</summary>
-    public static string LinkedNoteDay(LinkedRecordSummary note, CultureInfo? culture = null) =>
-        EpochTime.ToUtcDate(note.NoteDate).ToString("d MMM yyyy", culture ?? CultureInfo.CurrentCulture);
+    /// <summary>A linked note's local day (in <paramref name="zone"/>, Windows' when null): "15 Oct 2026".</summary>
+    public static string LinkedNoteDay(LinkedRecordSummary note, CultureInfo? culture = null, TimeZoneInfo? zone = null) =>
+        NoteDates.ShownDay(note.NoteDateTime, zone ?? TimeZoneInfo.Local).ToString("d MMM yyyy", culture ?? CultureInfo.CurrentCulture);
 
     /// <summary>A note can be saved with a title or some text (as on the edit page).</summary>
     public static bool IsValid(string title, string text) => title.Length > 0 || text.Length > 0;
 
     /// <summary>
-    /// The note with an edited title, text and day, or null when nothing changed. A value equal to
-    /// the stored one is kept as stored (an empty box doesn't turn a missing value into ""), and
-    /// a new day keeps the note's time of day. Text that differs only in its line breaks is equal;
-    /// changed text is saved with LF line breaks.
+    /// The note with an edited title, text, day and time, or null when nothing changed. A value equal to
+    /// the stored one is kept as stored (an empty box doesn't turn a missing value into ""). A day and
+    /// time equal to the ones shown in <paramref name="zone"/> keep both date columns exactly; otherwise
+    /// they follow <see cref="NoteDates.ForEditedNote"/>. Text that differs only in its line breaks is
+    /// equal; changed text is saved with LF line breaks.
     /// </summary>
-    public static Note? Edited(Note note, string title, string text, DateOnly day)
+    public static Note? Edited(Note note, string title, string text, DateOnly? day, TimeOnly? time = null, TimeZoneInfo? zone = null)
     {
-        var (createDate, createDateTime) = NoteDates.ForEditedNote(note, day);
+        var (createDate, createDateTime) = NoteDates.ForEditedNote(note, day, time, zone ?? TimeZoneInfo.Local);
         var newTitle = title == (note.Title ?? "") ? note.Title : title;
         var newText = RecordText.Edited(note.TextContents, text);
         if (newTitle == note.Title && newText == note.TextContents

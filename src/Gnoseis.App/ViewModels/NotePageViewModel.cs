@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -98,11 +98,12 @@ public sealed class NotePageViewModel(RecordRef record) : PageViewModel
 
     /// <summary>
     /// Saves an edit made in place: only when something changed, through the note update (which
-    /// writes the editable columns and moves updatedAt). A new day keeps the time of day.
+    /// writes the editable columns and moves updatedAt). A day and time as shown keep the stored
+    /// columns; a new day keeps the time, a new time keeps the day (in Windows' time zone).
     /// </summary>
-    public async Task SaveAsync(string title, string text, DateOnly day)
+    public async Task SaveAsync(string title, string text, DateOnly day, TimeOnly time)
     {
-        if (Note is { } note && NoteLogic.Edited(note, title, text, day) is { } edited)
+        if (Note is { } note && NoteLogic.Edited(note, title, text, day, time, Data.Database.TimeZone) is { } edited)
         {
             await Data.Notes.UpdateNoteAsync(edited);
         }

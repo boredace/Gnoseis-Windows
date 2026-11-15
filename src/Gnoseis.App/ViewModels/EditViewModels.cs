@@ -243,35 +243,59 @@ public sealed class NoteEditViewModel : EditViewModelBase
 {
     private Note? _note;
     private DateTimeOffset? _date;
+    private TimeSpan _time;
+
+    // The day and time the pickers started with, and whether they came from a draft (which counts as
+    // picked). A new note nobody changed is dated the moment of saving.
+    private DateOnly _startDay;
+    private TimeSpan _startTime;
+    private bool _fromDraft;
 
     public NoteEditViewModel(EditRequest request) : base(request)
     {
         NoteTitle.ValueChanged += (_, _) => UpdateValidity();
         Text.ValueChanged += (_, _) => UpdateValidity();
-        _date = new DateTimeOffset(DateTime.Today);
+        var now = DateTime.Now;
+        SetStart(DateOnly.FromDateTime(now), new TimeSpan(now.Hour, now.Minute, 0));
     }
 
     public FormField NoteTitle { get; } = new("Title", TitleLength.Note);
     public FormField Text { get; } = new("Note text");
 
-    /// <summary>The day the note belongs to (Android stores it as UTC midnight of that day).</summary>
+    /// <summary>The note's local day, in Windows' time zone.</summary>
     public DateTimeOffset? Date
     {
         get => _date;
         set => SetProperty(ref _date, value);
     }
 
-    private DateOnly SelectedDay => DateOnly.FromDateTime((Date ?? DateTimeOffset.Now).Date);
+    /// <summary>The note's local time of day (hours and minutes), in Windows' time zone.</summary>
+    public TimeSpan Time
+    {
+        get => _time;
+        set => SetProperty(ref _time, new TimeSpan(value.Hours, value.Minutes, 0));
+    }
 
-    // The time of day of a draft carried over from the contact page; otherwise the time of saving.
-    private TimeSpan? _draftTime;
+    private TimeZoneInfo Zone => Data.Database.TimeZone;
+
+    private DateOnly SelectedDay => Date is { } date ? DateOnly.FromDateTime(date.Date) : _startDay;
+
+    private TimeOnly SelectedTime => TimeOnly.FromTimeSpan(Time);
+
+    private void SetStart(DateOnly day, TimeSpan time)
+    {
+        _startDay = day;
+        _startTime = time;
+        Date = new DateTimeOffset(day.ToDateTime(TimeOnly.MinValue));
+        Time = time;
+    }
 
     protected override void ApplyNoteDraft(NoteDraft draft)
     {
         NoteTitle.Value = draft.Title.Length > TitleLength.Note ? draft.Title[..TitleLength.Note] : draft.Title;
         Text.Value = draft.Text;
-        Date = new DateTimeOffset(draft.Day.ToDateTime(TimeOnly.MinValue));
-        _draftTime = draft.TimeOfDay;
+        SetStart(draft.Day, draft.TimeOfDay);
+        _fromDraft = true;
     }
 
     protected override void Prefill(string query) =>
@@ -286,13 +310,17 @@ public sealed class NoteEditViewModel : EditViewModelBase
         }
         NoteTitle.Value = _note.Title ?? "";
         Text.Value = _note.TextContents ?? "";
-        Date = new DateTimeOffset(NoteDates.DisplayedDay(_note).ToDateTime(TimeOnly.MinValue));
+        var shown = NoteDates.Shown(_note.CreateDateTime, Zone);
+        SetStart(DateOnly.FromDateTime(shown), new TimeSpan(shown.Hour, shown.Minute, 0));
         return true;
     }
 
     protected override async Task<string> InsertAsync()
     {
-        var (createDate, createDateTime) = NoteDates.ForNewNote(SelectedDay, _draftTime ?? DateTime.Now.TimeOfDay);
+        var picked = _fromDraft || SelectedDay != _startDay || Time != _startTime;
+        var (createDate, createDateTime) = picked
+            ? NoteDates.ForNewNote(SelectedDay, SelectedTime, DateTimeOffset.UtcNow, Zone)
+            : NoteDates.ForNow(DateTimeOffset.UtcNow, Zone);
         var note = await Data.Notes.AddNoteAsync(new Note
         {
             OwnerDbId = "db1",
@@ -306,7 +334,7 @@ public sealed class NoteEditViewModel : EditViewModelBase
 
     protected override async Task UpdateAsync()
     {
-        if (NotePage.Edited(_note!, NoteTitle.Value, Text.Value, SelectedDay) is { } edited)
+        if (NotePage.Edited(_note!, NoteTitle.Value, Text.Value, SelectedDay, SelectedTime, Zone) is { } edited)
         {
             await Data.Notes.UpdateNoteAsync(edited);
         }
@@ -315,7 +343,7 @@ public sealed class NoteEditViewModel : EditViewModelBase
     protected override bool Validate() => NotePage.IsValid(NoteTitle.Value, Text.Value);
 
     // Line breaks normalised: the text box may hand back stored LF line breaks as CR.
-    protected override string Snapshot() => $"{NoteTitle.Value}\u0001{RecordText.NormalizeLineBreaks(Text.Value)}\u0001{SelectedDay}";
+    protected override string Snapshot() => $"{NoteTitle.Value}\u0001{RecordText.NormalizeLineBreaks(Text.Value)}\u0001{SelectedDay}\u0001{Time}";
 }
 
 /// <summary>New / edit contact.</summary>

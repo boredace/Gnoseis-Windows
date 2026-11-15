@@ -151,18 +151,24 @@
                                 <Button
                                     x:Name="EditDayButton"
                                     VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="Day of the note">
+                                    ToolTipService.ToolTip="Day and time of the note">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <FontIcon FontSize="14" Glyph="&#xE787;" />
                                         <TextBlock x:Name="EditDayText" />
                                     </StackPanel>
                                     <Button.Flyout>
                                         <Flyout x:Name="EditDayFlyout" Opening="EditDayFlyout_Opening" Placement="BottomEdgeAlignedLeft">
-                                            <CalendarDatePicker
-                                                x:Name="EditDatePicker"
-                                                DateChanged="EditDatePicker_DateChanged"
-                                                Header="Day"
-                                                IsTodayHighlighted="True" />
+                                            <StackPanel Spacing="12">
+                                                <CalendarDatePicker
+                                                    x:Name="EditDatePicker"
+                                                    DateChanged="EditDatePicker_DateChanged"
+                                                    Header="Day"
+                                                    IsTodayHighlighted="True" />
+                                                <TimePicker
+                                                    x:Name="EditTimePicker"
+                                                    Header="Time"
+                                                    TimeChanged="EditTimePicker_TimeChanged" />
+                                            </StackPanel>
                                         </Flyout>
                                     </Button.Flyout>
                                 </Button>

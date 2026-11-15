@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -97,11 +97,11 @@ public class BackupTests : IDisposable
         Assert.Equal(3, inspection.ContactCount);
         Assert.Equal(3, (await _data.Contacts.GetContactsAsync()).Count);
         var live = _data.Database.FilePath;
-        Assert.Equal(3L, TestDatabase.ScalarRaw(live, "PRAGMA user_version;"));
+        Assert.Equal(4L, TestDatabase.ScalarRaw(live, "PRAGMA user_version;"));
         Assert.Equal(2L, TestDatabase.ScalarRaw(live, "SELECT count(*) FROM LinkedRecord;"));
         Assert.Equal(0L, TestDatabase.ScalarRaw(live, "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND sql IS NOT NULL;"));
-        // Migrated on the staged copy: no before-v2 copy of the live file is needed.
-        Assert.Empty(Directory.GetFiles(_test.Folder, "*.before-v3-*"));
+        // Migrated on the staged copy: no before-v4 copy of the live file is needed.
+        Assert.Empty(Directory.GetFiles(_test.Folder, "*.before-v4-*"));
         // The chosen file itself is not changed.
         Assert.Equal(1L, TestDatabase.ScalarRaw(oldBackup, "PRAGMA user_version;"));
         Assert.Equal(4L, TestDatabase.ScalarRaw(oldBackup, "SELECT count(*) FROM LinkedRecord;"));
@@ -118,13 +118,13 @@ public class BackupTests : IDisposable
 
         Assert.True(inspection.IsValid);
         var live = _data.Database.FilePath;
-        Assert.Equal(3L, TestDatabase.ScalarRaw(live, "PRAGMA user_version;"));
+        Assert.Equal(4L, TestDatabase.ScalarRaw(live, "PRAGMA user_version;"));
         Assert.Equal(DatabaseSchema.RoomIdentityHash, TestDatabase.ScalarRaw(live, "SELECT identity_hash FROM room_master_table WHERE id = 42;"));
         DatabaseCompatibilityTests.AssertColumnsMatchRoomSchema(live);
         Assert.Equal(1L, TestDatabase.ScalarRaw(live, "SELECT count(*) FROM Contact WHERE createdAt IS NULL AND updatedAt IS NULL;"));
         Assert.Equal(0L, TestDatabase.ScalarRaw(live, "SELECT count(*) FROM Settings;"));
         Assert.Equal("Smith", Assert.Single(await _data.Contacts.GetContactsAsync()).NameLast);
-        Assert.Empty(Directory.GetFiles(_test.Folder, "*.before-v3-*"));
+        Assert.Empty(Directory.GetFiles(_test.Folder, "*.before-v4-*"));
         Assert.Equal(2L, TestDatabase.ScalarRaw(oldBackup, "PRAGMA user_version;"));
         Assert.Equal(0L, TestDatabase.ScalarRaw(oldBackup, "SELECT count(*) FROM sqlite_master WHERE name = 'Settings';"));
     }
@@ -134,7 +134,7 @@ public class BackupTests : IDisposable
     {
         // Restore never stamps: the file keeps what the backup holds.
         var androidFile = _test.PathFor("gnoseis_data_v3_from_phone");
-        DatabaseCompatibilityTests.CreateAndroidStyleDatabase(androidFile);
+        DatabaseCompatibilityTests.CreateAndroidStyleDatabase(androidFile, version: 3);
         TestDatabase.ExecuteRaw(androidFile,
             "UPDATE Contact SET createdAt = 1700000000001, updatedAt = 1700000000002;",
             "UPDATE Note SET createdAt = NULL, updatedAt = NULL;",
@@ -156,8 +156,8 @@ public class BackupTests : IDisposable
     public async Task Restore_rejects_a_newer_schema_version_and_keeps_the_data()
     {
         await _data.Notes.AddNoteAsync(new Note { Title = "Keep me" });
-        var newerFile = _test.PathFor("gnoseis_data_v4");
-        DatabaseCompatibilityTests.CreateAndroidStyleDatabase(newerFile, version: 4);
+        var newerFile = _test.PathFor("gnoseis_data_v5");
+        DatabaseCompatibilityTests.CreateAndroidStyleDatabase(newerFile, version: 5);
 
         var inspection = await BackupRepository.InspectAsync(newerFile);
         await Assert.ThrowsAsync<DatabaseIncompatibleException>(() => _data.Backup.RestoreAsync(newerFile));

@@ -99,6 +99,11 @@ internal sealed class DemoDataGenerator
 
     private readonly int _count;
     private readonly Rng _rng;
+    /// <summary>
+    /// The time zone note days and times are written in: fixed, so the demo data is the same on every PC.
+    /// </summary>
+    public static readonly TimeZoneInfo Zone = TimeZoneInfo.FindSystemTimeZoneById("America/Toronto");
+
     private readonly DateOnly _today;
     private readonly DateOnly _windowStart;
 
@@ -853,7 +858,7 @@ internal sealed class DemoDataGenerator
             {
                 continue;
             }
-            var year = EpochTime.ToUtcDate(note.CreateDateTime).Year;
+            var year = NoteDates.ShownDay(note.CreateDateTime, Zone).Year;
             var n = sequence[(kind, year)] = sequence.GetValueOrDefault((kind, year)) + 1;
             var number = n.ToString("D4", Inv);
             _notes[index] = note with
@@ -1379,7 +1384,7 @@ internal sealed class DemoDataGenerator
 
     private Note AddNote(string? title, string text, DateOnly day, TimeSpan time)
     {
-        var (createDate, createDateTime) = NoteDates.ForNewNote(day, time);
+        var (createDate, createDateTime) = NoteDates.ToStored(day, TimeOnly.FromTimeSpan(time), Zone);
         var note = new Note
         {
             Id = _rng.Guid(),
