@@ -1,48 +1,48 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
-using Windows.Storage;
-using Windows.Storage.Pickers;
+using Microsoft.Windows.Storage.Pickers;
 
 namespace Gnoseis.App.Services;
 
-/// <summary>The file pickers of Back up and Restore (Settings, and Back up now on Home).</summary>
+/// <summary>
+/// The file pickers of Back up and Restore (Settings, and Back up now on Home). They use the Windows App
+/// SDK pickers, which also work when Gnoseis runs as administrator (Windows.Storage.Pickers fails then).
+/// </summary>
 public static class BackupFiles
 {
     /// <summary>
-    /// Asks where to save a backup; null if the user cancels. An encrypted backup is suggested as
-    /// "gnoseis_data_&lt;date&gt;.encrypted.backup", still under the .backup type.
+    /// Asks where to save a backup; the full path, or null if the user cancels. An encrypted backup is
+    /// suggested as "gnoseis_data_&lt;date&gt;.encrypted.backup", still under the .backup type.
     /// </summary>
-    public static async Task<StorageFile?> PickBackupFileAsync(bool encrypted)
+    public static async Task<string?> PickBackupFileAsync(bool encrypted)
     {
-        var picker = new FileSavePicker
+        var picker = new FileSavePicker(App.MainWindow!.AppWindow.Id)
         {
             SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
             SuggestedFileName = Core.Backup.BackupEncryption.SuggestedFileName(DateTime.Now, encrypted),
+            DefaultFileExtension = BackupRepository.BackupFileExtension,
         };
         picker.FileTypeChoices.Add("Gnoseis backup", [BackupRepository.BackupFileExtension]);
-        InitializeWithWindow(picker);
-        return await picker.PickSaveFileAsync();
+        var result = await picker.PickSaveFileAsync();
+        return result?.Path;
     }
 
-    /// <summary>Asks for a backup or database file to restore; null if the user cancels.</summary>
-    public static async Task<StorageFile?> PickRestoreFileAsync()
+    /// <summary>Asks for a backup or database file to restore; the full path, or null if the user cancels.</summary>
+    public static async Task<string?> PickRestoreFileAsync()
     {
-        var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
+        var picker = new FileOpenPicker(App.MainWindow!.AppWindow.Id)
+        {
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+        };
         // Android database and backup files have no fixed extension.
         picker.FileTypeFilter.Add("*");
-        InitializeWithWindow(picker);
-        return await picker.PickSingleFileAsync();
-    }
-
-    private static void InitializeWithWindow(object picker)
-    {
-        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow!);
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+        var result = await picker.PickSingleFileAsync();
+        return result?.Path;
     }
 }

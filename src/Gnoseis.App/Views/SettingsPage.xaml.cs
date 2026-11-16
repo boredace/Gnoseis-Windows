@@ -211,8 +211,8 @@ public sealed partial class SettingsPage : Page
 
         await RunBusyAsync(async () =>
         {
-            var encrypted = await App.BackupEncryption.BackUpAsync(file.Path);
-            ShowResult(InfoBarSeverity.Success, encrypted ? "Encrypted backup saved" : "Backup saved", file.Path, file.Path);
+            var encrypted = await App.BackupEncryption.BackUpAsync(file);
+            ShowResult(InfoBarSeverity.Success, encrypted ? "Encrypted backup saved" : "Backup saved", file, file);
         }, "Couldn't back up the database");
     }
 
@@ -234,8 +234,8 @@ public sealed partial class SettingsPage : Page
 
         await RunBusyAsync(async () =>
         {
-            await App.BackupEncryption.BackUpWithoutEncryptionAsync(file.Path);
-            ShowResult(InfoBarSeverity.Warning, "Unencrypted backup saved", file.Path, file.Path);
+            await App.BackupEncryption.BackUpWithoutEncryptionAsync(file);
+            ShowResult(InfoBarSeverity.Warning, "Unencrypted backup saved", file, file);
         }, "Couldn't back up the database");
     }
 
@@ -255,7 +255,7 @@ public sealed partial class SettingsPage : Page
             {
                 return stored;
             }
-            var key = await BackupPassphraseDialog.AskAsync(file.Name, file.Path, header);
+            var key = await BackupPassphraseDialog.AskAsync(Path.GetFileName(file), file, header);
             if (key != null)
             {
                 typedKey = BackupMasterKey.FromKey(key.Key, key.KdfSalt, key.Parameters);
@@ -270,7 +270,7 @@ public sealed partial class SettingsPage : Page
                 StagedBackup staged;
                 try
                 {
-                    staged = await BackupRepository.StageAsync(file.Path, Unlock);
+                    staged = await BackupRepository.StageAsync(file, Unlock);
                 }
                 catch (OperationCanceledException)
                 {
@@ -298,7 +298,7 @@ public sealed partial class SettingsPage : Page
 
                     var confirmed = await Dialogs.ConfirmAsync(
                         "Replace all data?",
-                        $"\"{file.Name}\" contains {inspection.NoteCount} notes, {inspection.ContactCount} contacts, " +
+                        $"\"{Path.GetFileName(file)}\" contains {inspection.NoteCount} notes, {inspection.ContactCount} contacts, " +
                         $"{inspection.OrganizationCount} organizations, {inspection.CategoryCount} categories and {inspection.ItemCount} items.\n\n" +
                         "All data currently in Gnoseis will be replaced with the data from this file. " +
                         "A copy of your current data is saved in the database folder first.",
@@ -310,7 +310,7 @@ public sealed partial class SettingsPage : Page
 
                     var safetyCopy = await App.Container.Backup.RestoreAsync(staged);
                     await Dialogs.ShowMessageAsync("Database restored",
-                        $"Your data was replaced with the data from \"{file.Name}\".\n\nThe previous data was saved as:\n{safetyCopy}");
+                        $"Your data was replaced with the data from \"{Path.GetFileName(file)}\".\n\nThe previous data was saved as:\n{safetyCopy}");
                 }
 
                 if (typedKey != null && App.BackupEncryption.State != BackupEncryptionState.On
