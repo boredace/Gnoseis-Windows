@@ -63,18 +63,34 @@ public sealed partial class MainWindow : Window
     // Reloads the pages when Windows' time zone changes, so note times move to it.
     private TimeZoneWatcher? _timeZoneWatcher;
 
-    /// <summary>Opens the database and shows the page the user was on last time.</summary>
+    /// <summary>
+    /// Finds the data folder (a bad argument quits, the picker asks, a folder with no database asks before
+    /// one is made there), reads its settings, opens the database and shows the page the user was on last time.
+    /// </summary>
     public async Task StartAsync()
     {
         await _loaded.Task;
         NavView.IsEnabled = false;
         SearchBox.IsEnabled = false;
 
-        if (AppPaths.IsPortable && !await CanUsePortableFolderAsync())
+        var location = await ChooseDataFolderAsync();
+        if (location == null)
         {
             Application.Current.Exit();
             return;
         }
+        AppPaths.SetLocation(location);
+
+        // A folder opened from the command line shows in the picker and Settings next time.
+        if (location.Source == DataFolderSource.CommandLine)
+        {
+            AddToKnownDatabases(location.Folder);
+        }
+
+        // settings.json belongs to this database: until now the window had the default placement and theme.
+        App.LoadSettings();
+        RestoreWindowPlacement();
+        ApplyTheme(App.Settings.ElementTheme);
 
         // Plain copies left by a backup or restore that didn't finish.
         await Task.Run(() => BackupRepository.DeleteTemporaryFiles(AppPaths.DataFolder));
@@ -117,14 +133,118 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    /// <summary>In portable mode the data stays beside the app or nowhere: never silently somewhere else.</summary>
-    private static async Task<bool> CanUsePortableFolderAsync()
+    /// <summary>
+    /// The data folder to use, or null to quit: the argument error first, then the order (with the picker
+    /// when asked for), then the "no database here" question and the write checks. Nothing is written in
+    /// any data folder, or in databases.json, before the user has agreed to the folder.
+    /// </summary>
+    private static async Task<DataLocation?> ChooseDataFolderAsync()
     {
-        while (!DataLocation.CanWrite(AppPaths.DataFolder, out var error))
+        if (AppPaths.Argument.IsError)
+        {
+            await Dialogs.ShowQuitMessageAsync("Gnoseis can't start",
+                $"{AppPaths.Argument.Error}\n\nTo start Gnoseis on a data folder, use:\n\nGnoseis.exe {DataLocation.DataFolderOption} \"<folder>\"");
+            return null;
+        }
+
+        var location = AppPaths.ResolveAtStartup();
+        if (location == null)
+        {
+            location = await PickDatabaseAsync();
+            if (location == null)
+            {
+                return null;
+            }
+        }
+        else if (location.AsksBeforeCreating(AppPaths.DefaultDataFolder) && !DataLocation.HasDatabase(location.Folder)
+                 && !await AskToCreateAsync(location.Folder, fromPicker: false))
+        {
+            return null;
+        }
+
+        if (location.IsPortable)
+        {
+            return await CanUsePortableFolderAsync(location.Folder) ? location : null;
+        }
+        if (location.Source is DataFolderSource.CommandLine or DataFolderSource.Picker or DataFolderSource.DefaultEntry)
+        {
+            return await CanUseChosenFolderAsync(location) ? location : null;
+        }
+        return location;
+    }
+
+    /// <summary>The start-up picker, until a database is opened (null: Quit).</summary>
+    private static async Task<DataLocation?> PickDatabaseAsync()
+    {
+        var databases = AppPaths.LoadDatabases();
+        while (true)
+        {
+            var dialog = new DatabasePickerDialog(databases);
+            await Dialogs.ShowCustomAsync(dialog);
+            if (dialog.Chosen == null)
+            {
+                return null;
+            }
+            var location = new DataLocation(dialog.Chosen.Folder, IsPortable: false, DataFolderSource.Picker);
+            if (!location.AsksBeforeCreating(AppPaths.DefaultDataFolder) || DataLocation.HasDatabase(location.Folder)
+                || await AskToCreateAsync(location.Folder, fromPicker: true))
+            {
+                return location;
+            }
+        }
+    }
+
+    /// <summary>A typo or a disconnected drive never makes a new database silently. From the picker, Back returns to it.</summary>
+    private static Task<bool> AskToCreateAsync(string folder, bool fromPicker) =>
+        Dialogs.ConfirmAsync("No database here",
+            $"There's no Gnoseis database in this folder: {folder}. Start with a new, empty database there?",
+            "Create", fromPicker ? "Back" : "Quit");
+
+    private static void AddToKnownDatabases(string folder)
+    {
+        var databases = AppPaths.LoadDatabases();
+        // An unreadable list is only rewritten when the user changes it in Settings.
+        if (databases.CouldNotBeRead || !databases.AddIfMissing(folder))
+        {
+            return;
+        }
+        try
+        {
+            databases.Save(AppPaths.DatabasesFile);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // The list is a convenience; the folder is open either way.
+        }
+    }
+
+    /// <summary>In portable mode the data stays beside the app or nowhere: never silently somewhere else.</summary>
+    private static async Task<bool> CanUsePortableFolderAsync(string folder)
+    {
+        while (!DataLocation.CanWrite(folder, out var error))
         {
             var message =
-                $"This copy of Gnoseis is portable, so it keeps its data in this folder, which can't be written to:\n\n{AppPaths.DataFolder}\n\n{error}\n\n" +
+                $"This copy of Gnoseis is portable, so it keeps its data in this folder, which can't be written to:\n\n{folder}\n\n{error}\n\n" +
                 $"Move Gnoseis to a folder you can write to, or delete the file named \"{DataLocation.PortableMarkerName}\" next to Gnoseis.exe to keep the data in your user folder.";
+            if (!await Dialogs.ConfirmAsync("Can't write to the data folder", message, "Try again", "Quit"))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>A folder from the command line or the list that can't be written: try again or quit, never somewhere else.</summary>
+    private static async Task<bool> CanUseChosenFolderAsync(DataLocation location)
+    {
+        while (!DataLocation.CanWrite(location.Folder, out var error))
+        {
+            var from = location.Source == DataFolderSource.CommandLine
+                ? $"Gnoseis was started with {DataLocation.DataFolderOption} on this folder, which can't be written to:"
+                : "This database's folder, from your list of databases, can't be written to:";
+            var message =
+                $"{from}\n\n{location.Folder}\n\n{error}\n\n" +
+                "Check that the drive is connected and that you can write to the folder, then try again.";
             if (!await Dialogs.ConfirmAsync("Can't write to the data folder", message, "Try again", "Quit"))
             {
                 return false;

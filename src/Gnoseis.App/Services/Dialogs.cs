@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -49,6 +49,15 @@ public static class Dialogs
     {
         var dialog = Create(title, content);
         dialog.CloseButtonText = "OK";
+        dialog.DefaultButton = ContentDialogButton.Close;
+        await ShowAsync(dialog);
+    }
+
+    /// <summary>A message whose only answer is Quit (the caller quits).</summary>
+    public static async Task ShowQuitMessageAsync(string title, object content)
+    {
+        var dialog = Create(title, content);
+        dialog.CloseButtonText = "Quit";
         dialog.DefaultButton = ContentDialogButton.Close;
         await ShowAsync(dialog);
     }

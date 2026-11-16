@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -24,8 +24,14 @@ public partial class App : Application
     {
         try
         {
-            Directory.CreateDirectory(AppPaths.DataFolder);
-            File.AppendAllText(Path.Combine(AppPaths.DataFolder, "crash.log"), $"[{DateTime.Now:O}] {error}{Environment.NewLine}{Environment.NewLine}");
+            // With a bad argument nothing is written anywhere; before the data folder is known, in %LOCALAPPDATA%\Gnoseis.
+            if (AppPaths.Argument.IsError)
+            {
+                return;
+            }
+            var folder = AppPaths.IsResolved ? AppPaths.DataFolder : AppPaths.LocalFolder;
+            Directory.CreateDirectory(folder);
+            File.AppendAllText(Path.Combine(folder, "crash.log"), $"[{DateTime.Now:O}] {error}{Environment.NewLine}{Environment.NewLine}");
         }
         catch (Exception)
         {
@@ -52,13 +58,17 @@ public partial class App : Application
 
     private static Core.Backup.BackupEncryption? _backupEncryption;
 
+    /// <summary>The settings of the database in use; defaults until the data folder is known.</summary>
     public static AppSettings Settings { get; private set; } = new();
+
+    /// <summary>Reads settings.json once the data folder is known.</summary>
+    public static void LoadSettings() => Settings = AppSettings.Load(AppPaths.SettingsFile);
 
     public static MainWindow? MainWindow { get; private set; }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        Settings = AppSettings.Load(AppPaths.SettingsFile);
+        // settings.json is per data folder, so it's read once start-up knows the folder (MainWindow.StartAsync).
         MainWindow = new MainWindow();
         MainWindow.Activate();
         _ = MainWindow.StartAsync();
