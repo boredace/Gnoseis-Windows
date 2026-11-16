@@ -6,7 +6,7 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
-using Windows.Storage.Pickers;
+using Microsoft.Windows.Storage.Pickers;
 
 namespace Gnoseis.App.Views;
 
@@ -40,14 +40,17 @@ public sealed class DatabaseRow(KnownDatabase entry, bool isDefault, bool isInUs
             .Select(e => new DatabaseRow(e, e == list.Default, folderInUse != null && KnownDatabases.SameFolder(e.Folder, folderInUse)))
             .ToList();
 
-    /// <summary>Asks for a folder (the picker can also make a new one); null if the user cancels.</summary>
+    /// <summary>
+    /// Asks for a folder (the picker can also make a new one); null if the user cancels. Uses the Windows App
+    /// SDK picker, which also works when Gnoseis runs as administrator (Windows.Storage.Pickers fails then).
+    /// </summary>
     public static async Task<string?> PickFolderAsync()
     {
-        var picker = new FolderPicker { SuggestedStartLocation = PickerLocationId.DocumentsLibrary };
-        picker.FileTypeFilter.Add("*");
-        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow!);
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
-        var folder = await picker.PickSingleFolderAsync();
-        return folder?.Path;
+        var picker = new FolderPicker(App.MainWindow!.AppWindow.Id)
+        {
+            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+        };
+        var result = await picker.PickSingleFolderAsync();
+        return result?.Path;
     }
 }
