@@ -99,18 +99,70 @@ If it ever fails to start, the error is written to `crash.log` in the [data fold
 %LOCALAPPDATA%\Gnoseis\gnoseis_data      the database (same file name as on Android)
 %LOCALAPPDATA%\Gnoseis\settings.json     preferences, window position, recently opened records
 %LOCALAPPDATA%\Gnoseis\backup-key.dat    the backup key, while backups are encrypted (see Encrypted backups)
+%LOCALAPPDATA%\Gnoseis\databases.json    the list of your databases (see Several databases)
 ```
+
+Each database is a data folder with its own `gnoseis_data`, `settings.json` (theme, window, recently
+opened records) and `backup-key.dat`. `databases.json` always stays in `%LOCALAPPDATA%\Gnoseis`,
+whichever folder is in use.
 
 **Portable mode:** to keep the data next to the app (for example on a USB stick), create an empty file
 named `portable` (no extension) next to `Gnoseis.exe`. The database, `settings.json` and `crash.log`
 then go in a `data` folder beside it, created the first time the app starts. If that folder can't be
 written (for example under `Program Files`), the app says so instead of keeping the data somewhere
-else. The zip comes without this file.
-
-To keep the data somewhere else (for example for testing), set the environment variable
-`GNOSEIS_DATA_FOLDER` to a folder before starting the app. It takes priority over portable mode.
+else. The zip comes without this file. A portable copy always uses that folder: it doesn't show the
+start-up picker, and it neither reads nor writes `databases.json`.
 
 **Settings › Database file › Open folder** opens the folder in use, and **Settings › About** shows it.
+
+### Several databases
+
+Gnoseis keeps a list of your databases in `%LOCALAPPDATA%\Gnoseis\databases.json`: a name and a folder
+for each, which one is the default, and whether to ask at start-up. Every copy of Gnoseis for the
+same Windows user reads it, wherever it's installed (except a portable copy). The default folder,
+`%LOCALAPPDATA%\Gnoseis`, is always in the list ("My database" at first); it can be renamed but not
+removed. If the file can't be read, Gnoseis starts with the default folder and Settings › Databases
+says so; the file is only written again when you change something there.
+
+**Settings › Databases:**
+
+- **Always ask for a database at start-up**: shows the list each time Gnoseis starts. Pick one and
+  choose **Open** (or double-click it, or press Enter); **Add folder…** adds a folder to the list.
+  A database whose folder isn't there (for example an unplugged drive) shows "Folder not found".
+- **Always start with this database**: the database opened at start-up when Gnoseis doesn't ask.
+- **Manage databases**: add an existing folder, add a new database (an empty folder; the database is
+  made the first time it's opened), rename, remove from the list (the folder and its files are kept),
+  or set the default.
+
+Changes take effect the next time Gnoseis starts: it doesn't switch databases while it's running.
+
+**Starting on a data folder:** `Gnoseis.exe --data-folder <folder>` (or `--data-folder=<folder>`)
+opens that folder without asking, for example from a shortcut whose Target is:
+
+```
+"C:\Apps\Gnoseis\Gnoseis.exe" --data-folder "D:\Gnoseis data"
+```
+
+A trailing backslash on the folder is best left off. A relative folder is taken from the shortcut's
+"Start in" folder. The folder is added to the list, so it shows in the picker and Settings next time.
+Any other argument, or `--data-folder` without a folder or given twice, makes Gnoseis say what was
+wrong and quit, without opening or changing any data.
+
+**No database yet:** when a folder from `--data-folder`, the start-up picker or the default database
+has no `gnoseis_data` in it (or doesn't exist), Gnoseis asks before starting a new, empty database
+there, so a typo or a disconnected drive never makes one silently.
+
+To keep the data somewhere else for testing, set the environment variable `GNOSEIS_DATA_FOLDER` to a
+folder before starting the app. It doesn't add the folder to the list.
+
+**Which folder is used:** the first of these that applies.
+
+1. `--data-folder <folder>` on the command line.
+2. `GNOSEIS_DATA_FOLDER`.
+3. Portable mode (the `portable` file next to `Gnoseis.exe`).
+4. The start-up picker, when "Always ask for a database at start-up" is on.
+5. The default database ("Always start with this database").
+6. `%LOCALAPPDATA%\Gnoseis`.
 
 ### Demo database
 
@@ -132,8 +184,10 @@ dotnet run --project tools/Gnoseis.DemoData -- --force
 
 It writes `%LOCALAPPDATA%\Gnoseis-Demo\gnoseis_data`. It never writes into the real data folder.
 Options: a different folder as the first argument, `--count N`, `--seed N`, and `--force` to replace
-an existing demo file. To open the demo database, set `GNOSEIS_DATA_FOLDER` to
-`%LOCALAPPDATA%\Gnoseis-Demo` before starting the app. The file can also be copied to Android.
+an existing demo file. To open the demo database, start the app with
+`Gnoseis.exe --data-folder "%LOCALAPPDATA%\Gnoseis-Demo"` (from a shortcut, or from a command prompt,
+which expands the variable), or add that folder in Settings › Databases. The file can also be copied
+to Android.
 
 ### Using your Android database on Windows
 

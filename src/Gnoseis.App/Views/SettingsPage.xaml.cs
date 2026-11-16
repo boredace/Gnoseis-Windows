@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -14,7 +14,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Gnoseis.App.Views;
 
-/// <summary>Appearance, backup / restore (Android Import / Export page) and about.</summary>
+/// <summary>Appearance, databases, backup / restore (Android Import / Export page) and about.</summary>
 public sealed partial class SettingsPage : Page
 {
     private bool _initializing = true;
@@ -31,6 +31,7 @@ public sealed partial class SettingsPage : Page
         VersionText.Text = $"Gnoseis for Windows {version}";
         DataFolderText.Text = $"Data folder: {AppPaths.DataFolder}";
         PortableModeText.Text = $"Portable mode: {(AppPaths.IsPortable ? "on" : "off")}";
+        ShowDatabases();
         ShowEncryptionState();
         _initializing = false;
     }
@@ -47,6 +48,90 @@ public sealed partial class SettingsPage : Page
     }
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e) => MainWindow.OpenDataFolder();
+
+    // ---------- Databases
+
+    // The list as read when the page opened; null in a portable copy, which never reads or writes it.
+    private KnownDatabases? _databases;
+
+    // An unreadable list is only rewritten once the user changes something here.
+    private bool _databasesWritten;
+
+    private void ShowDatabases()
+    {
+        if (AppPaths.IsPortable)
+        {
+            DatabasesPanel.Visibility = Visibility.Collapsed;
+            PortableDatabasesText.Visibility = Visibility.Visible;
+            return;
+        }
+        _databases ??= AppPaths.LoadDatabases();
+
+        var wasInitializing = _initializing;
+        _initializing = true;
+        DatabasesUnreadableInfoBar.IsOpen = _databases.CouldNotBeRead && !_databasesWritten;
+        AskAtStartupToggle.IsOn = _databases.AskAtStartup;
+        DefaultDatabaseComboBox.ItemsSource = _databases.Entries.ToList();
+        DefaultDatabaseComboBox.SelectedItem = _databases.Default;
+        DefaultDatabaseComboBox.IsEnabled = !_databases.AskAtStartup;
+        _initializing = wasInitializing;
+    }
+
+    /// <summary>Writes databases.json; returns the error, or null.</summary>
+    private string? SaveDatabases()
+    {
+        try
+        {
+            _databases!.Save(AppPaths.DatabasesFile);
+            _databasesWritten = true;
+            DatabasesUnreadableInfoBar.IsOpen = false;
+            return null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return e.Message;
+        }
+    }
+
+    private void SaveDatabasesAndShow()
+    {
+        if (SaveDatabases() is { } error)
+        {
+            ShowResult(InfoBarSeverity.Error, "Couldn't save the list of databases", error, null);
+        }
+        ShowDatabases();
+    }
+
+    private void AskAtStartupToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _databases == null)
+        {
+            return;
+        }
+        _databases.AskAtStartup = AskAtStartupToggle.IsOn;
+        SaveDatabasesAndShow();
+    }
+
+    private void DefaultDatabaseComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || _databases == null || DefaultDatabaseComboBox.SelectedItem is not KnownDatabase entry
+            || entry == _databases.Default)
+        {
+            return;
+        }
+        _databases.SetDefault(entry.Folder);
+        SaveDatabasesAndShow();
+    }
+
+    private async void ManageDatabases_Click(object sender, RoutedEventArgs e)
+    {
+        if (_databases == null)
+        {
+            return;
+        }
+        await Dialogs.ShowCustomAsync(new ManageDatabasesDialog(_databases, SaveDatabases));
+        ShowDatabases();
+    }
 
     // ---------- Encryption
 

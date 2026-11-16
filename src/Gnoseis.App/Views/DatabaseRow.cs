@@ -6,7 +6,6 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
-using Gnoseis.Core.Data;
 using Windows.Storage.Pickers;
 
 namespace Gnoseis.App.Views;

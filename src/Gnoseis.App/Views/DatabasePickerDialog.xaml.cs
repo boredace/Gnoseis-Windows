@@ -6,7 +6,6 @@
  *   or a commercial license (see COMMERCIAL_LICENSE).
  */
 
-using Gnoseis.Core.Data;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
