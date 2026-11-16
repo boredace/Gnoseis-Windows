@@ -41,6 +41,10 @@
             IsBackButtonVisible="True"
             IsPaneToggleButtonVisible="True"
             PaneToggleRequested="AppTitleBar_PaneToggleRequested">
+            <TitleBar.Resources>
+                <!-- The database link sits against the window buttons; the window is still dragged by the space beside the search box. -->
+                <x:Double x:Key="TitleBarMinDragRegionWidth">4</x:Double>
+            </TitleBar.Resources>
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="ms-appx:///Assets/TitleBarIcon.png" />
             </TitleBar.IconSource>
@@ -61,7 +65,6 @@
                 <!-- The database in use; opens the list of databases (Gnoseis restarts to open another). -->
                 <HyperlinkButton
                     x:Name="DatabaseLink"
-                    Margin="0,0,8,0"
                     Padding="6,2"
                     VerticalAlignment="Center"
                     Click="DatabaseLink_Click"
