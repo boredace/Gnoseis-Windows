@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -14,7 +14,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Gnoseis.App.Views;
 
-/// <summary>Appearance, backup / restore (Android Import / Export page) and about.</summary>
+/// <summary>Appearance, databases, backup / restore (Android Import / Export page) and about.</summary>
 public sealed partial class SettingsPage : Page
 {
     private bool _initializing = true;
@@ -31,6 +31,7 @@ public sealed partial class SettingsPage : Page
         VersionText.Text = $"Gnoseis for Windows {version}";
         DataFolderText.Text = $"Data folder: {AppPaths.DataFolder}";
         PortableModeText.Text = $"Portable mode: {(AppPaths.IsPortable ? "on" : "off")}";
+        ShowDatabases();
         ShowEncryptionState();
         _initializing = false;
     }
@@ -47,6 +48,92 @@ public sealed partial class SettingsPage : Page
     }
 
     private void OpenFolder_Click(object sender, RoutedEventArgs e) => MainWindow.OpenDataFolder();
+
+    // ---------- Databases
+
+    // The list as read when the page opened; null in a portable copy, which never reads or writes it.
+    private KnownDatabases? _databases;
+
+    // An unreadable list is only rewritten once the user changes something here.
+    private bool _databasesWritten;
+
+    private void ShowDatabases()
+    {
+        if (AppPaths.IsPortable)
+        {
+            DatabasesPanel.Visibility = Visibility.Collapsed;
+            PortableDatabasesText.Visibility = Visibility.Visible;
+            return;
+        }
+        _databases ??= AppPaths.LoadDatabases();
+
+        var wasInitializing = _initializing;
+        _initializing = true;
+        DatabasesUnreadableInfoBar.IsOpen = _databases.CouldNotBeRead && !_databasesWritten;
+        AskAtStartupToggle.IsOn = _databases.AskAtStartup;
+        DefaultDatabaseComboBox.ItemsSource = _databases.Entries.ToList();
+        DefaultDatabaseComboBox.SelectedItem = _databases.Default;
+        DefaultDatabaseComboBox.IsEnabled = !_databases.AskAtStartup;
+        _initializing = wasInitializing;
+        // A rename shows in the title bar at once.
+        App.MainWindow?.ShowDatabaseName();
+    }
+
+    /// <summary>Writes databases.json; returns the error, or null.</summary>
+    private string? SaveDatabases()
+    {
+        try
+        {
+            _databases!.Save(AppPaths.DatabasesFile);
+            _databasesWritten = true;
+            DatabasesUnreadableInfoBar.IsOpen = false;
+            return null;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return e.Message;
+        }
+    }
+
+    private void SaveDatabasesAndShow()
+    {
+        if (SaveDatabases() is { } error)
+        {
+            ShowResult(InfoBarSeverity.Error, "Couldn't save the list of databases", error, null);
+        }
+        ShowDatabases();
+    }
+
+    private void AskAtStartupToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _databases == null)
+        {
+            return;
+        }
+        _databases.AskAtStartup = AskAtStartupToggle.IsOn;
+        SaveDatabasesAndShow();
+    }
+
+    private void DefaultDatabaseComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_initializing || _databases == null || DefaultDatabaseComboBox.SelectedItem is not KnownDatabase entry
+            || entry == _databases.Default)
+        {
+            return;
+        }
+        _databases.SetDefault(entry.Folder);
+        SaveDatabasesAndShow();
+    }
+
+    private async void ManageDatabases_Click(object sender, RoutedEventArgs e)
+    {
+        if (_databases == null)
+        {
+            return;
+        }
+        await Dialogs.ShowCustomAsync(new ManageDatabasesDialog(_databases, SaveDatabases));
+        ShowDatabases();
+    }
 
     // ---------- Encryption
 
@@ -126,8 +213,8 @@ public sealed partial class SettingsPage : Page
 
         await RunBusyAsync(async () =>
         {
-            var encrypted = await App.BackupEncryption.BackUpAsync(file.Path);
-            ShowResult(InfoBarSeverity.Success, encrypted ? "Encrypted backup saved" : "Backup saved", file.Path, file.Path);
+            var encrypted = await App.BackupEncryption.BackUpAsync(file);
+            ShowResult(InfoBarSeverity.Success, encrypted ? "Encrypted backup saved" : "Backup saved", file, file);
         }, "Couldn't back up the database");
     }
 
@@ -149,8 +236,8 @@ public sealed partial class SettingsPage : Page
 
         await RunBusyAsync(async () =>
         {
-            await App.BackupEncryption.BackUpWithoutEncryptionAsync(file.Path);
-            ShowResult(InfoBarSeverity.Warning, "Unencrypted backup saved", file.Path, file.Path);
+            await App.BackupEncryption.BackUpWithoutEncryptionAsync(file);
+            ShowResult(InfoBarSeverity.Warning, "Unencrypted backup saved", file, file);
         }, "Couldn't back up the database");
     }
 
@@ -170,7 +257,7 @@ public sealed partial class SettingsPage : Page
             {
                 return stored;
             }
-            var key = await BackupPassphraseDialog.AskAsync(file.Name, file.Path, header);
+            var key = await BackupPassphraseDialog.AskAsync(Path.GetFileName(file), file, header);
             if (key != null)
             {
                 typedKey = BackupMasterKey.FromKey(key.Key, key.KdfSalt, key.Parameters);
@@ -185,7 +272,7 @@ public sealed partial class SettingsPage : Page
                 StagedBackup staged;
                 try
                 {
-                    staged = await BackupRepository.StageAsync(file.Path, Unlock);
+                    staged = await BackupRepository.StageAsync(file, Unlock);
                 }
                 catch (OperationCanceledException)
                 {
@@ -213,7 +300,7 @@ public sealed partial class SettingsPage : Page
 
                     var confirmed = await Dialogs.ConfirmAsync(
                         "Replace all data?",
-                        $"\"{file.Name}\" contains {inspection.NoteCount} notes, {inspection.ContactCount} contacts, " +
+                        $"\"{Path.GetFileName(file)}\" contains {inspection.NoteCount} notes, {inspection.ContactCount} contacts, " +
                         $"{inspection.OrganizationCount} organizations, {inspection.CategoryCount} categories and {inspection.ItemCount} items.\n\n" +
                         "All data currently in Gnoseis will be replaced with the data from this file. " +
                         "A copy of your current data is saved in the database folder first.",
@@ -225,7 +312,7 @@ public sealed partial class SettingsPage : Page
 
                     var safetyCopy = await App.Container.Backup.RestoreAsync(staged);
                     await Dialogs.ShowMessageAsync("Database restored",
-                        $"Your data was replaced with the data from \"{file.Name}\".\n\nThe previous data was saved as:\n{safetyCopy}");
+                        $"Your data was replaced with the data from \"{Path.GetFileName(file)}\".\n\nThe previous data was saved as:\n{safetyCopy}");
                 }
 
                 if (typedKey != null && App.BackupEncryption.State != BackupEncryptionState.On

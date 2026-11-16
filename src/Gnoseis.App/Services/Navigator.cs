@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -129,6 +129,10 @@ public static class Navigator
         }
         Frame.GoBack();
     }
+
+    /// <summary>Whether the page shown can be left (unsaved edits are saved or discarded), e.g. before a restart.</summary>
+    public static Task<bool> CanLeaveAsync() =>
+        Frame.Content is IConfirmLeave page ? page.CanLeaveAsync() : Task.FromResult(true);
 
     /// <summary>Shows Home with an empty back stack (start-up, and after the database was replaced).</summary>
     public static void ResetTo(Type pageType, object? parameter)

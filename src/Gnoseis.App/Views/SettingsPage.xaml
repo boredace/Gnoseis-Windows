@@ -62,6 +62,88 @@
                     </Grid>
                 </Border>
 
+                <!-- Databases -->
+                <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Databases" />
+                <TextBlock
+                    x:Name="PortableDatabasesText"
+                    Style="{StaticResource SecondaryTextStyle}"
+                    Text="This copy is portable: it always uses the data folder next to Gnoseis.exe."
+                    Visibility="Collapsed" />
+                <StackPanel x:Name="DatabasesPanel" Spacing="4">
+                    <InfoBar
+                        x:Name="DatabasesUnreadableInfoBar"
+                        IsClosable="False"
+                        Message="Gnoseis started with the default folder. The list is written again only when you change something here."
+                        Severity="Warning"
+                        Title="The list of databases couldn't be read" />
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <Grid Style="{StaticResource SettingsCardGridStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon VerticalAlignment="Center" Glyph="&#xE8AB;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Always ask for a database at start-up" />
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Show the list of your databases each time Gnoseis starts." TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ToggleSwitch
+                                x:Name="AskAtStartupToggle"
+                                Grid.Column="2"
+                                MinWidth="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="Always ask for a database at start-up"
+                                Toggled="AskAtStartupToggle_Toggled" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <Grid Style="{StaticResource SettingsCardGridStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon VerticalAlignment="Center" Glyph="&#xE80F;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Always start with this database" />
+                                <TextBlock Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="Used from the next start." TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ComboBox
+                                x:Name="DefaultDatabaseComboBox"
+                                Grid.Column="2"
+                                MinWidth="200"
+                                MaxWidth="320"
+                                VerticalAlignment="Center"
+                                AutomationProperties.Name="Always start with this database"
+                                DisplayMemberPath="Name"
+                                SelectionChanged="DefaultDatabaseComboBox_SelectionChanged" />
+                        </Grid>
+                    </Border>
+
+                    <Border Style="{StaticResource CardStyle}">
+                        <Grid Style="{StaticResource SettingsCardGridStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon VerticalAlignment="Center" Glyph="&#xE8F1;" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="Manage databases" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="Add an existing folder or a new database, rename, remove from the list, or set the default. Gnoseis doesn't switch databases while it's running."
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Grid.Column="2" VerticalAlignment="Center" Click="ManageDatabases_Click" Content="Manage…" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
                 <!-- Data -->
                 <TextBlock AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SectionHeaderTextStyle}" Text="Data" />
 
