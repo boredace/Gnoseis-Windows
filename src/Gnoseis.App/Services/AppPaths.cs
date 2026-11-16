@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -20,11 +20,12 @@ namespace Gnoseis.App.Services;
 public static class AppPaths
 {
     private static readonly DataLocation Location = DataLocation.Resolve(
+        null,
         // For testing, or to keep the data somewhere else (e.g. a synced folder).
         Environment.GetEnvironmentVariable("GNOSEIS_DATA_FOLDER"),
         AppContext.BaseDirectory,
         File.Exists(Path.Combine(AppContext.BaseDirectory, DataLocation.PortableMarkerName)),
-        DefaultDataFolder());
+        () => KnownDatabases.Create(DefaultDataFolder()))!;
 
     public static string DataFolder => Location.Folder;
 
