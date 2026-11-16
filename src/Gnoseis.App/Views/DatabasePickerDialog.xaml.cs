@@ -7,8 +7,6 @@
  */
 
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Windows.System;
 
 namespace Gnoseis.App.Views;
 
@@ -19,68 +17,26 @@ namespace Gnoseis.App.Views;
 /// </summary>
 public sealed partial class DatabasePickerDialog : ContentDialog
 {
-    private readonly KnownDatabases _databases;
-
     public DatabasePickerDialog(KnownDatabases databases)
     {
-        _databases = databases;
         InitializeComponent();
-        ShowRows(select: null);
-        Opened += (_, _) => DatabaseList.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
+        Chooser.CanOpenChanged += (_, _) => IsPrimaryButtonEnabled = Chooser.Openable != null;
+        Chooser.OpenRequested += (_, _) =>
+        {
+            Chosen = Chooser.Openable;
+            Hide();
+        };
+        Chooser.Show(databases, folderInUse: null);
+        Opened += (_, _) => Chooser.FocusList();
     }
 
     /// <summary>The database to open; null when the user quit.</summary>
     public KnownDatabase? Chosen { get; private set; }
 
-    private DatabaseRow? Selected => DatabaseList.SelectedItem as DatabaseRow;
-
-    private void ShowRows(string? select)
-    {
-        var rows = DatabaseRow.From(_databases, folderInUse: null);
-        DatabaseList.ItemsSource = rows;
-        DatabaseList.SelectedItem =
-            (select != null ? rows.FirstOrDefault(r => KnownDatabases.SameFolder(r.Folder, select)) : null)
-            ?? rows.FirstOrDefault(r => r.IsDefault)
-            ?? rows.FirstOrDefault();
-        if (DatabaseList.SelectedItem != null)
-        {
-            DatabaseList.ScrollIntoView(DatabaseList.SelectedItem);
-        }
-        UpdateOpenButton();
-    }
-
-    private void UpdateOpenButton() => IsPrimaryButtonEnabled = Selected is { IsMissing: false };
-
-    private void DatabaseList_SelectionChanged(object sender, SelectionChangedEventArgs e) => UpdateOpenButton();
-
     private void DatabasePickerDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
     {
-        if (Selected is not { IsMissing: false } row)
-        {
-            args.Cancel = true;
-            return;
-        }
-        Chosen = row.Entry;
-    }
-
-    private void OpenSelected()
-    {
-        if (Selected is { IsMissing: false } row)
-        {
-            Chosen = row.Entry;
-            Hide();
-        }
-    }
-
-    private void DatabaseList_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e) => OpenSelected();
-
-    private void DatabaseList_KeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        if (e.Key == VirtualKey.Enter)
-        {
-            e.Handled = true;
-            OpenSelected();
-        }
+        Chosen = Chooser.Openable;
+        args.Cancel = Chosen == null;
     }
 
     private async void DatabasePickerDialog_SecondaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
@@ -90,27 +46,7 @@ public sealed partial class DatabasePickerDialog : ContentDialog
         var deferral = args.GetDeferral();
         try
         {
-            var folder = await DatabaseRow.PickFolderAsync();
-            if (folder == null)
-            {
-                return;
-            }
-            ErrorBar.IsOpen = false;
-            if (_databases.AddIfMissing(folder))
-            {
-                try
-                {
-                    _databases.Save(AppPaths.DatabasesFile);
-                }
-                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-                {
-                    // Still listed for this start; it will be saved with the next change.
-                    ErrorBar.Title = "Couldn't save the list of databases";
-                    ErrorBar.Message = e.Message;
-                    ErrorBar.IsOpen = true;
-                }
-            }
-            ShowRows(select: folder);
+            await Chooser.AddFolderAsync();
         }
         finally
         {

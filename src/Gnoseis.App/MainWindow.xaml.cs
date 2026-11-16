@@ -13,7 +13,9 @@ using Gnoseis.Core.Domain;
 using Microsoft.Data.Sqlite;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Graphics;
@@ -56,6 +58,8 @@ public sealed partial class MainWindow : Window
             _loaded.TrySetResult();
         };
 
+        DatabaseChooser.CanOpenChanged += DatabaseChooser_CanOpenChanged;
+        DatabaseChooser.OpenRequested += DatabaseChooser_OpenRequested;
         Closed += MainWindow_Closed;
         Navigator.BackStateChanged += (_, _) => AppTitleBar.IsBackButtonEnabled = Navigator.CanGoBackAnywhere;
     }
@@ -117,6 +121,7 @@ public sealed partial class MainWindow : Window
 
         NavView.IsEnabled = true;
         SearchBox.IsEnabled = true;
+        ShowDatabaseName();
         if (NavView.DisplayMode == NavigationViewDisplayMode.Expanded)
         {
             NavView.IsPaneOpen = App.Settings.IsPaneOpen;
@@ -295,6 +300,89 @@ public sealed partial class MainWindow : Window
 
     /// <summary>Applies the theme chosen in Settings.</summary>
     public void ApplyTheme(ElementTheme theme) => RootGrid.RequestedTheme = theme;
+
+    // ---------------------------------------------------------------- Database in the title bar
+
+    /// <summary>Shows "Database: name" in the title bar (not in a portable copy, which has no list).</summary>
+    public void ShowDatabaseName()
+    {
+        if (!AppPaths.IsResolved || AppPaths.IsPortable)
+        {
+            DatabaseLink.Visibility = Visibility.Collapsed;
+            return;
+        }
+        var name = AppPaths.LoadDatabases().Find(AppPaths.DataFolder)?.Name ?? KnownDatabases.NameFor(AppPaths.DataFolder);
+        DatabaseLinkText.Text = $"Database: {name}";
+        AutomationProperties.SetName(DatabaseLink, $"Database: {name}. Choose another database");
+        DatabaseLink.Visibility = Visibility.Visible;
+    }
+
+    private void DatabaseLink_Click(object sender, RoutedEventArgs e)
+    {
+        DatabaseChooser.Show(AppPaths.LoadDatabases(), AppPaths.DataFolder);
+        FlyoutBase.ShowAttachedFlyout(DatabaseLink);
+        DatabaseChooser.FocusList();
+    }
+
+    private void DatabaseChooser_CanOpenChanged(object? sender, EventArgs e) =>
+        DatabaseOpenButton.IsEnabled = DatabaseChooser.Openable != null;
+
+    private async void DatabaseAddFolder_Click(object sender, RoutedEventArgs e)
+    {
+        await DatabaseChooser.AddFolderAsync();
+        // The folder picker takes the focus, which closes the flyout.
+        if (!DatabaseFlyout.IsOpen)
+        {
+            FlyoutBase.ShowAttachedFlyout(DatabaseLink);
+        }
+    }
+
+    private async void DatabaseOpen_Click(object sender, RoutedEventArgs e) => await RestartWithChosenDatabaseAsync();
+
+    private async void DatabaseChooser_OpenRequested(object? sender, EventArgs e) => await RestartWithChosenDatabaseAsync();
+
+    /// <summary>
+    /// Gnoseis opens one database per run: after unsaved edits are dealt with and the user agrees, it starts
+    /// a new Gnoseis on the chosen folder (--data-folder) and closes this one.
+    /// </summary>
+    private async Task RestartWithChosenDatabaseAsync()
+    {
+        if (DatabaseChooser.Openable is not { } database)
+        {
+            return;
+        }
+        DatabaseFlyout.Hide();
+        if (!await Navigator.CanLeaveAsync())
+        {
+            return;
+        }
+        if (!await Dialogs.ConfirmAsync("Restart Gnoseis?",
+                $"Gnoseis will close and start again with \"{database.Name}\":\n\n{database.Folder}",
+                "Restart", defaultToPrimary: true))
+        {
+            return;
+        }
+
+        var start = new ProcessStartInfo(Environment.ProcessPath!)
+        {
+            UseShellExecute = false,
+            WorkingDirectory = AppContext.BaseDirectory,
+        };
+        // ArgumentList quotes the folder so that one ending in a backslash (a drive) arrives whole.
+        start.ArgumentList.Add(DataLocation.DataFolderOption);
+        start.ArgumentList.Add(database.Folder);
+        try
+        {
+            Process.Start(start);
+        }
+        catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            await Dialogs.ShowMessageAsync("Couldn't restart Gnoseis", e.Message);
+            return;
+        }
+        // Saves this database's settings and releases its file.
+        Close();
+    }
 
     // ---------------------------------------------------------------- Window placement
 

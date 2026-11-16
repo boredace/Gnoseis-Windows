@@ -75,6 +75,8 @@ public sealed partial class SettingsPage : Page
         DefaultDatabaseComboBox.SelectedItem = _databases.Default;
         DefaultDatabaseComboBox.IsEnabled = !_databases.AskAtStartup;
         _initializing = wasInitializing;
+        // A rename shows in the title bar at once.
+        App.MainWindow?.ShowDatabaseName();
     }
 
     /// <summary>Writes databases.json; returns the error, or null.</summary>

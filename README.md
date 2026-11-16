@@ -136,6 +136,10 @@ says so; the file is only written again when you change something there.
 
 Changes take effect the next time Gnoseis starts: it doesn't switch databases while it's running.
 
+**Database: <name>** at the right of the title bar shows the database in use. Click it for the same list
+as at start-up; opening another database restarts Gnoseis on it, after asking first (and after any
+unsaved edit is saved or discarded). A portable copy doesn't show it.
+
 **Starting on a data folder:** `Gnoseis.exe --data-folder <folder>` (or `--data-folder=<folder>`)
 opens that folder without asking, for example from a shortcut whose Target is:
 

@@ -14,49 +14,7 @@
 
     <ContentDialog.Resources>
         <x:Double x:Key="ContentDialogMaxWidth">640</x:Double>
-
-        <DataTemplate x:Key="DatabaseRowTemplate" x:DataType="local:DatabaseRow">
-            <Grid Padding="0,8" AutomationProperties.Name="{x:Bind AutomationName}" ColumnSpacing="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource BodyTextBlockStyle}" Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
-                    <TextBlock
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind Folder}"
-                        TextWrapping="Wrap" />
-                    <TextBlock
-                        Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="Folder not found"
-                        Visibility="{x:Bind IsMissing}" />
-                </StackPanel>
-                <Border
-                    Grid.Column="1"
-                    Padding="6,2"
-                    VerticalAlignment="Center"
-                    Background="{ThemeResource AccentFillColorDefaultBrush}"
-                    CornerRadius="4"
-                    Visibility="{x:Bind IsDefault}">
-                    <TextBlock Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" Text="Default" />
-                </Border>
-            </Grid>
-        </DataTemplate>
     </ContentDialog.Resources>
 
-    <StackPanel MinWidth="440" Spacing="8">
-        <ListView
-            x:Name="DatabaseList"
-            MaxHeight="420"
-            AutomationProperties.Name="Databases"
-            DoubleTapped="DatabaseList_DoubleTapped"
-            ItemTemplate="{StaticResource DatabaseRowTemplate}"
-            KeyDown="DatabaseList_KeyDown"
-            SelectionChanged="DatabaseList_SelectionChanged"
-            SelectionMode="Single" />
-        <InfoBar x:Name="ErrorBar" IsOpen="False" Severity="Error" />
-    </StackPanel>
+    <local:DatabaseChooser x:Name="Chooser" MinWidth="440" />
 </ContentDialog>
