@@ -434,6 +434,8 @@ Gnoseis is dual-licensed:
 2. **Commercial License**: for proprietary, closed-source or commercial use, see
    [COMMERCIAL_LICENSE](COMMERCIAL_LICENSE).
 
+The GPL comes with an additional permission under its section 7, in [LICENSE_EXCEPTION.md](LICENSE_EXCEPTION.md), to convey Gnoseis with the Windows App SDK and the Windows SDK projection for .NET.
+
 By contributing to this project, you agree to license your contributions under both licenses.
 
 Licences and attributions of third-party material in the app are in
