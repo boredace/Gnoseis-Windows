@@ -106,7 +106,8 @@ public static class NoteDay
 {
     public static DateOnly Of(long createDateTime) => NoteDates.ShownDay(createDateTime, TimeZoneInfo.Local);
 
-    public static string Format(long createDateTime) => Of(createDateTime).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    /// <summary>The day as Windows' short date.</summary>
+    public static string Format(long createDateTime) => Core.Domain.DateText.ShortDate(Of(createDateTime));
 
     public static string Weekday(long createDateTime) => Of(createDateTime).ToString("ddd", CultureInfo.CurrentCulture);
 }

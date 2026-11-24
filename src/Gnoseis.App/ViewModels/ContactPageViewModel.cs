@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -24,11 +24,11 @@ public sealed class HistoryRow(HistoryNote note, string contactId)
     public bool HasLinks => Links.Length > 0;
     public int Year => ContactHistory.Day(Note).Year;
 
-    /// <summary>"Note, 26 May 2026: Visit. Line of text. Linked: …"</summary>
+    /// <summary>"Note, Tuesday, May 26, 2026: Visit. Line of text. Linked: …" (the long date).</summary>
     public string AutomationName =>
         string.Join(". ", new[]
         {
-            $"Note, {ContactHistory.Day(Note):d MMMM yyyy}: {(Title.Length > 0 ? Title : "untitled")}",
+            $"Note, {Core.Domain.DateText.LongDate(ContactHistory.Day(Note))}: {(Title.Length > 0 ? Title : "untitled")}",
             Text,
             HasLinks ? $"Also linked to {Links}" : "",
         }.Where(s => s.Length > 0));

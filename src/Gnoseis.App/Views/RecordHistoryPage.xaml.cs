@@ -423,7 +423,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
                 ? "Write the first one above. Calls, visits and e-mails noted here build its history, newest first."
                 : "Write the first one above. Repairs, checks and changes noted here build its history, newest first.";
             CreatedText.Text = ViewModel.CreatedAt is { } created
-                ? $"{DateTimeOffset.FromUnixTimeMilliseconds(created).ToLocalTime():d MMM yyyy} · {ViewModel.Type.DisplayName()} created"
+                ? $"{Core.Domain.DateText.LongDate(TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(created), TimeZoneInfo.Local).DateTime)} · {ViewModel.Type.DisplayName()} added"
                 : "";
             CreatedText.Visibility = ViewModel.CreatedAt != null ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -1519,6 +1519,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
     {
         _updatingNotePickers = true;
         NoteDatePicker.Date = new DateTimeOffset(_noteDay.ToDateTime(TimeOnly.MinValue));
+        NoteTimePicker.ClockIdentifier = Helpers.SystemClock.Identifier;
         NoteTimePicker.Time = _noteTime;
         _updatingNotePickers = false;
     }

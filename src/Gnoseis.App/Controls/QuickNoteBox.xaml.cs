@@ -84,6 +84,7 @@ public sealed partial class QuickNoteBox : UserControl
     {
         _updatingPickers = true;
         DatePicker.Date = new DateTimeOffset(_day.ToDateTime(TimeOnly.MinValue));
+        TimePicker.ClockIdentifier = Helpers.SystemClock.Identifier;
         TimePicker.Time = _time;
         _updatingPickers = false;
     }

@@ -47,7 +47,6 @@
                                     IsTodayHighlighted="True" />
                                 <TimePicker
                                     x:Name="TimePicker"
-                                    ClockIdentifier="24HourClock"
                                     Header="Time"
                                     TimeChanged="TimePicker_TimeChanged" />
                             </StackPanel>

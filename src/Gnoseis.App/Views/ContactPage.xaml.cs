@@ -496,7 +496,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             EmptyHistoryTitle.Text = $"No notes about {name} yet";
             EmptyHistoryText.Text = $"Write the first one above. Calls, meetings and e-mails noted here build {name}'s history, newest first.";
             CreatedText.Text = ViewModel.CreatedAt is { } created
-                ? $"{DateTimeOffset.FromUnixTimeMilliseconds(created).ToLocalTime():d MMM yyyy} · Contact created"
+                ? $"{Core.Domain.DateText.LongDate(TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(created), TimeZoneInfo.Local).DateTime)} · Contact added"
                 : "";
             CreatedText.Visibility = ViewModel.CreatedAt != null ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -1111,6 +1111,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     {
         _updatingNotePickers = true;
         NoteDatePicker.Date = new DateTimeOffset(_noteDay.ToDateTime(TimeOnly.MinValue));
+        NoteTimePicker.ClockIdentifier = Helpers.SystemClock.Identifier;
         NoteTimePicker.Time = _noteTime;
         _updatingNotePickers = false;
     }

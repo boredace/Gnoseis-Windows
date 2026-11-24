@@ -16,7 +16,7 @@
                 Header="Day"
                 IsTodayHighlighted="True" />
             <TimePicker
-                ClockIdentifier="{x:Bind helpers:SystemClock.Identifier}"
+                x:Name="NoteTimePicker"
                 Header="Time"
                 Time="{x:Bind ViewModel.Time, Mode=TwoWay}" />
         </StackPanel>
