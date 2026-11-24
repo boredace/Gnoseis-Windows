@@ -390,16 +390,16 @@ public class HomeRepositoryTests : IDisposable
     [Fact]
     public void Reminder_text_names_the_backup_day_the_changes_and_deletions()
     {
-        var culture = CultureInfo.GetCultureInfo("en-GB");
+        var culture = TestCultures.TwentyFourHour;
         var at = new DateTimeOffset(2026, 10, 21, 12, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
 
         Assert.Equal(BackupReminder.NeverBackedUpMessage, new BackupReminder(BackupReminderKind.NeverBackedUp).Message(TimeZoneInfo.Utc, culture));
         Assert.Equal("", BackupReminder.From(at, null, 0).Message(TimeZoneInfo.Utc, culture));
-        Assert.Equal("Last backup 21 Oct 2026. 18 records changed since and some records were deleted.",
+        Assert.Equal("Last backup Wednesday 21 October 2026. 18 records changed since and some records were deleted.",
             BackupReminder.From(at, at + 1, 18).Message(TimeZoneInfo.Utc, culture));
-        Assert.Equal("Last backup 21 Oct 2026. 1 record changed since.",
+        Assert.Equal("Last backup Wednesday 21 October 2026. 1 record changed since.",
             BackupReminder.From(at, at - 1, 1).Message(TimeZoneInfo.Utc, culture));
-        Assert.Equal("Last backup 21 Oct 2026. Some records were deleted since.",
+        Assert.Equal("Last backup Wednesday 21 October 2026. Some records were deleted since.",
             BackupReminder.From(at, at + 1, 0).Message(TimeZoneInfo.Utc, culture));
     }
 }

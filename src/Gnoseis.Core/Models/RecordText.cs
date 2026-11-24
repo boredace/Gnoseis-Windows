@@ -43,12 +43,11 @@ public static class RecordText
         : "";
 
     /// <summary>
-    /// A note's day as yyyy-MM-dd: the local day of its createDateTime in <paramref name="zone"/> (Windows'
-    /// when null), as the note list shows it.
+    /// A note's day as the short date: the local day of its createDateTime in <paramref name="zone"/>
+    /// (Windows' when null), as the note list shows it. Shown as the name of an untitled note.
     /// </summary>
-    public static string NoteDay(Note note, TimeZoneInfo? zone = null) =>
-        Domain.NoteDates.ShownDay(note.CreateDateTime, zone ?? TimeZoneInfo.Local)
-            .ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+    public static string NoteDay(Note note, TimeZoneInfo? zone = null, System.Globalization.CultureInfo? culture = null) =>
+        Domain.DateText.ShortDate(Domain.NoteDates.ShownDay(note.CreateDateTime, zone ?? TimeZoneInfo.Local), culture);
 
     /// <summary>
     /// The text with each line break as a line feed (LF), the way stored text keeps them: CRLF

@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -94,7 +94,7 @@ public static class CategoryPage
         return new CategoryRow(
             note.Id,
             RecordType.Note,
-            day.ToString(day.Year == today.Year ? "d MMM" : "d MMM yyyy", culture),
+            day.Year == today.Year ? DateText.MonthDay(day, culture) : DateText.LongDateWithoutWeekday(day, culture),
             ContactHistory.FullTitle(note),
             ContactHistory.RowLinks(note, categoryId),
             // A search also finds the first line of a titled note, and every name of the "with" line (not only the first 3).

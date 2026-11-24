@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -14,7 +14,7 @@ namespace Gnoseis.Core.Domain;
 /// <summary>
 /// The record a new record will be linked to, with the name shown for it (same rules as Android):
 /// a contact's "First Last", the name of an organization, category or item, a note's title or
-/// else its day (yyyy-MM-dd). A blank name falls back to the type name.
+/// else its day (the short date). A blank name falls back to the type name.
 /// </summary>
 public sealed class GetLinkSourceUseCase(
     NoteRepository notes,

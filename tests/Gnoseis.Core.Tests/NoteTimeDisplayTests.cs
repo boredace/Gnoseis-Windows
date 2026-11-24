@@ -23,7 +23,7 @@ public class NoteTimeDisplayTests
     private static readonly TimeZoneInfo Tokyo = NoteDatesTests.Zone("Asia/Tokyo");
     private static readonly TimeZoneInfo Bogota = NoteDatesTests.Zone("America/Bogota"); // UTC−5 all year
     private static readonly TimeZoneInfo Toronto = NoteDatesTests.Zone("America/Toronto");
-    private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
+    private static readonly CultureInfo H24 = TestCultures.TwentyFourHour;
 
     private static long At(TimeZoneInfo zone, int year, int month, int day, int hour, int minute) =>
         NoteDates.ToInstant(new DateTime(year, month, day, hour, minute, 0), zone);
@@ -83,8 +83,8 @@ public class NoteTimeDisplayTests
 
         Assert.Equal(new DateOnly(2026, 11, 14), ContactHistory.Day(note, Tokyo));
         Assert.Equal(new DateOnly(2026, 11, 13), ContactHistory.Day(note, Bogota));
-        Assert.Equal("Note · Sat 14 Nov 2026, 08:15", ContactHistory.ReadingCaption(note, Invariant, Tokyo));
-        Assert.Equal("Note · Fri 13 Nov 2026, 18:15", ContactHistory.ReadingCaption(note, Invariant, Bogota));
+        Assert.Equal("Note · Saturday 14 November 2026, 08:15", ContactHistory.ReadingCaption(note, H24, Tokyo));
+        Assert.Equal("Note · Friday 13 November 2026, 18:15", ContactHistory.ReadingCaption(note, H24, Bogota));
     }
 
     [Fact]
@@ -92,7 +92,8 @@ public class NoteTimeDisplayTests
     {
         var note = new Note { CreateDate = At(Toronto, 2026, 11, 14, 0, 0), CreateDateTime = At(Toronto, 2026, 11, 14, 0, 0) };
 
-        Assert.Equal("Sat 14 Nov 2026, 00:00", NotePage.DayAndTimeLine(note, Invariant, Toronto));
+        Assert.Equal("Saturday 14 November 2026, 00:00", NotePage.DayAndTimeLine(note, H24, Toronto));
+        Assert.Equal("Saturday, November 14, 2026, 12:00 AM", NotePage.DayAndTimeLine(note, TestCultures.TwelveHour, Toronto));
         Assert.Equal(TimeSpan.Zero, NotePage.TimeOfDay(note, Toronto));
     }
 
@@ -114,9 +115,9 @@ public class NoteTimeDisplayTests
     [Fact]
     public void Search_and_text_show_the_note_day_in_the_zone()
     {
-        Assert.Equal("2026-11-14 · No links", SearchLogic.ContextLine(new SearchResult("n", 1, "N", NoteDateTime: 1794611700000), Tokyo));
-        Assert.Equal("2026-11-13 · No links", SearchLogic.ContextLine(new SearchResult("n", 1, "N", NoteDateTime: 1794611700000), Bogota));
-        Assert.Equal("2026-11-14", RecordText.NoteDay(new Note { CreateDateTime = 1794611700000 }, Tokyo));
-        Assert.Equal("14 Nov 2026", NotePage.LinkedNoteDay(new LinkedRecordSummary { Id = "n", Type = RecordType.Note, NoteDateTime = 1794611700000 }, Invariant, Tokyo));
+        Assert.Equal("14/11/2026 · No links", SearchLogic.ContextLine(new SearchResult("n", 1, "N", NoteDateTime: 1794611700000), Tokyo, H24));
+        Assert.Equal("13/11/2026 · No links", SearchLogic.ContextLine(new SearchResult("n", 1, "N", NoteDateTime: 1794611700000), Bogota, H24));
+        Assert.Equal("14/11/2026", RecordText.NoteDay(new Note { CreateDateTime = 1794611700000 }, Tokyo, H24));
+        Assert.Equal("14 November 2026", NotePage.LinkedNoteDay(new LinkedRecordSummary { Id = "n", Type = RecordType.Note, NoteDateTime = 1794611700000 }, H24, Tokyo));
     }
 }
