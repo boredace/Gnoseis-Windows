@@ -21,23 +21,24 @@ Gnoseis uses [GitHub Flow](https://docs.github.com/en/get-started/using-github/g
 
 Builds for users are made only by GitHub Actions, from the tag ([release.yml](.github/workflows/release.yml)), never on a PC.
 
-1. On a `release/<version>` branch from `main`, set the release version in `src/Gnoseis.App/Gnoseis.App.csproj`: for a beta, `VersionPrefix` `0.1.0` and `VersionSuffix` `beta.1`; for a final release, `VersionPrefix` only.
-2. Run the tests:
+1. Before the release branch, check that the README describes this version: its features, the screenshots, the supported schema versions and the oldest Android version that opens its files. Check too that `docs/windows-android-differences.md` lists this version and what differs. Any change goes in on its own branch, merged into `main` and pushed before the release branch starts.
+2. On a `release/<version>` branch from `main`, set the release version in `src/Gnoseis.App/Gnoseis.App.csproj`: for a beta, `VersionPrefix` `0.1.0` and `VersionSuffix` `beta.1`; for a final release, `VersionPrefix` only.
+3. Run the tests:
    ```bash
    dotnet test tests/Gnoseis.Core.Tests
    ```
-3. Check the third-party notices. Compare the shipped packages with `THIRD_PARTY_NOTICES.md` and add any package or version that's missing:
+4. Check the third-party notices. Compare the shipped packages with `THIRD_PARTY_NOTICES.md` and add any package or version that's missing:
    ```bash
    dotnet list src/Gnoseis.App package --include-transitive
    ```
    Then build the release locally (the msbuild command in [release.yml](.github/workflows/release.yml), with `OutDir` in a temporary folder) and check that the output has no `Microsoft.Windows.AI.*`, `onnxruntime` or `DirectML` files.
-4. Merge the branch into `main`, with the merge commit named `Release <version>`.
-5. Tag the merge commit `v<version>` and push `main` and the tag.
-6. The workflow runs the tests, builds the self-contained x64 app, zips it as `Gnoseis-v<version>-win-x64.zip`, attests the build, and creates a **draft** GitHub release with the zip and its SHA-256. Versions with a label after the number, such as betas, are marked as pre-releases.
-7. Download the zip from the draft and [verify it](#verifying-a-download). Check that it has `LICENSE`, `LICENSE_EXCEPTION.md`, `COMMERCIAL_LICENSE` and `THIRD_PARTY_NOTICES.md` next to `Gnoseis.exe`, with the texts that `THIRD_PARTY_NOTICES.md` lists in their own files.
-8. Write the release notes under **What's new** in the draft, and publish it.
-9. After a final release, on a `start/<next version>` branch from `main`, set the next version, then merge it into `main` with the merge commit named `Start <next version>`. After a beta, `main` keeps the beta's version until the next release.
-10. Close the milestone.
+5. Merge the branch into `main`, with the merge commit named `Release <version>`.
+6. Tag the merge commit `v<version>` and push `main` and the tag.
+7. The workflow runs the tests, builds the self-contained x64 app, zips it as `Gnoseis-v<version>-win-x64.zip`, attests the build, and creates a **draft** GitHub release with the zip and its SHA-256. Versions with a label after the number, such as betas, are marked as pre-releases.
+8. Download the zip from the draft and [verify it](#verifying-a-download). Check that it has `LICENSE`, `LICENSE_EXCEPTION.md`, `COMMERCIAL_LICENSE` and `THIRD_PARTY_NOTICES.md` next to `Gnoseis.exe`, with the texts that `THIRD_PARTY_NOTICES.md` lists in their own files.
+9. Write the release notes under **What's new** in the draft, and publish it.
+10. After a final release, on a `start/<next version>` branch from `main`, set the next version, then merge it into `main` with the merge commit named `Start <next version>`. After a beta, `main` keeps the beta's version until the next release.
+11. Close the milestone.
 
 Releases before 1.0 aren't code-signed. Signing goes in the place marked in the workflow, between the build and the zip.
 
