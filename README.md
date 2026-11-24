@@ -5,18 +5,18 @@ It stores all data on the device. This is the Windows (WinUI 3) version, ported 
 [Gnoseis for Android](https://github.com/boredace/Gnoseis-Android).
 
 The Windows app uses **the same SQLite database format** as the Android app. A `gnoseis_data` file
-or backup from Android can be used on Windows as long as it's schema version 3 or earlier (Android
-0.3.0 writes version 3), and a Windows database or backup can be used on Android 0.3.0 or later. See [Supported schema versions](#supported-schema-versions).
+or backup from Android can be used on Windows as long as it's schema version 4 or earlier (Android
+0.4.0 writes version 4), and a Windows database or backup can be used on Android 0.4.0 or later. See [Supported schema versions](#supported-schema-versions).
 
 <p align="center">
-  <img src="docs/readme-screens.png" alt="Gnoseis for Windows in dark mode: the Home page with the most linked records, search results with a best match, a contact's linked records, and an organization's history" width="880">
+  <img src="docs/readme-screens.png" alt="Gnoseis for Windows in dark mode: the Home page with the most linked records, search results with a best match, a category's linked records in five lists, and an organization's history" width="880">
 </p>
 
 More screenshots of the current release are in [screenshots](screenshots/).
 
 ## Features
 
-Gnoseis for Windows 0.1.0 offers what Gnoseis for Android 0.3.0 offers, with the newer search from Android 0.4.0:
+Gnoseis for Windows 0.2.0 offers:
 
 - Notes, contacts, organizations, categories and items: list, view, add, edit and delete.
 - Link any record to records of other types, either by picking existing records or by creating a
@@ -26,9 +26,16 @@ Gnoseis for Windows 0.1.0 offers what Gnoseis for Android 0.3.0 offers, with the
   record from a search that finds no record with that name.
 - Back up the database to a file and restore it (Android: Settings › Import / Export), optionally
   encrypted with a backup passphrase (see [Encrypted backups](#encrypted-backups)).
+- Each note keeps the day and time it was written. You can set both when writing or editing a note.
+  They're stored in UTC and shown in the PC's time zone.
+- Several databases in different folders. Choose one at start-up or in Settings › Databases, or
+  start on one with `--data-folder` (see [Several databases](#several-databases)).
+- Every date and time follows Windows' regional format and 12- or 24-hour clock, and changes when you
+  change them.
 
-Only on Windows: the contact, note, organization, category and item pages, the linked record trail,
-and Outlook-style keyboard shortcuts (see [Windows user experience](#windows-user-experience)).
+What differs from Gnoseis for Android, and which versions work together, is in
+[docs/windows-android-differences.md](docs/windows-android-differences.md). The Windows layout is
+described under [Windows user experience](#windows-user-experience).
 
 ## Installing
 
@@ -41,6 +48,10 @@ Requires Windows 10 version 1809 (build 17763) or later, x64. Nothing else needs
    release notes, and check its build attestation.
 3. Unpack it anywhere and run `Gnoseis.exe`.
 
+The zip also holds `LICENSE`, `LICENSE_EXCEPTION.md`, `COMMERCIAL_LICENSE` and
+`THIRD_PARTY_NOTICES.md` next to `Gnoseis.exe`, with the third-party licence texts that the notices
+list.
+
 Releases before 1.0 aren't code-signed, so Windows warns about them. SmartScreen shows "Windows
 protected your PC" the first time: select **More info**, then **Run anyway**. Where Smart App Control
 (Windows 11) is on, it blocks unsigned apps. The SHA-256 and the attestation are how to check that a
@@ -50,8 +61,8 @@ download is genuine until then.
 
 **Uninstalling:** delete the folder. Data in `%LOCALAPPDATA%\Gnoseis` stays until you delete it too.
 
-**Files from Android:** Windows opens databases and backups with schema versions 1 to 3 (Android
-0.3.0 writes version 3), and upgrades older files to version 3. See
+**Files from Android:** Windows opens databases and backups with schema versions 1 to 4 (Android
+0.4.0 writes version 4), and upgrades older files to version 4. See
 [Supported schema versions](#supported-schema-versions).
 
 **No network:** the app makes no network connections: no update check and no telemetry. Web and
@@ -62,7 +73,7 @@ e-mail links in your notes open your browser or mail app.
 | Project | What it contains |
 |---|---|
 | `src/Gnoseis.Core` | .NET 10 class library: models, the Room-compatible SQLite data layer, repositories, backup/restore and validation. It has no UI code. |
-| `src/Gnoseis.App` | The WinUI 3 desktop app (.NET 10, Windows App SDK 2.5, unpackaged, self-contained `.exe`). |
+| `src/Gnoseis.App` | The WinUI 3 desktop app (.NET 10, Windows App SDK (only the components it uses), unpackaged, self-contained `.exe`). |
 | `tests/Gnoseis.Core.Tests` | xUnit tests for the data layer, ported from Gnoseis for Android, plus database compatibility tests against the Room schema export. |
 | `tools/Gnoseis.DemoData` | Console tool that creates a demo database (see [Demo database](#demo-database)). |
 
@@ -200,7 +211,7 @@ Either:
 1. On Android, open **Settings › Import / Export** and select **Export**. Copy the exported file to the
    PC. In Gnoseis for Windows, open **Settings › Restore database** and select the file. The file is
    checked before anything is replaced, and your current Windows data is kept as
-   `gnoseis_data.before-restore-<date>.backup` in the database folder.
+   `gnoseis_data.before-restore-<date>_<time>.backup` in the database folder.
 
    **Or:**
 
@@ -244,8 +255,8 @@ How it works:
   Back up without encryption still works.
 - Changing the passphrase applies to new backups; backups made before keep the passphrase they were
   made with. Turning encryption off doesn't decrypt backups already made.
-- Encrypted backups have the same file format on Windows and Android, so either app can restore
-  them. The format is documented in the
+- Encrypted backups have the same file format on Windows and Android, so Gnoseis for Windows 0.2.0
+  and later and Gnoseis for Android 0.4.0 and later can restore them. The format is documented in the
   [Gnoseis for Android repository](https://github.com/boredace/Gnoseis-Android).
 
 ### Supported schema versions
@@ -254,10 +265,11 @@ The schema version is stored in the database file as `PRAGMA user_version`.
 
 | Schema version | Written by | On Windows |
 |---|---|---|
-| 1 | Android before 0.2.4 | Opens. It's migrated to version 3 the first time it's opened or restored (see below). |
-| 2 | Android 0.2.4 and 0.2.5 | Opens. It's migrated to version 3 the first time it's opened or restored (see below). |
-| 3 | Android 0.3.0 and later, and this app | Opens as is. New databases and backups are version 3. |
-| 4 or later | Not released yet | Doesn't open. The app explains that the file is from a newer version and leaves it unchanged. |
+| 1 | Android before 0.2.4 | Opens. It's migrated to version 4 the first time it's opened or restored (see below). |
+| 2 | Android 0.2.4 and 0.2.5 | Opens. It's migrated to version 4 the first time it's opened or restored (see below). |
+| 3 | Android 0.3.0, and Windows 0.1.0 | Opens. It's migrated to version 4 the first time it's opened or restored (see below). |
+| 4 | Android 0.4.0 and later, and this app | Opens as is. New databases and backups are version 4. |
+| 5 or later | Not released yet | Doesn't open. The app explains that the file is from a newer version and leaves it unchanged. |
 
 The migrations are the same as on Android:
 
@@ -268,13 +280,18 @@ The migrations are the same as on Android:
   and links keep these empty, because their times aren't known. A new `Settings` table holds the
   time of the last backup (`lastBackupAt`) and of the last deletion of a record or link
   (`lastDeletionAt`). It starts empty.
+- **3 to 4:** the tables don't change; only note times do. Until version 4, a note's time
+  (`createDateTime`) held the local date and time it was written. It becomes that moment in UTC,
+  converted once in the time zone of the PC that upgrades the file (or restores the older backup).
+  The note's day (`createDate`) becomes the UTC moment of 00:00 of its local day. A note with no time
+  of day gets 00:00 of its day. Nothing else changes, `updatedAt` included.
 
-Before migrating the database file, the app copies it to `gnoseis_data.before-v3-<date>.backup` in
-the database folder. A restored version 1 or 2 backup is migrated on a temporary copy, so the backup
-file itself isn't changed.
+Before upgrading the database file, the app copies it to `gnoseis_data.before-v4-<date>_<time>.backup`
+in the database folder, named for the version it's upgraded to. A restored version 1 to 3 backup is
+upgraded on a temporary copy, so the backup file itself isn't changed.
 
-Android before 0.3.0 can't open a version 3 file, so update the Android app before copying a
-Windows database or backup to it.
+Android before 0.4.0 can't open a version 4 file, so update the Android app to 0.4.0 or later before
+copying a Windows database or backup to it.
 
 ### Record times and settings
 
@@ -285,23 +302,25 @@ Windows database or backup to it.
 - **Back up database** saves the time of the backup in the backup file and, once the backup has
   succeeded, in the database. Deleting a record or removing a link saves the time of the deletion.
 - A restore never changes these times: the restored database keeps what the backup holds.
-- The Windows app doesn't show these times yet. It keeps them up to date, so the Android app shows
-  the right backup reminder for a database that was used on Windows.
+- The note page shows when the note was added and last modified, and a contact, organization or
+  item with no notes yet shows when it was added. The times are also kept up to date, so the Android
+  app shows the right backup reminder for a database that was used on Windows.
 
 ### Compatibility details
 
-- The tables, columns, `PRAGMA user_version` (3) and Room's `room_master_table` identity hash
+- The tables, columns, `PRAGMA user_version` (4) and Room's `room_master_table` identity hash
   (`d4a4ee67…`) are exactly the ones Room expects. The tests compare new and migrated databases
-  against the Room schema export (`tests/Gnoseis.Core.Tests/RoomSchema/3.json`, copied from
+  against the Room schema export (`tests/Gnoseis.Core.Tests/RoomSchema/4.json`, copied from
   `Gnoseis-Android/app/schemas`).
-- Ids are GUID strings and dates are epoch milliseconds, as on Android. Note dates are shown in UTC,
-  like the Android app, so a note shows the same date on both platforms.
+- Ids are GUID strings and dates are epoch milliseconds, as on Android. Note times are stored in UTC
+  and shown in the PC's time zone, as Android shows them in the phone's, so a note shows the same
+  moment on both.
 - Windows keeps the file in rollback-journal mode, so the main `gnoseis_data` file always holds all
   committed data. Room switches it back to WAL when Android opens it.
 - A file that doesn't match (e.g. from a newer app version) is **never deleted or changed**. The
   app explains the problem and offers to start a new database, renaming the old file to
-  `gnoseis_data.unusable-<date>`. The only file the app migrates is a version 1 file, after copying
-  it as described above.
+  `gnoseis_data.unusable-<date>_<time>`. The only files the app changes this way are versions 1 to
+  3, which it upgrades after copying them as described above.
 
 ## Windows user experience
 
@@ -350,17 +369,17 @@ switching and seeing related information at a glance.
   list (Ctrl+Shift+N).
 - **Note page**, built around the text: a header with the title, the day and time, and the
   commands; the text in a readable column, with clickable web and e-mail links, and when it was
-  created and changed under it. The records it's linked to sit in a side column, contacts first,
+  added and last modified under it. The records it's linked to sit in a side column, contacts first,
   each type with a **+** to link one more. **Edit** (F2) or a double-click on the text edits
-  the title, the text and the day in place (Ctrl+Enter or Ctrl+S saves; Esc cancels, and asks first
+  the title, the text, the day and the time in place (Ctrl+Enter or Ctrl+S saves; Esc cancels, and asks first
   when something changed). The layout follows the
   width of the record pane as on the contact page, with a compact header once the header scrolls
   away. **More** has **New linked**, **Copy note text** (Ctrl+C) and **Delete**.
 - **Contact page**, built around the person: a header with the name, the job and company (the
   company opens its organization when it's linked, or offers **Link as organization**), and a chip
   per phone number and e-mail address that calls or writes (right-click to copy; the value is copied
-  when no app handles it). Below it, a note box writes a note linked to the contact without leaving
-  the page (Ctrl+Shift+N, Ctrl+Enter saves), and the contact's history lists its notes, newest
+  when no app handles it). Below it, a note box writes a note linked to the contact, with its day and
+  time, without leaving the page (Ctrl+Shift+N, Ctrl+Enter saves), and the contact's history lists its notes, newest
   first, with month headers, a filter, year chips and **Show older** for long histories. The
   organizations, categories and items sit in a side column, each with a **+** to link one more.
   The layout follows the width of the record pane: tabs on a narrow one, a side column from 860 px,
@@ -394,6 +413,9 @@ switching and seeing related information at a glance.
   the system colours instead.
 - **Remembers where you were**: window size and position, whether it was maximized, the navigation
   pane and the last section, plus the selected record in each section while the app is open.
+- **Dates and times** follow Windows' regional format (date order, 12- or 24-hour clock) and time
+  zone. Notes are grouped and shown by their day in that zone. A change to the format, the time zone
+  or the day shows within a minute.
 - **Narrow windows** show one pane at a time; Back returns from a record to the list.
 - **Keyboard**, following Outlook, Office and Windows: Ctrl+1 to Ctrl+6 switch sections, Ctrl+E or
   F3 searches everything, Ctrl+F finds on the current screen (the record page's search or filter box,
