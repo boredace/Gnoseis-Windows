@@ -94,12 +94,16 @@ public static class CategoryPage
         return new CategoryRow(
             note.Id,
             RecordType.Note,
-            day.Year == today.Year ? DateText.MonthDay(day, culture) : DateText.LongDateWithoutWeekday(day, culture),
+            NoteDayText(day, today, culture),
             ContactHistory.FullTitle(note),
             ContactHistory.RowLinks(note, categoryId),
             // A search also finds the first line of a titled note, and every name of the "with" line (not only the first 3).
             string.Join("\n", new[] { note.Title.Length > 0 ? firstLine : "" }.Concat(with)));
     }
+
+    /// <summary>A note row's day: month and day this year, the long date without its weekday before.</summary>
+    public static string NoteDayText(DateOnly day, DateOnly today, CultureInfo? culture = null) =>
+        day.Year == today.Year ? DateText.MonthDay(day, culture) : DateText.LongDateWithoutWeekday(day, culture);
 
     private static CategoryRow RecordRow(LinkedRecordSummary record) => record.Type switch
     {

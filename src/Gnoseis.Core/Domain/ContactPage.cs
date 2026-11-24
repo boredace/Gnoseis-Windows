@@ -323,7 +323,11 @@ public static class ContactHistory
 
     /// <summary>"Tue · 2026".</summary>
     public static string WeekdayAndYearText(HistoryNote note, CultureInfo? culture = null) =>
-        $"{Day(note).ToString("ddd", culture ?? CultureInfo.CurrentCulture)} · {Day(note).Year}";
+        WeekdayAndYearText(Day(note), culture);
+
+    /// <summary>"Tue · 2026" for <paramref name="day"/>.</summary>
+    public static string WeekdayAndYearText(DateOnly day, CultureInfo? culture = null) =>
+        $"{day.ToString("ddd", culture ?? CultureInfo.CurrentCulture)} · {day.Year}";
 
     /// <summary>Year and month, "October 2026".</summary>
     public static string MonthText(DateOnly day, CultureInfo? culture = null) =>
