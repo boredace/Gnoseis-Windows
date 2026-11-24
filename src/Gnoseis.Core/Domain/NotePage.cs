@@ -13,7 +13,7 @@ namespace Gnoseis.Core.Domain;
 
 /// <summary>
 /// What the note page shows that doesn't depend on the UI: the title, the day and time line, the
-/// created and changed caption, the text Copy note text writes, the side column's sections, and
+/// "Added" and "Last modified" caption, the text Copy note text writes, the side column's sections, and
 /// the note an edit in place saves.
 /// </summary>
 public static class NotePage
@@ -36,37 +36,33 @@ public static class NotePage
     public static TimeSpan TimeOfDay(Note note, TimeZoneInfo? zone = null) =>
         NoteDates.ShownTimeOfDay(note.CreateDateTime, zone ?? TimeZoneInfo.Local);
 
-    /// <summary>The line under the title, in <paramref name="zone"/> (Windows' when null): "Thu 15 Oct 2026, 09:30".</summary>
-    public static string DayAndTimeLine(Note note, CultureInfo? culture = null, TimeZoneInfo? zone = null)
-    {
-        culture ??= CultureInfo.CurrentCulture;
-        var shown = NoteDates.Shown(note.CreateDateTime, zone ?? TimeZoneInfo.Local);
-        return $"{shown.ToString("ddd d MMM yyyy", culture)}, {shown.ToString("HH:mm", culture)}";
-    }
+    /// <summary>
+    /// The line under the title, in <paramref name="zone"/> (Windows' when null): the long date and the
+    /// short time, "Thursday, October 15, 2026, 9:30 AM".
+    /// </summary>
+    public static string DayAndTimeLine(Note note, CultureInfo? culture = null, TimeZoneInfo? zone = null) =>
+        DateText.LongDateAndTime(NoteDates.Shown(note.CreateDateTime, zone ?? TimeZoneInfo.Local), culture);
 
     /// <summary>
-    /// The caption under the text: "Created 15 Oct 2026, 13:40 · changed 20 Oct 2026, 08:55", in
-    /// <paramref name="zone"/>. A part whose time isn't set is left out, and "changed" when it equals
-    /// "created" to the minute; empty when neither is set.
+    /// The caption under the text: "Added 10/15/2026, 1:40 PM · Last modified 10/20/2026, 8:55 AM", the
+    /// short date and short time in <paramref name="zone"/> (Windows' when null). "Added" is shown whenever
+    /// <paramref name="createdAt"/> is set; "Last modified" is left out when it equals "Added" to the minute.
+    /// Empty when neither is set.
     /// </summary>
     public static string TimesCaption(long? createdAt, long? updatedAt, TimeZoneInfo? zone = null, CultureInfo? culture = null)
     {
         zone ??= TimeZoneInfo.Local;
-        culture ??= CultureInfo.CurrentCulture;
         string Format(long millis) =>
-            TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(millis), zone).ToString("d MMM yyyy, HH:mm", culture);
+            DateText.ShortDateAndTime(TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(millis), zone).DateTime, culture);
+        static long Minute(long millis) => Math.DivRem(millis, 60_000L, out var rest) - (rest < 0 ? 1 : 0);
 
-        var created = createdAt is { } c ? Format(c) : null;
-        var changed = updatedAt is { } u ? Format(u) : null;
-        if (created != null && changed == created)
+        var added = createdAt is { } c ? Format(c) : null;
+        var modified = updatedAt is { } u && (createdAt is not { } c2 || Minute(u) != Minute(c2)) ? Format(u) : null;
+        return (added, modified) switch
         {
-            changed = null;
-        }
-        return (created, changed) switch
-        {
-            ({ } a, { } b) => $"Created {a} · changed {b}",
-            ({ } a, null) => $"Created {a}",
-            (null, { } b) => $"Changed {b}",
+            ({ } a, { } m) => $"Added {a} · Last modified {m}",
+            ({ } a, null) => $"Added {a}",
+            (null, { } m) => $"Last modified {m}",
             _ => "",
         };
     }
@@ -102,9 +98,12 @@ public static class NotePage
         : note.FirstLine.Length > 0 ? note.FirstLine
         : LinkedNoteDay(note);
 
-    /// <summary>A linked note's local day (in <paramref name="zone"/>, Windows' when null): "15 Oct 2026".</summary>
+    /// <summary>
+    /// A linked note's local day (in <paramref name="zone"/>, Windows' when null): the long date without its
+    /// weekday, "October 15, 2026" (the side column is too narrow for one).
+    /// </summary>
     public static string LinkedNoteDay(LinkedRecordSummary note, CultureInfo? culture = null, TimeZoneInfo? zone = null) =>
-        NoteDates.ShownDay(note.NoteDateTime, zone ?? TimeZoneInfo.Local).ToString("d MMM yyyy", culture ?? CultureInfo.CurrentCulture);
+        DateText.LongDateWithoutWeekday(NoteDates.ShownDay(note.NoteDateTime, zone ?? TimeZoneInfo.Local), culture);
 
     /// <summary>A note can be saved with a title or some text (as on the edit page).</summary>
     public static bool IsValid(string title, string text) => title.Length > 0 || text.Length > 0;

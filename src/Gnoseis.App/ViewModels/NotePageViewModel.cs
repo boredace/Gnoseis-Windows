@@ -10,7 +10,7 @@ using NoteLogic = Gnoseis.Core.Domain.NotePage;
 
 namespace Gnoseis.App.ViewModels;
 
-/// <summary>One note: its title, day and time, its text, when it was created and changed, and the records linked to it.</summary>
+/// <summary>One note: its title, day and time, its text, when it was added and last modified, and the records linked to it.</summary>
 public sealed class NotePageViewModel(RecordRef record) : PageViewModel
 {
     private int _loadVersion;
@@ -28,7 +28,7 @@ public sealed class NotePageViewModel(RecordRef record) : PageViewModel
 
     public LinkedRecordSet Linked { get; private set; } = LinkedRecordSet.Empty;
 
-    /// <summary>When the note was created and last changed; null when unknown.</summary>
+    /// <summary>When the note was added and last modified; null when unknown.</summary>
     public long? CreatedAt { get; private set; }
 
     public long? UpdatedAt { get; private set; }
@@ -38,7 +38,7 @@ public sealed class NotePageViewModel(RecordRef record) : PageViewModel
 
     public bool HasTitle => !Title.IsPlaceholder;
 
-    /// <summary>"Thu 15 Oct 2026, 09:30".</summary>
+    /// <summary>The long date and short time, "Thursday, October 15, 2026, 9:30 AM".</summary>
     public string DayAndTime => Note is { } n ? NoteLogic.DayAndTimeLine(n) : "";
 
     /// <summary>The text as stored.</summary>
@@ -46,7 +46,7 @@ public sealed class NotePageViewModel(RecordRef record) : PageViewModel
 
     public bool HasText => !string.IsNullOrWhiteSpace(Text);
 
-    /// <summary>"Created … · changed …"; empty when neither time is known.</summary>
+    /// <summary>"Added … · Last modified …"; empty when neither time is known.</summary>
     public string TimesCaption => NoteLogic.TimesCaption(CreatedAt, UpdatedAt);
 
     /// <summary>The name used in messages and the delete confirmation: the title, else the first line, else the day.</summary>

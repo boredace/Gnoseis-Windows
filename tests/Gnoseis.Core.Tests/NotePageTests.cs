@@ -16,7 +16,8 @@ namespace Gnoseis.Core.Tests;
 /// <summary>The note page: title, day and time line, the created and changed caption, copy text, side column and saving in place.</summary>
 public class NotePageTests : IDisposable
 {
-    private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
+    private static readonly CultureInfo H12 = TestCultures.TwelveHour;
+    private static readonly CultureInfo H24 = TestCultures.TwentyFourHour;
 
     private readonly TestDatabase _test = new();
     private readonly AppContainer _data;
@@ -63,43 +64,46 @@ public class NotePageTests : IDisposable
     [Fact]
     public void Day_and_time_line()
     {
-        Assert.Equal("Thu 15 Oct 2026, 09:30", NotePage.DayAndTimeLine(Meeting(), Invariant));
+        Assert.Equal("Thursday 15 October 2026, 09:30", NotePage.DayAndTimeLine(Meeting(), H24));
+        Assert.Equal("Thursday, October 15, 2026, 9:30 AM", NotePage.DayAndTimeLine(Meeting(), H12));
     }
 
-    // ---------------------------------------------------------------- Created and changed
+    // ---------------------------------------------------------------- Added and last modified
 
     [Fact]
     public void Caption_with_both_times()
     {
-        Assert.Equal("Created 15 Oct 2026, 13:40 · changed 20 Oct 2026, 08:55",
-            NotePage.TimesCaption(Utc(2026, 10, 15, 13, 40), Utc(2026, 10, 20, 8, 55), TimeZoneInfo.Utc, Invariant));
+        Assert.Equal("Added 15/10/2026, 13:40 · Last modified 20/10/2026, 08:55",
+            NotePage.TimesCaption(Utc(2026, 10, 15, 13, 40), Utc(2026, 10, 20, 8, 55), TimeZoneInfo.Utc, H24));
+        Assert.Equal("Added 10/15/2026, 1:40 PM · Last modified 10/20/2026, 8:55 AM",
+            NotePage.TimesCaption(Utc(2026, 10, 15, 13, 40), Utc(2026, 10, 20, 8, 55), TimeZoneInfo.Utc, H12));
     }
 
     [Fact]
     public void Caption_in_the_given_time_zone()
     {
         var zone = TimeZoneInfo.CreateCustomTimeZone("plus2", TimeSpan.FromHours(2), "plus2", "plus2");
-        Assert.Equal("Created 15 Oct 2026, 15:40", NotePage.TimesCaption(Utc(2026, 10, 15, 13, 40), null, zone, Invariant));
+        Assert.Equal("Added 15/10/2026, 15:40", NotePage.TimesCaption(Utc(2026, 10, 15, 13, 40), null, zone, H24));
     }
 
     [Fact]
     public void Caption_with_one_time()
     {
-        Assert.Equal("Created 15 Oct 2026, 13:40", NotePage.TimesCaption(Utc(2026, 10, 15, 13, 40), null, TimeZoneInfo.Utc, Invariant));
-        Assert.Equal("Changed 20 Oct 2026, 08:55", NotePage.TimesCaption(null, Utc(2026, 10, 20, 8, 55), TimeZoneInfo.Utc, Invariant));
+        Assert.Equal("Added 15/10/2026, 13:40", NotePage.TimesCaption(Utc(2026, 10, 15, 13, 40), null, TimeZoneInfo.Utc, H24));
+        Assert.Equal("Last modified 20/10/2026, 08:55", NotePage.TimesCaption(null, Utc(2026, 10, 20, 8, 55), TimeZoneInfo.Utc, H24));
     }
 
     [Fact]
     public void Caption_without_times_is_empty()
     {
-        Assert.Equal("", NotePage.TimesCaption(null, null, TimeZoneInfo.Utc, Invariant));
+        Assert.Equal("", NotePage.TimesCaption(null, null, TimeZoneInfo.Utc, H24));
     }
 
     [Fact]
-    public void Caption_leaves_out_changed_when_equal_to_the_minute()
+    public void Caption_leaves_out_last_modified_when_equal_to_the_minute()
     {
-        Assert.Equal("Created 15 Oct 2026, 13:40",
-            NotePage.TimesCaption(Utc(2026, 10, 15, 13, 40, 5), Utc(2026, 10, 15, 13, 40, 50), TimeZoneInfo.Utc, Invariant));
+        Assert.Equal("Added 15/10/2026, 13:40",
+            NotePage.TimesCaption(Utc(2026, 10, 15, 13, 40, 5), Utc(2026, 10, 15, 13, 40, 50), TimeZoneInfo.Utc, H24));
     }
 
     // ---------------------------------------------------------------- Copy note text
@@ -108,14 +112,14 @@ public class NotePageTests : IDisposable
     public void Copy_text_with_a_title()
     {
         var nl = Environment.NewLine;
-        Assert.Equal($"Kick-off{nl}Thu 15 Oct 2026, 09:30{nl}{nl}Agenda\nBudget", NotePage.CopyText(Meeting(), Invariant));
+        Assert.Equal($"Kick-off{nl}Thursday 15 October 2026, 09:30{nl}{nl}Agenda\nBudget", NotePage.CopyText(Meeting(), H24));
     }
 
     [Fact]
     public void Copy_text_without_a_title()
     {
         var nl = Environment.NewLine;
-        Assert.Equal($"Thu 15 Oct 2026, 09:30{nl}{nl}Agenda\nBudget", NotePage.CopyText(Meeting(title: " "), Invariant));
+        Assert.Equal($"Thursday 15 October 2026, 09:30{nl}{nl}Agenda\nBudget", NotePage.CopyText(Meeting(title: " "), H24));
     }
 
     // ---------------------------------------------------------------- Side column
@@ -170,7 +174,8 @@ public class NotePageTests : IDisposable
         var time = LocalNoteTimes.At(new DateOnly(2026, 10, 15), 23 * 60 + 30);
         Assert.Equal("Visit", NotePage.LinkedNoteName(Linked(RecordType.Note, "1", null, "Visit", "Line")));
         Assert.Equal("Line", NotePage.LinkedNoteName(Linked(RecordType.Note, "1", null, "", "Line")));
-        Assert.Equal("15 Oct 2026", NotePage.LinkedNoteDay(Linked(RecordType.Note, "1", null) with { NoteDateTime = time }, Invariant));
+        Assert.Equal("15 October 2026", NotePage.LinkedNoteDay(Linked(RecordType.Note, "1", null) with { NoteDateTime = time }, H24));
+        Assert.Equal("October 15, 2026", NotePage.LinkedNoteDay(Linked(RecordType.Note, "1", null) with { NoteDateTime = time }, H12));
     }
 
     // ---------------------------------------------------------------- Saving in place
@@ -209,7 +214,7 @@ public class NotePageTests : IDisposable
         var edited = NotePage.Edited(note, "Kick-off", "Agenda\nBudget", new DateOnly(2026, 10, 20), zone: Zone)!;
 
         Assert.Equal(LocalNoteTimes.Start(new DateOnly(2026, 10, 20)), edited.CreateDate);
-        Assert.Equal("Tue 20 Oct 2026, 09:30", NotePage.DayAndTimeLine(edited, Invariant));
+        Assert.Equal("Tuesday 20 October 2026, 09:30", NotePage.DayAndTimeLine(edited, H24));
     }
 
     [Fact]
@@ -226,7 +231,7 @@ public class NotePageTests : IDisposable
         var (createdAt, updatedAt) = await _data.Notes.GetTimesAsync(note.Id);
         Assert.Equal("Kick-off", saved.Title);
         Assert.Equal("Agenda\nBudget\nRisks", saved.TextContents);
-        Assert.Equal("Fri 16 Oct 2026, 09:30", NotePage.DayAndTimeLine(saved, Invariant));
+        Assert.Equal("Friday 16 October 2026, 09:30", NotePage.DayAndTimeLine(saved, H24));
         Assert.Equal(100, createdAt);
         Assert.InRange(updatedAt!.Value, before, EpochTime.UtcNowMillis());
     }

@@ -60,6 +60,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         ViewModel = new NotePageViewModel((RecordRef)e.Parameter);
         RecordPageParts.InsertOpenedFrom(HeaderBlock, ViewModel.Record);
         ViewModel.Loaded += ViewModel_Loaded;
+        RegionalSettingsWatcher.Changed += RegionalSettings_Changed;
         ViewModel.Activate();
         await ViewModel.LoadAsync();
     }
@@ -69,6 +70,17 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
         base.OnNavigatedFrom(e);
         ViewModel.Deactivate();
         ViewModel.Loaded -= ViewModel_Loaded;
+        RegionalSettingsWatcher.Changed -= RegionalSettings_Changed;
+    }
+
+    // Windows' regional format or the day changed: the in-place editor's day button and clock follow.
+    private void RegionalSettings_Changed(object? sender, EventArgs e)
+    {
+        EditTimePicker.ClockIdentifier = SystemClock.Identifier;
+        if (_editing)
+        {
+            ShowEditDay();
+        }
     }
 
     private void ViewModel_Loaded(object? sender, EventArgs e)
@@ -254,7 +266,7 @@ public sealed partial class NotePage : Page, IRecordPage, IConfirmLeave
 
     // ---------------------------------------------------------------- Text
 
-    /// <summary>The text as stored, with clickable links; under it the created and changed caption.</summary>
+    /// <summary>The text as stored, with clickable links; under it the "Added" and "Last modified" caption.</summary>
     private void ShowText()
     {
         var hasText = ViewModel.HasText;

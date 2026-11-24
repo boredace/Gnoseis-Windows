@@ -15,7 +15,6 @@ namespace Gnoseis.Core.Tests;
 /// <summary>The category page: header line, copy text, rows, search, row allotment, column placement.</summary>
 public class CategoryPageTests
 {
-    private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
 
     // ---------------------------------------------------------------- Header line
 
@@ -88,7 +87,7 @@ public class CategoryPageTests
             Linked("i1", RecordType.Item, "Oven", "Bought 2020"),
             Linked("n1", RecordType.Note, "Oven repair"),
         ]);
-        return CategoryPage.Rows("cat", notes, linked, Today, Invariant);
+        return CategoryPage.Rows("cat", notes, linked, Today, TestCultures.TwentyFourHour);
     }
 
     [Fact]
@@ -97,8 +96,8 @@ public class CategoryPageTests
         var notes = SampleRows()[RecordType.Note];
 
         Assert.Equal(["n1", "n2"], notes.Select(r => r.Id));
-        Assert.Equal(("28 Oct", "Oven repair", "Kok Catering"), (notes[0].Day, notes[0].Name, notes[0].Second));
-        Assert.Equal(("2 Mar 2025", "Fridge check", ""), (notes[1].Day, notes[1].Name, notes[1].Second));
+        Assert.Equal(("28 October", "Oven repair", "Kok Catering"), (notes[0].Day, notes[0].Name, notes[0].Second));
+        Assert.Equal(("2 March 2025", "Fridge check", ""), (notes[1].Day, notes[1].Name, notes[1].Second));
     }
 
     [Fact]

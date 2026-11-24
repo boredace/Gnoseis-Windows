@@ -269,7 +269,7 @@ public class SearchLogicTests
     [Fact]
     public void Context_lines_per_type()
     {
-        Assert.Equal("2026-10-28 · 6 links", SearchLogic.ContextLine(new SearchResult("n", 1, "N", 6, NoteDateTime: 1_793_145_600_000), TimeZoneInfo.Utc));
+        Assert.Equal("28/10/2026 · 6 links", SearchLogic.ContextLine(new SearchResult("n", 1, "N", 6, NoteDateTime: 1_793_145_600_000), TimeZoneInfo.Utc, TestCultures.TwentyFourHour));
         Assert.Equal("No links", SearchLogic.ContextLine(new SearchResult("n", 1, "N")));
         Assert.Equal("Head of operations, Harbour Labs · 9 links",
             SearchLogic.ContextLine(new SearchResult("c", 2, "C", 9, JobTitle: "Head of operations", Company: " Harbour Labs ")));
@@ -286,7 +286,7 @@ public class SearchLogicTests
     {
         var zone = TimeZoneInfo.Utc;
         var now = new DateTimeOffset(2026, 11, 5, 15, 0, 0, TimeSpan.Zero).ToUnixTimeMilliseconds();
-        string Ago(TimeSpan span) => SearchLogic.RelativeTime(now - (long)span.TotalMilliseconds, now, zone);
+        string Ago(TimeSpan span) => SearchLogic.RelativeTime(now - (long)span.TotalMilliseconds, now, zone, TestCultures.TwentyFourHour);
 
         Assert.Equal("just now", Ago(TimeSpan.FromSeconds(30)));
         Assert.Equal("1 minute ago", Ago(TimeSpan.FromMinutes(1)));
@@ -299,7 +299,8 @@ public class SearchLogicTests
         Assert.Equal("6 days ago", Ago(TimeSpan.FromDays(6)));
         Assert.Equal("last week", Ago(TimeSpan.FromDays(7)));
         Assert.Equal("last week", Ago(TimeSpan.FromDays(13)));
-        Assert.Equal("2026-10-22", Ago(TimeSpan.FromDays(14)));
+        Assert.Equal("22/10/2026", Ago(TimeSpan.FromDays(14)));
+        Assert.Equal("10/22/2026", SearchLogic.RelativeTime(now - (long)TimeSpan.FromDays(14).TotalMilliseconds, now, zone, TestCultures.TwelveHour));
         Assert.Equal("Changed just now", SearchLogic.ChangedText(now, now, zone));
     }
 

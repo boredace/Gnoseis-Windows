@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -17,7 +17,15 @@ public sealed partial class NoteFields : UserControl, IEditFields
     {
         ViewModel = viewModel;
         InitializeComponent();
+        ShowClock();
+        Loaded += (_, _) => RegionalSettingsWatcher.Changed += RegionalSettings_Changed;
+        Unloaded += (_, _) => RegionalSettingsWatcher.Changed -= RegionalSettings_Changed;
     }
+
+    private void RegionalSettings_Changed(object? sender, EventArgs e) => ShowClock();
+
+    /// <summary>Sets the time picker to Windows' 12- or 24-hour clock (again after the regional format changed).</summary>
+    public void ShowClock() => NoteTimePicker.ClockIdentifier = SystemClock.Identifier;
 
     public NoteEditViewModel ViewModel { get; }
 

@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -85,8 +85,8 @@ public sealed partial class NotesChart : UserControl
         }
     }
 
-    /// <summary>"2026-11-03, Tue: 2 notes".</summary>
+    /// <summary>"11/3/2026, Tue: 2 notes" (Windows' short date and the short weekday).</summary>
     public static string Describe(DayCount day) =>
-        $"{day.Day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}, {day.Day.ToString("ddd", CultureInfo.CurrentCulture)}: " +
+        $"{Core.Domain.DateText.ShortDate(day.Day)}, {day.Day.ToString("ddd", CultureInfo.CurrentCulture)}: " +
         (day.Count == 1 ? "1 note" : $"{day.Count.ToString(CultureInfo.CurrentCulture)} notes");
 }

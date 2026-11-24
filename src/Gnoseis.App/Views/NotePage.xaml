@@ -117,7 +117,7 @@
                     <!-- Under 860 px: Note, Linked records -->
                     <SelectorBar x:Name="TabBar" Margin="-8,-8,0,0" SelectionChanged="TabBar_SelectionChanged" Visibility="Collapsed" />
 
-                    <!-- The note: its text in a readable width, then when it was created and changed -->
+                    <!-- The note: its text in a readable width, then when it was added and last modified -->
                     <StackPanel x:Name="NotePanel" Spacing="16">
                         <!-- Body text, line height about 1.6, at most about 75 characters a line -->
                         <RichTextBlock

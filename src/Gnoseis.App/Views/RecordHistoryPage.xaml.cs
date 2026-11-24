@@ -103,6 +103,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         TypeTile.Type = ViewModel.Type;
         CompactTypeTile.Type = ViewModel.Type;
         ViewModel.Loaded += ViewModel_Loaded;
+        RegionalSettingsWatcher.Changed += RegionalSettings_Changed;
         ViewModel.Activate();
         await ViewModel.LoadAsync();
     }
@@ -112,6 +113,20 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
         base.OnNavigatedFrom(e);
         ViewModel.Deactivate();
         ViewModel.Loaded -= ViewModel_Loaded;
+        RegionalSettingsWatcher.Changed -= RegionalSettings_Changed;
+    }
+
+    // Windows' regional format or the day changed: the note box's day and time (now, unless picked) and its clock follow.
+    private void RegionalSettings_Changed(object? sender, EventArgs e)
+    {
+        NoteTimePicker.ClockIdentifier = SystemClock.Identifier;
+        if (!_noteDatePicked && !_noteBoxCollapsed)
+        {
+            var now = DateTime.Now;
+            _noteDay = DateOnly.FromDateTime(now);
+            _noteTime = new TimeSpan(now.Hour, now.Minute, 0);
+        }
+        ShowNoteDay();
     }
 
     private void ViewModel_Loaded(object? sender, EventArgs e)
@@ -423,7 +438,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
                 ? "Write the first one above. Calls, visits and e-mails noted here build its history, newest first."
                 : "Write the first one above. Repairs, checks and changes noted here build its history, newest first.";
             CreatedText.Text = ViewModel.CreatedAt is { } created
-                ? $"{DateTimeOffset.FromUnixTimeMilliseconds(created).ToLocalTime():d MMM yyyy} · {ViewModel.Type.DisplayName()} created"
+                ? $"{Core.Domain.DateText.LongDate(TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(created), TimeZoneInfo.Local).DateTime)} · {ViewModel.Type.DisplayName()} added"
                 : "";
             CreatedText.Visibility = ViewModel.CreatedAt != null ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -1519,6 +1534,7 @@ public sealed partial class RecordHistoryPage : Page, IRecordPage, IConfirmLeave
     {
         _updatingNotePickers = true;
         NoteDatePicker.Date = new DateTimeOffset(_noteDay.ToDateTime(TimeOnly.MinValue));
+        NoteTimePicker.ClockIdentifier = SystemClock.Identifier;
         NoteTimePicker.Time = _noteTime;
         _updatingNotePickers = false;
     }

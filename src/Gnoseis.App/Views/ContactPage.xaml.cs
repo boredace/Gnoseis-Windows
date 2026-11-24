@@ -96,6 +96,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         ViewModel = new ContactPageViewModel((RecordRef)e.Parameter);
         RecordPageParts.InsertOpenedFrom(HeaderBlock, ViewModel.Record);
         ViewModel.Loaded += ViewModel_Loaded;
+        RegionalSettingsWatcher.Changed += RegionalSettings_Changed;
         ViewModel.Activate();
         await ViewModel.LoadAsync();
     }
@@ -105,6 +106,20 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
         base.OnNavigatedFrom(e);
         ViewModel.Deactivate();
         ViewModel.Loaded -= ViewModel_Loaded;
+        RegionalSettingsWatcher.Changed -= RegionalSettings_Changed;
+    }
+
+    // Windows' regional format or the day changed: the note box's day and time (now, unless picked) and its clock follow.
+    private void RegionalSettings_Changed(object? sender, EventArgs e)
+    {
+        NoteTimePicker.ClockIdentifier = SystemClock.Identifier;
+        if (!_noteDatePicked && !_noteBoxCollapsed)
+        {
+            var now = DateTime.Now;
+            _noteDay = DateOnly.FromDateTime(now);
+            _noteTime = new TimeSpan(now.Hour, now.Minute, 0);
+        }
+        ShowNoteDay();
     }
 
     private void ViewModel_Loaded(object? sender, EventArgs e)
@@ -496,7 +511,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
             EmptyHistoryTitle.Text = $"No notes about {name} yet";
             EmptyHistoryText.Text = $"Write the first one above. Calls, meetings and e-mails noted here build {name}'s history, newest first.";
             CreatedText.Text = ViewModel.CreatedAt is { } created
-                ? $"{DateTimeOffset.FromUnixTimeMilliseconds(created).ToLocalTime():d MMM yyyy} · Contact created"
+                ? $"{Core.Domain.DateText.LongDate(TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(created), TimeZoneInfo.Local).DateTime)} · Contact added"
                 : "";
             CreatedText.Visibility = ViewModel.CreatedAt != null ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -1111,6 +1126,7 @@ public sealed partial class ContactPage : Page, IRecordPage, IConfirmLeave
     {
         _updatingNotePickers = true;
         NoteDatePicker.Date = new DateTimeOffset(_noteDay.ToDateTime(TimeOnly.MinValue));
+        NoteTimePicker.ClockIdentifier = SystemClock.Identifier;
         NoteTimePicker.Time = _noteTime;
         _updatingNotePickers = false;
     }

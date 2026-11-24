@@ -272,19 +272,19 @@ public static partial class SearchLogic
         _ => $"{count} links",
     };
 
-    /// <summary>A note's local day (its createDateTime in <paramref name="zone"/>, Windows' when null) as yyyy-MM-dd.</summary>
-    public static string NoteDayText(long noteDateTime, TimeZoneInfo? zone = null) =>
-        NoteDates.ShownDay(noteDateTime, zone ?? TimeZoneInfo.Local).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    /// <summary>A note's local day (its createDateTime in <paramref name="zone"/>, Windows' when null) as the short date.</summary>
+    public static string NoteDayText(long noteDateTime, TimeZoneInfo? zone = null, CultureInfo? culture = null) =>
+        DateText.ShortDate(NoteDates.ShownDay(noteDateTime, zone ?? TimeZoneInfo.Local), culture);
 
     /// <summary>
     /// The line under a result's title: a note's day, a contact's job title and company (whichever are
     /// set, joined by ", "), then its links.
     /// </summary>
-    public static string ContextLine(SearchResult result, TimeZoneInfo? zone = null)
+    public static string ContextLine(SearchResult result, TimeZoneInfo? zone = null, CultureInfo? culture = null)
     {
         var details = result.RecordType switch
         {
-            RecordType.Note => result.NoteDateTime is { } time ? NoteDayText(time, zone) : null,
+            RecordType.Note => result.NoteDateTime is { } time ? NoteDayText(time, zone, culture) : null,
             RecordType.Contact => string.Join(", ", new[] { result.JobTitle, result.Company }
                 .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!.Trim())),
             _ => null,
@@ -295,9 +295,9 @@ public static partial class SearchLogic
     /// <summary>
     /// How long ago <paramref name="time"/> was at <paramref name="now"/> (UTC epoch ms), with days in
     /// <paramref name="zone"/>: "just now", "N minutes ago", "N hours ago" the same day, "yesterday",
-    /// "N days ago", "last week", then the date.
+    /// "N days ago", "last week", then the short date.
     /// </summary>
-    public static string RelativeTime(long time, long now, TimeZoneInfo zone)
+    public static string RelativeTime(long time, long now, TimeZoneInfo zone, CultureInfo? culture = null)
     {
         var minutes = (long)Math.Floor((now - time) / 60_000.0);
         var day = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(DateTimeOffset.FromUnixTimeMilliseconds(time), zone).DateTime);
@@ -312,7 +312,7 @@ public static partial class SearchLogic
             _ when days == 1 => "yesterday",
             _ when days < 7 => $"{days} days ago",
             _ when days < 14 => "last week",
-            _ => day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            _ => DateText.ShortDate(day, culture),
         };
     }
 

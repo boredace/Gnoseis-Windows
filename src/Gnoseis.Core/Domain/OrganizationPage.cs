@@ -126,7 +126,10 @@ public static class OrganizationPage
             .ThenBy(p => p.Id, StringComparer.Ordinal)
             .ToList();
 
-    /// <summary>"15 notes · last 15 Oct 2026", "1 note · last 3 Jan 2025", or "no notes yet".</summary>
+    /// <summary>
+    /// "15 notes · last October 15, 2026", "1 note · last January 3, 2025" (the long date without its
+    /// weekday), or "no notes yet".
+    /// </summary>
     public static string NotesLine(PersonSummary person, CultureInfo? culture = null)
     {
         if (person.SharedNoteCount == 0 || person.LatestSharedNoteDay is not { } latest)
@@ -134,7 +137,7 @@ public static class OrganizationPage
             return "no notes yet";
         }
         var count = person.SharedNoteCount == 1 ? "1 note" : $"{person.SharedNoteCount} notes";
-        return $"{count} · last {latest.ToString("d MMM yyyy", culture ?? CultureInfo.CurrentCulture)}";
+        return $"{count} · last {DateText.LongDateWithoutWeekday(latest, culture)}";
     }
 
     /// <summary>The notes linked to both the organization (every note of its history) and the person.</summary>

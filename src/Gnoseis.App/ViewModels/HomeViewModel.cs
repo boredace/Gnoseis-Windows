@@ -1,6 +1,6 @@
 /*
  *   Gnoseis is a CRM application and general knowledge manager.
- *   Copyright (C) 2024 Gnoseis.org
+ *   Copyright (C) 2024-2026 Gnoseis.org
  *
  *   Dual-licensed under the GNU General Public License v3.0 (see LICENSE)
  *   or a commercial license (see COMMERCIAL_LICENSE).
@@ -307,6 +307,9 @@ public sealed class HomeViewModel : PageViewModel
     {
         var version = ++_loadVersion;
         IsLoading = true;
+        // Today's date and the greeting move on with each load (after midnight, or a new zone or regional format).
+        OnPropertyChanged(nameof(Greeting));
+        OnPropertyChanged(nameof(DateText));
         try
         {
             var home = Data.Home;

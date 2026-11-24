@@ -161,9 +161,10 @@ public class OrganizationPageTests : IDisposable
     [Fact]
     public void Notes_line_counts_and_names_the_latest_day()
     {
-        var culture = System.Globalization.CultureInfo.GetCultureInfo("en-GB");
-        Assert.Equal("15 notes · last 15 Oct 2026", OrganizationPage.NotesLine(Person("c1", "", 15, new DateOnly(2026, 10, 15)), culture));
-        Assert.Equal("1 note · last 3 Jan 2025", OrganizationPage.NotesLine(Person("c1", "", 1, new DateOnly(2025, 1, 3)), culture));
+        var culture = TestCultures.TwentyFourHour;
+        Assert.Equal("15 notes · last 15 October 2026", OrganizationPage.NotesLine(Person("c1", "", 15, new DateOnly(2026, 10, 15)), culture));
+        Assert.Equal("1 note · last 3 January 2025", OrganizationPage.NotesLine(Person("c1", "", 1, new DateOnly(2025, 1, 3)), culture));
+        Assert.Equal("1 note · last January 3, 2025", OrganizationPage.NotesLine(Person("c1", "", 1, new DateOnly(2025, 1, 3)), TestCultures.TwelveHour));
         Assert.Equal("no notes yet", OrganizationPage.NotesLine(Person("c1", "", 0, null), culture));
     }
 

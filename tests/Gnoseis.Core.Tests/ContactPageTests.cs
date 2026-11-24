@@ -17,6 +17,8 @@ namespace Gnoseis.Core.Tests;
 public class ContactPageTests : IDisposable
 {
     private static readonly CultureInfo Invariant = CultureInfo.InvariantCulture;
+    private static readonly CultureInfo H12 = TestCultures.TwelveHour;
+    private static readonly CultureInfo H24 = TestCultures.TwentyFourHour;
 
     private readonly TestDatabase _test = new();
     private readonly AppContainer _data;
@@ -231,10 +233,15 @@ public class ContactPageTests : IDisposable
         var today = new DateOnly(2026, 11, 5);
         var time = new TimeSpan(15, 40, 0);
 
-        Assert.Equal("Today, 15:40", ContactPage.DayAndTimeText(today, time, today, Invariant));
-        Assert.Equal("Yesterday, 15:40", ContactPage.DayAndTimeText(today.AddDays(-1), time, today, Invariant));
-        Assert.Equal("Tue 26 May, 15:40", ContactPage.DayAndTimeText(new DateOnly(2026, 5, 26), time, today, Invariant));
-        Assert.Equal("Mon 26 May 2025, 15:40", ContactPage.DayAndTimeText(new DateOnly(2025, 5, 26), time, today, Invariant));
+        Assert.Equal("Today, 15:40", ContactPage.DayAndTimeText(today, time, today, H24));
+        Assert.Equal("Yesterday, 15:40", ContactPage.DayAndTimeText(today.AddDays(-1), time, today, H24));
+        Assert.Equal("Tue 26 May, 15:40", ContactPage.DayAndTimeText(new DateOnly(2026, 5, 26), time, today, H24));
+        Assert.Equal("Monday 26 May 2025, 15:40", ContactPage.DayAndTimeText(new DateOnly(2025, 5, 26), time, today, H24));
+
+        Assert.Equal("Today, 3:40 PM", ContactPage.DayAndTimeText(today, time, today, H12));
+        Assert.Equal("Yesterday, 3:40 PM", ContactPage.DayAndTimeText(today.AddDays(-1), time, today, H12));
+        Assert.Equal("Tue May 26, 3:40 PM", ContactPage.DayAndTimeText(new DateOnly(2026, 5, 26), time, today, H12));
+        Assert.Equal("Monday, May 26, 2025, 3:40 PM", ContactPage.DayAndTimeText(new DateOnly(2025, 5, 26), time, today, H12));
     }
 
     // ---------------------------------------------------------------- History
@@ -278,7 +285,8 @@ public class ContactPageTests : IDisposable
     {
         Assert.False(ContactHistory.IsGrouped(12));
         Assert.True(ContactHistory.IsGrouped(13));
-        Assert.Equal("Oct 2026", ContactHistory.MonthText(new DateOnly(2026, 10, 14), Invariant));
+        Assert.Equal("October 2026", ContactHistory.MonthText(new DateOnly(2026, 10, 14), H12));
+        Assert.Equal("2026 October", ContactHistory.MonthText(new DateOnly(2026, 10, 14), H24));
     }
 
     [Fact]
@@ -314,8 +322,9 @@ public class ContactPageTests : IDisposable
 
         Assert.Equal(("Visit", "First line"), (ContactHistory.RowTitle(titled), ContactHistory.RowText(titled)));
         Assert.Equal(("First line", "Second line"), (ContactHistory.RowTitle(untitled), ContactHistory.RowText(untitled)));
-        Assert.Equal("26 May", ContactHistory.DayText(titled, Invariant));
-        Assert.Equal("Tue · 2026", ContactHistory.WeekdayAndYearText(titled, Invariant));
+        Assert.Equal("26 May", ContactHistory.DayText(titled, H24));
+        Assert.Equal("May 26", ContactHistory.DayText(titled, H12));
+        Assert.Equal("Tue · 2026", ContactHistory.WeekdayAndYearText(titled, H24));
     }
 
     [Fact]
@@ -336,8 +345,10 @@ public class ContactPageTests : IDisposable
     {
         var day = new DateOnly(2026, 5, 26);
 
-        Assert.Equal("Note · Tue 26 May 2026, 15:00", ContactHistory.ReadingCaption(Note("1", day, 900), Invariant));
-        Assert.Equal("Note · Tue 26 May 2026, 00:00", ContactHistory.ReadingCaption(Note("1", day), Invariant));
+        Assert.Equal("Note · Tuesday 26 May 2026, 15:00", ContactHistory.ReadingCaption(Note("1", day, 900), H24));
+        Assert.Equal("Note · Tuesday 26 May 2026, 00:00", ContactHistory.ReadingCaption(Note("1", day), H24));
+        Assert.Equal("Note · Tuesday, May 26, 2026, 3:00 PM", ContactHistory.ReadingCaption(Note("1", day, 900), H12));
+        Assert.Equal("Note · Tuesday, May 26, 2026, 12:00 AM", ContactHistory.ReadingCaption(Note("1", day), H12));
         Assert.Equal(TimeSpan.Zero, ContactHistory.TimeOfDay(Note("1", day)));
     }
 

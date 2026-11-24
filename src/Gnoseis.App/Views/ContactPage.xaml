@@ -230,7 +230,6 @@
                                                             IsTodayHighlighted="True" />
                                                         <TimePicker
                                                             x:Name="NoteTimePicker"
-                                                            ClockIdentifier="24HourClock"
                                                             Header="Time"
                                                             TimeChanged="NoteTimePicker_TimeChanged" />
                                                     </StackPanel>

@@ -229,16 +229,16 @@ public static class ContactPage
     public static IReadOnlyList<RecordType> SideTypes { get; } = [RecordType.Organization, RecordType.Category, RecordType.Item];
 
     /// <summary>
-    /// The note box's day and time button: "Today, 15:40", "Yesterday, 09:05", "Tue 26 May, 15:40",
-    /// with the year for another year.
+    /// The note box's day and time button, with the short time: "Today, 3:40 PM", "Yesterday, 9:05 AM",
+    /// "Tue May 26, 3:40 PM" (weekday, month and day) this year, the long date for another year.
     /// </summary>
     public static string DayAndTimeText(DateOnly day, TimeSpan time, DateOnly today, CultureInfo? culture = null)
     {
-        culture ??= CultureInfo.CurrentCulture;
         var dayText = day == today ? "Today"
             : day == today.AddDays(-1) ? "Yesterday"
-            : day.ToString(day.Year == today.Year ? "ddd d MMM" : "ddd d MMM yyyy", culture);
-        return $"{dayText}, {new DateTime(1, 1, 1).Add(time).ToString("HH:mm", culture)}";
+            : day.Year == today.Year ? DateText.WeekdayMonthDay(day, culture)
+            : DateText.LongDate(day, culture);
+        return $"{dayText}, {DateText.Time(time, culture)}";
     }
 }
 
@@ -317,29 +317,25 @@ public static class ContactHistory
         return names.Count > RowLinkCount ? $"{text} +{names.Count - RowLinkCount}" : text;
     }
 
-    /// <summary>"26 May".</summary>
+    /// <summary>Month and day, "May 26".</summary>
     public static string DayText(HistoryNote note, CultureInfo? culture = null) =>
-        Day(note).ToString("d MMM", culture ?? CultureInfo.CurrentCulture);
+        DateText.MonthDay(Day(note), culture);
 
     /// <summary>"Tue · 2026".</summary>
     public static string WeekdayAndYearText(HistoryNote note, CultureInfo? culture = null) =>
         $"{Day(note).ToString("ddd", culture ?? CultureInfo.CurrentCulture)} · {Day(note).Year}";
 
-    /// <summary>"Oct 2026".</summary>
+    /// <summary>Year and month, "October 2026".</summary>
     public static string MonthText(DateOnly day, CultureInfo? culture = null) =>
-        day.ToString("MMM yyyy", culture ?? CultureInfo.CurrentCulture);
+        DateText.YearMonth(day, culture);
 
     /// <summary>The note's local time of day in <paramref name="zone"/> (Windows' when null). Every note has one, 00:00 included.</summary>
     public static TimeSpan TimeOfDay(HistoryNote note, TimeZoneInfo? zone = null) =>
         NoteDates.ShownTimeOfDay(note.CreateDateTime, zone ?? TimeZoneInfo.Local);
 
-    /// <summary>The reading pane's caption: "Note · Tue 26 May 2026, 15:00".</summary>
-    public static string ReadingCaption(HistoryNote note, CultureInfo? culture = null, TimeZoneInfo? zone = null)
-    {
-        culture ??= CultureInfo.CurrentCulture;
-        var shown = NoteDates.Shown(note.CreateDateTime, zone ?? TimeZoneInfo.Local);
-        return $"Note · {shown.ToString("ddd d MMM yyyy", culture)}, {shown.ToString("HH:mm", culture)}";
-    }
+    /// <summary>The reading pane's caption, the long date and short time: "Note · Tuesday, May 26, 2026, 3:00 PM".</summary>
+    public static string ReadingCaption(HistoryNote note, CultureInfo? culture = null, TimeZoneInfo? zone = null) =>
+        $"Note · {DateText.LongDateAndTime(NoteDates.Shown(note.CreateDateTime, zone ?? TimeZoneInfo.Local), culture)}";
 
     /// <summary>Whether the note's title or text contains <paramref name="filter"/>, ignoring case. A blank filter matches all.</summary>
     public static bool Matches(HistoryNote note, string? filter)
@@ -360,8 +356,8 @@ public static class ContactHistory
     /// <summary>The note's month (first of the month), the key of its month header.</summary>
     public static DateOnly Month(HistoryNote note) => new(Day(note).Year, Day(note).Month, 1);
 
-    /// <summary>The note's name where one is needed: its row title, or its day (yyyy-MM-dd) when it has no title or text.</summary>
+    /// <summary>The note's name where one is needed: its row title, or its day (short date) when it has no title or text.</summary>
     public static string FullTitle(HistoryNote note) => RowTitle(note) is { Length: > 0 } title ? title : NoteDayFallback(note);
 
-    private static string NoteDayFallback(HistoryNote note) => Day(note).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private static string NoteDayFallback(HistoryNote note) => DateText.ShortDate(Day(note));
 }

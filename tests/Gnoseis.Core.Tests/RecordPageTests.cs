@@ -105,7 +105,8 @@ public class RecordPageTests : IDisposable
         Assert.Equal(new LinkSource(RecordType.Contact, "Maria Lindqvist"), await _data.GetLinkSource.InvokeAsync(RecordType.Contact, contact.Id));
         Assert.Equal("Holm", (await _data.GetLinkSource.InvokeAsync(RecordType.Contact, lastOnly.Id))!.Name);
         Assert.Equal("Quote", (await _data.GetLinkSource.InvokeAsync(RecordType.Note, titled.Id))!.Name);
-        Assert.Equal("2026-10-28", (await _data.GetLinkSource.InvokeAsync(RecordType.Note, untitled.Id))!.Name);
+        // An untitled note is named by its day, in Windows' short date.
+        Assert.Equal(DateText.ShortDate(new DateOnly(2026, 10, 28)), (await _data.GetLinkSource.InvokeAsync(RecordType.Note, untitled.Id))!.Name);
         Assert.Equal("Organization", (await _data.GetLinkSource.InvokeAsync(RecordType.Organization, blank.Id))!.Name);
         Assert.Equal("Oak flooring", (await _data.GetLinkSource.InvokeAsync(RecordType.Item, item.Id))!.Name);
         Assert.Null(await _data.GetLinkSource.InvokeAsync(RecordType.Category, "missing"));
