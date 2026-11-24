@@ -26,6 +26,8 @@ public sealed partial class DatabaseChooser : UserControl
     public DatabaseChooser()
     {
         InitializeComponent();
+        // The row (ListViewItem) marks Enter handled before the list sees it, so listen for handled keys too.
+        DatabaseList.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(DatabaseList_KeyDown), handledEventsToo: true);
     }
 
     /// <summary>The selected database can be opened (or not any more).</summary>

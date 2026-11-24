@@ -57,7 +57,6 @@
             AutomationProperties.Name="Databases"
             DoubleTapped="DatabaseList_DoubleTapped"
             ItemTemplate="{StaticResource DatabaseRowTemplate}"
-            KeyDown="DatabaseList_KeyDown"
             SelectionChanged="DatabaseList_SelectionChanged"
             SelectionMode="Single" />
         <InfoBar x:Name="ErrorBar" IsOpen="False" Severity="Error" />
