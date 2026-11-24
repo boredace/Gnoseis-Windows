@@ -16,7 +16,7 @@ More screenshots of the current release are in [screenshots](screenshots/).
 
 ## Features
 
-Gnoseis for Windows 0.1.0 offers what Gnoseis for Android 0.3.0 offers, with the newer search from Android 0.4.0:
+Gnoseis for Windows 0.2.0 offers:
 
 - Notes, contacts, organizations, categories and items: list, view, add, edit and delete.
 - Link any record to records of other types, either by picking existing records or by creating a
@@ -26,9 +26,16 @@ Gnoseis for Windows 0.1.0 offers what Gnoseis for Android 0.3.0 offers, with the
   record from a search that finds no record with that name.
 - Back up the database to a file and restore it (Android: Settings › Import / Export), optionally
   encrypted with a backup passphrase (see [Encrypted backups](#encrypted-backups)).
+- Each note keeps the day and time it was written. You can set both when writing or editing a note.
+  They're stored in UTC and shown in the PC's time zone.
+- Several databases in different folders. Choose one at start-up or in Settings › Databases, or
+  start on one with `--data-folder` (see [Several databases](#several-databases)).
+- Every date and time follows Windows' regional format and 12- or 24-hour clock, and changes when you
+  change them.
 
-Only on Windows: the contact, note, organization, category and item pages, the linked record trail,
-and Outlook-style keyboard shortcuts (see [Windows user experience](#windows-user-experience)).
+What differs from Gnoseis for Android, and which versions work together, is in
+[docs/windows-android-differences.md](docs/windows-android-differences.md). The Windows layout is
+described under [Windows user experience](#windows-user-experience).
 
 ## Installing
 
@@ -40,6 +47,10 @@ Requires Windows 10 version 1809 (build 17763) or later, x64. Nothing else needs
 2. [Verify the download](RELEASING.md#verifying-a-download): compare its SHA-256 with the one in the
    release notes, and check its build attestation.
 3. Unpack it anywhere and run `Gnoseis.exe`.
+
+The zip also holds `LICENSE`, `LICENSE_EXCEPTION.md`, `COMMERCIAL_LICENSE` and
+`THIRD_PARTY_NOTICES.md` next to `Gnoseis.exe`, with the third-party licence texts that the notices
+list.
 
 Releases before 1.0 aren't code-signed, so Windows warns about them. SmartScreen shows "Windows
 protected your PC" the first time: select **More info**, then **Run anyway**. Where Smart App Control
@@ -62,7 +73,7 @@ e-mail links in your notes open your browser or mail app.
 | Project | What it contains |
 |---|---|
 | `src/Gnoseis.Core` | .NET 10 class library: models, the Room-compatible SQLite data layer, repositories, backup/restore and validation. It has no UI code. |
-| `src/Gnoseis.App` | The WinUI 3 desktop app (.NET 10, Windows App SDK 2.5, unpackaged, self-contained `.exe`). |
+| `src/Gnoseis.App` | The WinUI 3 desktop app (.NET 10, Windows App SDK (only the components it uses), unpackaged, self-contained `.exe`). |
 | `tests/Gnoseis.Core.Tests` | xUnit tests for the data layer, ported from Gnoseis for Android, plus database compatibility tests against the Room schema export. |
 | `tools/Gnoseis.DemoData` | Console tool that creates a demo database (see [Demo database](#demo-database)). |
 
@@ -291,8 +302,9 @@ copying a Windows database or backup to it.
 - **Back up database** saves the time of the backup in the backup file and, once the backup has
   succeeded, in the database. Deleting a record or removing a link saves the time of the deletion.
 - A restore never changes these times: the restored database keeps what the backup holds.
-- The Windows app doesn't show these times yet. It keeps them up to date, so the Android app shows
-  the right backup reminder for a database that was used on Windows.
+- The note page shows when the note was added and last modified, and a contact, organization or
+  item with no notes yet shows when it was added. The times are also kept up to date, so the Android
+  app shows the right backup reminder for a database that was used on Windows.
 
 ### Compatibility details
 
@@ -357,17 +369,17 @@ switching and seeing related information at a glance.
   list (Ctrl+Shift+N).
 - **Note page**, built around the text: a header with the title, the day and time, and the
   commands; the text in a readable column, with clickable web and e-mail links, and when it was
-  created and changed under it. The records it's linked to sit in a side column, contacts first,
+  added and last modified under it. The records it's linked to sit in a side column, contacts first,
   each type with a **+** to link one more. **Edit** (F2) or a double-click on the text edits
-  the title, the text and the day in place (Ctrl+Enter or Ctrl+S saves; Esc cancels, and asks first
+  the title, the text, the day and the time in place (Ctrl+Enter or Ctrl+S saves; Esc cancels, and asks first
   when something changed). The layout follows the
   width of the record pane as on the contact page, with a compact header once the header scrolls
   away. **More** has **New linked**, **Copy note text** (Ctrl+C) and **Delete**.
 - **Contact page**, built around the person: a header with the name, the job and company (the
   company opens its organization when it's linked, or offers **Link as organization**), and a chip
   per phone number and e-mail address that calls or writes (right-click to copy; the value is copied
-  when no app handles it). Below it, a note box writes a note linked to the contact without leaving
-  the page (Ctrl+Shift+N, Ctrl+Enter saves), and the contact's history lists its notes, newest
+  when no app handles it). Below it, a note box writes a note linked to the contact, with its day and
+  time, without leaving the page (Ctrl+Shift+N, Ctrl+Enter saves), and the contact's history lists its notes, newest
   first, with month headers, a filter, year chips and **Show older** for long histories. The
   organizations, categories and items sit in a side column, each with a **+** to link one more.
   The layout follows the width of the record pane: tabs on a narrow one, a side column from 860 px,
@@ -401,6 +413,9 @@ switching and seeing related information at a glance.
   the system colours instead.
 - **Remembers where you were**: window size and position, whether it was maximized, the navigation
   pane and the last section, plus the selected record in each section while the app is open.
+- **Dates and times** follow Windows' regional format (date order, 12- or 24-hour clock) and time
+  zone. Notes are grouped and shown by their day in that zone. A change to the format, the time zone
+  or the day shows within a minute.
 - **Narrow windows** show one pane at a time; Back returns from a record to the list.
 - **Keyboard**, following Outlook, Office and Windows: Ctrl+1 to Ctrl+6 switch sections, Ctrl+E or
   F3 searches everything, Ctrl+F finds on the current screen (the record page's search or filter box,
