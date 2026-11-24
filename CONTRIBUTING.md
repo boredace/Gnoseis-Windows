@@ -24,7 +24,11 @@ See [Branches](RELEASING.md#branches). In short: every change is a short-lived b
 
 ## Licence agreement
 
-By contributing to Gnoseis, you agree that your contributions will be licensed under both the open-source license in the `LICENSE` file and the commercial license described in the `COMMERCIAL_LICENSE` file.
+By contributing to Gnoseis, you agree that your contributions will be licensed under both the open-source license in the `LICENSE` file, with the additional permission in the `LICENSE_EXCEPTION.md` file, and the commercial license described in the `COMMERCIAL_LICENSE` file.
+
+## Third-party packages
+
+A change that adds a package which ships with the app adds its notice to `THIRD_PARTY_NOTICES.md` in the same change: its version, what it's used for, its licence and copyright as found in the package, and any NOTICE file (long texts go in `third-party/`). A new shipped package that isn't under an MIT, BSD or Apache license needs the maintainer's OK first.
 
 ## AI-assisted contributions
 

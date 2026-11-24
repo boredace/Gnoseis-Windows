@@ -4,3 +4,5 @@
 src/Gnoseis.Core/Backup/eff_large_wordlist.txt -text
 # Test files shared byte for byte with Gnoseis-Android: never convert line endings
 tests/Gnoseis.Core.Tests/SharedBackups/* -text
+# Licence texts and notices copied byte for byte from the packages they come with: never convert line endings
+third-party/* -text

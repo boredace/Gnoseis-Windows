@@ -75,7 +75,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <!--
+      Only the Windows App SDK components the app uses, not the Microsoft.WindowsAppSDK metapackage,
+      which would also ship the Windows AI and machine learning runtime. A component added here
+      ships with the app: add its notice to THIRD_PARTY_NOTICES.md.
+    -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.Foundation" Version="2.3.12" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.9" />
+    <!-- Foundation asks for 2.1.8, which isn't published; 2.1.9 is the version the 2.5.1 release uses. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.InteractiveExperiences" Version="2.1.9" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
     <!-- DPAPI for the stored backup key. Managed only; it calls Windows' own crypt32.dll. -->
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
@@ -89,8 +97,9 @@
     <Manifest Include="$(ApplicationManifest)" />
     <Content Include="Assets\Gnoseis.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\TitleBarIcon.scale-*.png" CopyToOutputDirectory="PreserveNewest" />
-    <!-- Licences of third-party material, shipped next to Gnoseis.exe. -->
-    <Content Include="..\..\THIRD_PARTY_NOTICES.md" Link="THIRD_PARTY_NOTICES.md" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The app's licences and the third-party notices, shipped next to Gnoseis.exe (so in the release zip). -->
+    <Content Include="..\..\LICENSE;..\..\LICENSE_EXCEPTION.md;..\..\COMMERCIAL_LICENSE;..\..\THIRD_PARTY_NOTICES.md" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\..\third-party\*.txt" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <!-- The icon sources (Assets\source) are for regenerating the images, not for the app. -->
     <Content Remove="Assets\source\**" />
     <None Remove="Assets\source\**" />
