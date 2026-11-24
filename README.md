@@ -9,7 +9,7 @@ or backup from Android can be used on Windows as long as it's schema version 4 o
 0.4.0 writes version 4), and a Windows database or backup can be used on Android 0.4.0 or later. See [Supported schema versions](#supported-schema-versions).
 
 <p align="center">
-  <img src="docs/readme-screens.png" alt="Gnoseis for Windows in dark mode: the Home page with the most linked records, search results with a best match, a contact's linked records, and an organization's history" width="880">
+  <img src="docs/readme-screens.png" alt="Gnoseis for Windows in dark mode: the Home page with the most linked records, search results with a best match, a category's linked records in five lists, and an organization's history" width="880">
 </p>
 
 More screenshots of the current release are in [screenshots](screenshots/).
