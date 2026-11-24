@@ -30,6 +30,21 @@ public sealed partial class QuickNoteBox : UserControl
     public QuickNoteBox()
     {
         InitializeComponent();
+        Loaded += (_, _) => RegionalSettingsWatcher.Changed += RegionalSettings_Changed;
+        Unloaded += (_, _) => RegionalSettingsWatcher.Changed -= RegionalSettings_Changed;
+    }
+
+    // Windows' regional format or the day changed: the day and time (now, unless picked) and the clock follow.
+    private void RegionalSettings_Changed(object? sender, EventArgs e)
+    {
+        TimePicker.ClockIdentifier = SystemClock.Identifier;
+        if (!_dayPicked)
+        {
+            var now = DateTime.Now;
+            _day = DateOnly.FromDateTime(now);
+            _time = new TimeSpan(now.Hour, now.Minute, 0);
+        }
+        ShowDay();
     }
 
     /// <summary>The record the note is linked to.</summary>
@@ -84,7 +99,7 @@ public sealed partial class QuickNoteBox : UserControl
     {
         _updatingPickers = true;
         DatePicker.Date = new DateTimeOffset(_day.ToDateTime(TimeOnly.MinValue));
-        TimePicker.ClockIdentifier = Helpers.SystemClock.Identifier;
+        TimePicker.ClockIdentifier = SystemClock.Identifier;
         TimePicker.Time = _time;
         _updatingPickers = false;
     }

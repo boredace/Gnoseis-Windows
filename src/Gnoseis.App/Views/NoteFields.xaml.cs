@@ -18,10 +18,14 @@ public sealed partial class NoteFields : UserControl, IEditFields
         ViewModel = viewModel;
         InitializeComponent();
         ShowClock();
+        Loaded += (_, _) => RegionalSettingsWatcher.Changed += RegionalSettings_Changed;
+        Unloaded += (_, _) => RegionalSettingsWatcher.Changed -= RegionalSettings_Changed;
     }
 
+    private void RegionalSettings_Changed(object? sender, EventArgs e) => ShowClock();
+
     /// <summary>Sets the time picker to Windows' 12- or 24-hour clock (again after the regional format changed).</summary>
-    public void ShowClock() => NoteTimePicker.ClockIdentifier = Helpers.SystemClock.Identifier;
+    public void ShowClock() => NoteTimePicker.ClockIdentifier = SystemClock.Identifier;
 
     public NoteEditViewModel ViewModel { get; }
 

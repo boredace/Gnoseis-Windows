@@ -64,8 +64,8 @@ public sealed partial class MainWindow : Window
         Navigator.BackStateChanged += (_, _) => AppTitleBar.IsBackButtonEnabled = Navigator.CanGoBackAnywhere;
     }
 
-    // Reloads the pages when Windows' time zone changes, so note times move to it.
-    private TimeZoneWatcher? _timeZoneWatcher;
+    // Reloads the pages when Windows' time zone or regional format changes, or the day does, so shown dates and times follow.
+    private RegionalSettingsWatcher? _regionalSettingsWatcher;
 
     /// <summary>
     /// Finds the data folder (a bad argument quits, the picker asks, a folder with no database asks before
@@ -106,7 +106,7 @@ public sealed partial class MainWindow : Window
                 var database = await Task.Run(() => GnoseisDatabase.Open(AppPaths.DatabaseFile));
                 App.Container = new AppContainer(database);
                 database.DataChanged += (_, _) => _suggestionIndex = null;
-                _timeZoneWatcher ??= new TimeZoneWatcher(this, () => App.Container.Database.NotifyTimeZoneChanged());
+                _regionalSettingsWatcher ??= new RegionalSettingsWatcher(this, () => App.Container.Database.NotifyRegionalSettingsChanged());
                 break;
             }
             catch (Exception e) when (e is DatabaseIncompatibleException or SqliteException or IOException or UnauthorizedAccessException)

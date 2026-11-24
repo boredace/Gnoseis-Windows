@@ -194,8 +194,8 @@
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <StackPanel VerticalAlignment="Center" Spacing="2">
-                        <TextBlock AutomationProperties.HeadingLevel="Level1" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind ViewModel.Greeting}" />
-                        <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind ViewModel.DateText}" />
+                        <TextBlock AutomationProperties.HeadingLevel="Level1" Style="{StaticResource TitleTextBlockStyle}" Text="{x:Bind ViewModel.Greeting, Mode=OneWay}" />
+                        <TextBlock Style="{StaticResource SecondaryTextStyle}" Text="{x:Bind ViewModel.DateText, Mode=OneWay}" />
                     </StackPanel>
                     <StackPanel
                         x:Name="AddNewPanel"
