@@ -22,16 +22,21 @@
                 ColumnSpacing="12"
                 ContextRequested="HistoryRow_ContextRequested">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="64" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind DayText}" />
+                <!-- As wide as the widest day of the regional format, so no month name breaks and rows align -->
+                <StackPanel Width="{x:Bind DayColumnWidth}">
+                    <TextBlock
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="{x:Bind DayText}"
+                        TextWrapping="NoWrap" />
                     <TextBlock
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind WeekdayText}" />
+                        Text="{x:Bind WeekdayText}"
+                        TextWrapping="NoWrap" />
                 </StackPanel>
                 <StackPanel Grid.Column="1">
                     <TextBlock

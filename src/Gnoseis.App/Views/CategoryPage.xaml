@@ -38,7 +38,7 @@
         <Style x:Key="RowTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
             <Setter Property="TextWrapping" Value="NoWrap" />
         </Style>
-        <!-- Caption size, so a day with its year ("27 Dec 2022") fits the 76 px column -->
+        <!-- Caption size, so a day with its year ("December 27, 2022") keeps the column narrow -->
         <Style x:Key="DayTextStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="TextWrapping" Value="NoWrap" />

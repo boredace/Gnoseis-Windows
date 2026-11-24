@@ -17,6 +17,8 @@ public sealed class HistoryRow(HistoryNote note, string contactId)
     public string Id => Note.Id;
     public string DayText { get; } = ContactHistory.DayText(note);
     public string WeekdayText { get; } = ContactHistory.WeekdayAndYearText(note);
+    /// <summary>The day column's width, the same on every row (read on the UI thread, when the row is shown).</summary>
+    public double DayColumnWidth => Helpers.DayColumn.History;
     public string Title { get; } = ContactHistory.RowTitle(note);
     public string Text { get; } = ContactHistory.RowText(note);
     public string Links { get; } = ContactHistory.RowLinks(note, contactId);
