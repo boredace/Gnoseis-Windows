@@ -17,10 +17,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>14</LangVersion>
-    <VersionPrefix>0.2.0</VersionPrefix>
+    <VersionPrefix>0.3.0</VersionPrefix>
     <Product>Gnoseis</Product>
     <Company>Gnoseis.org</Company>
-    <Copyright>Copyright (C) 2024 Gnoseis.org</Copyright>
+    <Copyright>Copyright (C) 2024-2026 Gnoseis.org</Copyright>
     <ApplicationIcon>Assets\Gnoseis.ico</ApplicationIcon>
     <!-- Program.cs is the entry point, so DLL loading is restricted before anything else runs. -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
